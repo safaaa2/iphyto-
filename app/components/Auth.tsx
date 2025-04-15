@@ -7,7 +7,6 @@ import * as WebBrowser from 'expo-web-browser';
 import * as Google from 'expo-auth-session/providers/google';
 import { makeRedirectUri } from 'expo-auth-session';
 import { useNavigation } from '@react-navigation/native';
-import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { router } from 'expo-router';
 
 WebBrowser.maybeCompleteAuthSession();
@@ -21,7 +20,7 @@ export default function Auth(): JSX.Element {
   const [password, setPassword] = useState<string>('');
   const [loading, setLoading] = useState<boolean>(false);
   const [showPassword, setShowPassword] = useState<boolean>(false);
-  const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList, 'Signup'>>();
+  const navigation = useNavigation();
 
   const [request, response, promptAsync] = Google.useAuthRequest({
     clientId: '681948067449-c0smtgqu5qjqdqjc5lqunci9454lr0kf.apps.googleusercontent.com',
@@ -118,6 +117,8 @@ export default function Auth(): JSX.Element {
             value={email}
             placeholder="email@address.com"
             autoCapitalize="none"
+            containerStyle={styles.inputContainer}
+            inputStyle={styles.inputText}
           />
         </View>
 
@@ -130,6 +131,8 @@ export default function Auth(): JSX.Element {
             secureTextEntry={!showPassword}
             placeholder="Password"
             autoCapitalize="none"
+            containerStyle={styles.inputContainer}
+            inputStyle={styles.inputText}
             rightIcon={
               <TouchableOpacity onPress={() => setShowPassword(!showPassword)}>
                 <Icon name={showPassword ? 'visibility-off' : 'visibility'} />
@@ -138,29 +141,38 @@ export default function Auth(): JSX.Element {
           />
 
           <Button
-            title="Forgot Password?"
+            title="Mot de passe oublié ?"
             type="clear"
             onPress={resetPassword}
-            titleStyle={{ color: 'black', fontSize: 13, fontWeight: 'bold' }}
-            buttonStyle={{ alignSelf: 'flex-start', marginTop: -10 }}
+            titleStyle={styles.forgotPasswordText}
+            buttonStyle={styles.forgotPasswordButton}
+            containerStyle={{ padding: 0, margin: 0 }}
           />
         </View>
 
         <View style={styles.verticallySpaced}>
           <Button
-            title="Sign in"
+            title="Se connecter"
             disabled={loading}
             onPress={signInWithEmail}
             buttonStyle={styles.signInButton}
+            titleStyle={styles.buttonText}
+            loading={loading}
+            raised={false}
+            containerStyle={{ padding: 0, margin: 0 }}
           />
         </View>
 
-        <View style={styles.verticallySpaced}>
+        <View style={styles.buttonContainer}>
+          <Text style={styles.text}>Vous n'avez pas de compte ?</Text>
           <Button
-            title="Create account"
+            title="Créer un compte"
             disabled={loading}
             onPress={() => router.push('/(auth)/signup')}
             buttonStyle={styles.signUpButton}
+            titleStyle={styles.buttonText}
+            containerStyle={{ padding: 0, margin: 0 }}
+            raised={false}
           />
         </View>
       </View>
@@ -173,15 +185,14 @@ const styles = StyleSheet.create({
     flexGrow: 1,
     justifyContent: 'flex-start',
     alignItems: 'center',
-    paddingVertical: 150,
-    backgroundColor: '#ffffff',
+    paddingVertical: 50,
+    backgroundColor: '#f5f5f5',
   },
   container: {
     width: '100%',
     maxWidth: 400,
     paddingHorizontal: 20,
     alignItems: 'center',
-    backgroundColor: '#ffffff',
   },
   image: {
     width: 200,
@@ -196,19 +207,77 @@ const styles = StyleSheet.create({
     color: '#008000',
   },
   verticallySpaced: {
-    paddingVertical: 7,
+    paddingVertical: 10,
     alignSelf: 'stretch',
+  },
+  inputContainer: {
+    marginBottom: 10,
+  },
+  inputText: {
+    fontSize: 16,
+    paddingHorizontal: 10,
+    color: '#333',
   },
   signInButton: {
     backgroundColor: '#008000',
-    borderRadius: 100,
-    width: 150,
+    borderRadius: 8,
+    width: '70%',
+    height: 42,
+    marginVertical: 8,
+    elevation: 0,
+    shadowColor: 'transparent',
+    borderWidth: 0,
+    borderColor: '#008000',
+    padding: 0,
+    margin: 0,
     alignSelf: 'center',
   },
   signUpButton: {
     backgroundColor: '#008000',
-    borderRadius: 100,
-    width: 150,
+    borderRadius: 8,
+    width: '80%',
+    height: 45,
+    marginVertical: 8,
+    elevation: 0,
+    shadowColor: 'transparent',
+    borderWidth: 0,
+    borderColor: '#008000',
+    padding: 0,
+    margin: 0,
     alignSelf: 'center',
   },
+  buttonText: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#ffffff',
+    textAlign: 'center',
+  },
+  buttonContainer: {
+    width: '100%',
+    alignItems: 'center',
+    marginTop: 16,
+    backgroundColor: 'transparent',
+    padding: 0,
+    borderWidth: 0,
+    justifyContent: 'center',
+  },
+  text: {
+    fontSize: 14,
+    color: '#666',
+    marginBottom: 8,
+  },
+  forgotPasswordText: {
+    color: '#008000',
+    fontSize: 14,
+    fontWeight: '600',
+  },
+  forgotPasswordButton: {
+    marginTop: 8,
+    marginBottom: 16,
+    backgroundColor: 'transparent',
+    borderWidth: 0,
+    borderColor: 'transparent',
+    padding: 0,
+  },
 });
+

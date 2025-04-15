@@ -14,9 +14,9 @@ import { Input, Button, Icon } from '@rneui/themed';
 import { router } from 'expo-router';
 import { supabase } from '../../lib/supabase';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { LinearGradient } from 'expo-linear-gradient';
 
 export default function SignUp() {
+  const [username, setUsername] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
@@ -25,7 +25,7 @@ export default function SignUp() {
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
   const handleSignUp = async () => {
-    if (!email || !password || !confirmPassword) {
+    if (!username || !email || !password || !confirmPassword) {
       Alert.alert('Erreur', 'Veuillez remplir tous les champs.');
       return;
     }
@@ -41,7 +41,16 @@ export default function SignUp() {
     }
 
     setLoading(true);
-    const { data: { session }, error } = await supabase.auth.signUp({ email, password });
+
+    const { data: { session }, error } = await supabase.auth.signUp({
+      email,
+      password,
+      options: {
+        data: {
+          username,
+        },
+      },
+    });
 
     if (error) {
       Alert.alert('Erreur', error.message);
@@ -49,6 +58,7 @@ export default function SignUp() {
       await AsyncStorage.setItem('session', JSON.stringify(session));
       router.replace('/(tabs)/home');
     }
+
     setLoading(false);
   };
 
@@ -58,80 +68,90 @@ export default function SignUp() {
       style={styles.keyboardAvoidingView}
     >
       <ScrollView contentContainerStyle={styles.scrollContainer}>
-        <LinearGradient colors={['#ffffff', '#e0f2e9']} style={styles.gradient}>
-          <View style={styles.container}>
-            <Image
-              source={require('../../assets/images/iphyto.png')}
-              style={styles.logo}
-              resizeMode="contain"
-            />
-            <Text style={styles.title}>Créer un compte</Text>
+        <View style={styles.container}>
+          <Image
+            source={require('../../assets/images/iphyto.png')}
+            style={styles.logo}
+            resizeMode="contain"
+          />
+          <Text style={styles.title}>S'inscrire à iPhyto!</Text>
 
-            <Input
-              placeholder="Email"
-              label="Email"
-              value={email}
-              onChangeText={setEmail}
-              autoCapitalize="none"
-              leftIcon={{ type: 'material', name: 'email', color: '#2E7D32' }}
-              inputStyle={styles.input}
-              labelStyle={styles.label}
-              containerStyle={styles.inputContainer}
-            />
+          <Input
+            placeholder="Nom d'utilisateur"
+            label="Nom d'utilisateur"
+            value={username}
+            onChangeText={setUsername}
+            autoCapitalize="none"
+            leftIcon={{ type: 'material', name: 'person', color: '#008000' }}
+            inputStyle={styles.input}
+            containerStyle={styles.inputContainer}
+            labelStyle={styles.label}
+          />
 
-            <Input
-              placeholder="Mot de passe"
-              label="Mot de passe"
-              value={password}
-              onChangeText={setPassword}
-              secureTextEntry={!showPassword}
-              leftIcon={{ type: 'font-awesome', name: 'lock', color: '#2E7D32' }}
-              rightIcon={
-                <TouchableOpacity onPress={() => setShowPassword(!showPassword)}>
-                  <Icon name={showPassword ? 'visibility-off' : 'visibility'} color="#2E7D32" />
-                </TouchableOpacity>
-              }
-              inputStyle={styles.input}
-              labelStyle={styles.label}
-              containerStyle={styles.inputContainer}
-            />
+          <Input
+            placeholder="Email"
+            label="Email"
+            value={email}
+            onChangeText={setEmail}
+            autoCapitalize="none"
+            leftIcon={{ type: 'material', name: 'email', color: '#008000' }}
+            inputStyle={styles.input}
+            containerStyle={styles.inputContainer}
+            labelStyle={styles.label}
+          />
 
-            <Input
-              placeholder="Confirmer mot de passe"
-              label="Confirmer le mot de passe"
-              value={confirmPassword}
-              onChangeText={setConfirmPassword}
-              secureTextEntry={!showConfirmPassword}
-              leftIcon={{ type: 'font-awesome', name: 'lock', color: '#2E7D32' }}
-              rightIcon={
-                <TouchableOpacity onPress={() => setShowConfirmPassword(!showConfirmPassword)}>
-                  <Icon
-                    name={showConfirmPassword ? 'visibility-off' : 'visibility'}
-                    color="#2E7D32"
-                  />
-                </TouchableOpacity>
-              }
-              inputStyle={styles.input}
-              labelStyle={styles.label}
-              containerStyle={styles.inputContainer}
-            />
+          <Input
+            placeholder="Mot de passe"
+            label="Mot de passe"
+            value={password}
+            onChangeText={setPassword}
+            secureTextEntry={!showPassword}
+            leftIcon={{ type: 'font-awesome', name: 'lock', color: '#008000' }}
+            rightIcon={
+              <TouchableOpacity onPress={() => setShowPassword(!showPassword)}>
+                <Icon name={showPassword ? 'visibility-off' : 'visibility'} color="#008000" />
+              </TouchableOpacity>
+            }
+            inputStyle={styles.input}
+            containerStyle={styles.inputContainer}
+            labelStyle={styles.label}
+          />
 
-            <Button
-              title="Créer un compte"
-              loading={loading}
-              disabled={loading}
-              onPress={handleSignUp}
-              buttonStyle={styles.button}
-            />
+          <Input
+            placeholder="Confirmer mot de passe"
+            label="Confirmer le mot de passe"
+            value={confirmPassword}
+            onChangeText={setConfirmPassword}
+            secureTextEntry={!showConfirmPassword}
+            leftIcon={{ type: 'font-awesome', name: 'lock', color: '#008000' }}
+            rightIcon={
+              <TouchableOpacity onPress={() => setShowConfirmPassword(!showConfirmPassword)}>
+                <Icon
+                  name={showConfirmPassword ? 'visibility-off' : 'visibility'}
+                  color="#008000"
+                />
+              </TouchableOpacity>
+            }
+            inputStyle={styles.input}
+            containerStyle={styles.inputContainer}
+            labelStyle={styles.label}
+          />
 
-            <Button
-              title="J'ai déjà un compte"
-              type="clear"
-              titleStyle={styles.link}
-              onPress={() => router.back()}
-            />
-          </View>
-        </LinearGradient>
+          <Button
+            title="Créer un compte"
+            loading={loading}
+            disabled={loading}
+            onPress={handleSignUp}
+            buttonStyle={styles.button}
+            titleStyle={styles.buttonText}
+            containerStyle={{ padding: 0, margin: 0 }}
+            raised={false}
+          />
+
+          <TouchableOpacity onPress={() => router.back()} style={styles.linkContainer}>
+            <Text style={styles.link}>J'ai déjà un compte</Text>
+          </TouchableOpacity>
+        </View>
       </ScrollView>
     </KeyboardAvoidingView>
   );
@@ -144,55 +164,70 @@ const styles = StyleSheet.create({
   scrollContainer: {
     flexGrow: 1,
   },
-  gradient: {
+  container: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    paddingVertical: 40,
-  },
-  container: {
-    width: '90%',
-    maxWidth: 400,
+    paddingHorizontal: 20,
     backgroundColor: 'white',
-    padding: 25,
-    borderRadius: 20,
-    elevation: 5,
-    shadowColor: '#000',
-    shadowOpacity: 0.1,
-    shadowRadius: 10,
-    shadowOffset: { width: 0, height: 4 },
+    paddingTop: 40,
+    paddingBottom: 60,
   },
   logo: {
-    width: 100,
-    height: 100,
-    alignSelf: 'center',
-    marginBottom: 20,
+    width: 200,
+    height: 150,
+    marginBottom: 10,
   },
   title: {
-    fontSize: 22,
+    fontSize: 20,
     fontWeight: 'bold',
-    color: '#2E7D32',
-    textAlign: 'center',
-    marginBottom: 25,
+    color: '#008000',
+    marginBottom: 30,
+    fontStyle:'italic'
   },
   inputContainer: {
+    width: '100%',
     marginBottom: 15,
-  },
-  label: {
-    color: '#2E7D32',
-    fontWeight: '600',
   },
   input: {
     fontSize: 16,
+    paddingVertical: 8,
+  },
+  label: {
+    color: 'gray',
+    fontWeight: 'bold',
+    fontSize: 14,
+    marginBottom: 4,
   },
   button: {
-    backgroundColor: '#2E7D32',
-    borderRadius: 10,
-    padding: 12,
-    marginTop: 10,
+    backgroundColor: '#008000',
+    borderRadius: 8,
+    width: '80%',
+    height: 45,
+    marginVertical: 8,
+    elevation: 0,
+    shadowColor: 'transparent',
+    borderWidth: 0,
+    borderColor: '#008000',
+    padding: 0,
+    margin: 0,
+    alignSelf: 'center',
+  },
+  buttonText: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#ffffff',
+    textAlign: 'center',
+  },
+  linkContainer: {
+    marginTop: 15,
+    padding: 10,
+    alignItems: 'center',
   },
   link: {
-    marginTop: 15,
-    color: '#2E7D32',
+    color: '#008000',
+    fontSize: 14,
+    fontWeight: '600',
+    textAlign: 'center',
   },
 });
