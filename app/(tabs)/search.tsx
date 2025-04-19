@@ -1,7 +1,25 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { View, TextInput, Text, StyleSheet, TouchableOpacity, ActivityIndicator, FlatList } from 'react-native';
 import Icon from 'react-native-vector-icons/MaterialIcons';
 import { supabase } from '../../lib/supabase';
+type SavedProduct = {
+  user_id: string;
+  "Numéro homologation": string;
+  Produits: string;
+  Cible: string;
+  Cultures: string;
+  Categorie: string;
+  "Valable jusqu'au"?: string;
+  "Matière active"?: string;
+  Fournisseur?: string;
+  Détenteur?: string;
+  Dose?: string;
+  DAR?: string;
+  "Nbr_d'app"?: string;
+  Formulation?: string;
+  "Tableau toxicologique"?: string;
+  Teneur?: string;
+};
 
 type utilisation = {
   Produits: string;
@@ -29,25 +47,63 @@ const AdvancedSearch = () => {
   const [showFilters, setShowFilters] = useState(false);
   const [loading, setLoading] = useState(false);
   const [filteredProducts, setFilteredProducts] = useState<utilisation[]>([]);
-
+  const [hasAppliedFilters, setHasAppliedFilters] = useState(false);
+  
+  
   const handleSearch = () => {
     setLoading(true);
-    
-   
   };
+  const handleSaveProduct = async (product: utilisation) => {
+    const { data: userData } = await supabase.auth.getUser();
+    const userId = userData?.user?.id;
+
+    if (!userId) {
+      console.log("Utilisateur non connecté.");
+      return;
+    }
+    
+    const { error } = await supabase.from('saved_products').insert([
+      {
+        user_id: userId,
+        "Numéro homologation": product["Numéro homologation"] || null, // Utilisation de null si le champ est vide
+        Produits: product.Produits,
+        Cible: product.Cible,
+        Cultures: product.Cultures,
+        Categorie: product.Categorie,
+        "Valable jusqu'au": product["Valable jusqu'au"] || null,
+        "Matière active": product["Matière active"] || null,
+        Fournisseur: product.Fournisseur || null,
+        Détenteur: product.Détenteur || null,
+        Dose: product.Dose || null,
+        DAR: product.DAR || null,
+        "Nbr_d'app": product["Nbr_d'app"] || null,
+        Formulation: product.Formulation || null,
+        "Tableau toxicologique": product["Tableau toxicologique"] || null,
+        Teneur: product.Teneur || null,
+      }
+    ]);
+
+    if (error) {
+      console.error("Erreur lors de la sauvegarde :", error.message);
+    } else {
+      console.log("Produit sauvegardé !");
+    }
+  };
+ 
 
   const handleApplyFilters = async () => {
     setLoading(true);
+    setHasAppliedFilters(true); // Indique que les filtres ont été appliqués.
 
     let query = supabase
       .from('utilisation')
       .select('*')
       .order('Produits', { ascending: true });
 
-      if (Produits) query = query.ilike('Produits', `${Produits}%`); // Ici, % après `Produits` signifie que les produits doivent commencer par le texte saisi.
-      if (Matière_active) query = query.ilike('Matière active', `%${Matière_active}%`);
-      if (Cultures) query = query.ilike('Cultures', `%${Cultures}%`);
-      if (Cible) query = query.ilike('Cible', `%${Cible}%`);
+    if (Produits) query = query.ilike('Produits', `${Produits}%`);
+    if (Matière_active) query = query.ilike('Matière active', `%${Matière_active}%`);
+    if (Cultures) query = query.ilike('Cultures', `%${Cultures}%`);
+    if (Cible) query = query.ilike('Cible', `%${Cible}%`);
 
     try {
       const { data, error } = await query;
@@ -62,7 +118,7 @@ const AdvancedSearch = () => {
         data.map(async (item) => {
           const { data: productData, error } = await supabase
             .from('Produits')
-            .select('Fournisseur, Détenteur, "Tableau toxicologique",Categorie')
+            .select('Fournisseur, Détenteur, "Tableau toxicologique", Categorie')
             .eq('Numéro homologation', item['Numéro homologation'])
             .single();
 
@@ -90,7 +146,14 @@ const AdvancedSearch = () => {
     setCible('');
     setShowFilters(false);
     setFilteredProducts([]);
+    setHasAppliedFilters(false); // Réinitialise l'état de l'application des filtres
   };
+
+  useEffect(() => {
+    if (!hasAppliedFilters) {
+      setFilteredProducts([]); // Réinitialise les produits filtrés si aucun filtre n'a été appliqué.
+    }
+  }, [hasAppliedFilters]);
 
   return (
     <View style={styles.container}>
@@ -145,6 +208,14 @@ const AdvancedSearch = () => {
           renderItem={({ item }) => (
             <View style={styles.cardContainer}>
               <View style={styles.card}>
+                <TouchableOpacity
+                  style={styles.saveIcon}
+                  onPress={() => handleSaveProduct(item)}
+                >
+                  <Icon name="bookmark-border" size={24} 
+                  />
+                </TouchableOpacity>
+
                 <Text style={styles.productName}>
                   <Icon name="local-offer" size={16} color="green" /> {item.Produits}
                 </Text>
@@ -155,39 +226,49 @@ const AdvancedSearch = () => {
                   <Icon name="science" size={16} color="green" /> {item['Matière active'] || 'Non spécifié'}
                 </Text>
                 <Text style={styles.productDetail}>
-                  <Icon name="agriculture" size={16} color="green" /> {item.Cultures || 'Non spécifié'}
+                  <Icon name="agriculture" size={16} color="green" /> <Text style={styles.boldDate}>{item.Cultures || 'Non spécifié'}</Text>
                 </Text>
                 <Text style={styles.productDetail}>
                   <Icon name="bug-report" size={16} color="green" /> {item.Cible || 'Non spécifié'}
                 </Text>
                 <Text style={styles.productDetail}>
-                  <Icon name="opacity" size={16} color="green" /> Dose:{item.Dose || 'Non spécifié'}
+                  <Icon name="opacity" size={16} color="green" /> Dose:<Text style={styles.boldDate}>{item.Dose || 'Non spécifié'}</Text>
                 </Text>
                 <Text style={styles.productDetail}>
-                  <Icon name="hourglass-bottom" size={16} color="green" /> DAR: {item.DAR || 'Non spécifié'}
+                  <Icon name="hourglass-bottom" size={16} color="green" /> Délais Avant récolte: {item.DAR || 'Non spécifié'}
                 </Text>
                 <Text style={styles.productDetail}>
-                  <Icon name="confirmation-number" size={16} color="green" /> Numéro homologation: {item["Numéro homologation"] || 'Non spécifié'}
+                  <Icon name="confirmation-number" size={16} color="green" /> Numéro homologation: <Text style={styles.boldDate}>{item["Numéro homologation"] || 'Non spécifié'}</Text>
                 </Text>
                 <Text style={styles.productDetail}>
-                  <Icon name="local-shipping" size={16} color="green" /> Fournisseur: {item.Fournisseur || 'Non spécifié'}
+                  <Icon name="local-shipping" size={16} color="green" /> Fournisseur:<Text style={styles.boldDate}> {item.Fournisseur || 'Non spécifié'}</Text>
                 </Text>
                 <Text style={styles.productDetail}>
                   <Icon name="person" size={16} color="green" /> Détenteur: {item.Détenteur ? item.Détenteur : 'Non spécifié'}
                 </Text>
                 <Text style={styles.productDetail}>
-                  <Icon name="report-problem" size={16} color="red" /> Tableau toxicologique: {item["Tableau toxicologique"] ? item["Tableau toxicologique"] : 'Non spécifié'}
+                  <Icon name="report-problem" size={16} color="red" /> Tableau toxicologique: <Text style={styles.boldDate}>{item["Tableau toxicologique"] ? item["Tableau toxicologique"] : 'Non spécifié'}</Text>
                 </Text>
                 <Text style={styles.productDetail}>
-                  <Icon name="event" size={16} color="black" /> Valable jusqu'au: {new Date().toLocaleDateString('fr-FR')}
+                  <Icon name="event" size={16} color="black" />
+                  Valable jusqu'au: <Text style={styles.boldDate}>
+                    {item["Valable jusqu'au"]
+                      ? new Date(item["Valable jusqu'au"]).toLocaleDateString('en-US', {
+                        year: 'numeric',
+                        month: 'short',
+                        day: 'numeric',
+                      })
+                      : 'Non spécifié'}
+                  </Text>
                 </Text>
+
               </View>
             </View>
           )}
           keyExtractor={(item, index) => index.toString()}
         />
       )}
-      {filteredProducts.length === 0 && !loading && (
+      {filteredProducts.length === 0 && !loading && hasAppliedFilters && (
         <Text style={styles.noResultsText}>Aucun produit trouvé.</Text>
       )}
     </View>
@@ -198,6 +279,12 @@ const styles = StyleSheet.create({
   container: {
     padding: 20,
   },
+  saveIcon: {
+    position: 'absolute',
+    top: 10,
+    right: 10,
+    zIndex: 1,
+  },
   filterButton: {
     backgroundColor: '#008000',
     paddingVertical: 10,
@@ -206,6 +293,9 @@ const styles = StyleSheet.create({
     marginBottom: 10,
     flexDirection: 'row',
     justifyContent: 'center',
+  },
+  boldDate: {
+    fontWeight: 'bold',
   },
   buttonText: {
     color: 'white',
@@ -277,16 +367,15 @@ const styles = StyleSheet.create({
   },
   loadingText: {
     marginTop: 10,
-    fontSize: 16,
     color: 'gray',
   },
   cardContainer: {
-    marginBottom: 15,
+    marginBottom: 10,
   },
   card: {
-    backgroundColor: '#FFF',
     padding: 15,
-    borderRadius: 10,
+    backgroundColor: '#fff',
+    borderRadius: 5,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
@@ -296,23 +385,25 @@ const styles = StyleSheet.create({
   productName: {
     fontSize: 18,
     fontWeight: 'bold',
+    color: '#008000',
   },
   productDetail: {
     fontSize: 14,
     color: 'black',
-    
+    marginTop: 5,
   },
   productDetail1: {
     fontSize: 14,
-    color: 'black',
-    marginBottom: 15,
-    
+    color: "black",
+    marginTop: 5,
+    fontStyle: "italic",
+    fontWeight: "bold"
   },
   noResultsText: {
-    fontSize: 16,
-    color: 'gray',
     textAlign: 'center',
     marginTop: 20,
+    color: 'black',
+    fontStyle: 'italic',
   },
 });
 

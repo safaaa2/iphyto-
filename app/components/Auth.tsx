@@ -102,115 +102,92 @@ export default function Auth(): JSX.Element {
   }
 
   return (
-    <ScrollView contentContainerStyle={styles.scrollContainer}>
-      <View style={styles.container}>
-        <Image source={require('../../assets/images/iphyto.png')} style={styles.image} />
-        <Text style={styles.welcomeText}>
-          <Text style={{ fontWeight: 'bold', fontStyle: 'italic', fontSize: 16 }}>Bienvenue chez IPHYTO !</Text>
-        </Text>
+    <ScrollView contentContainerStyle={styles.container}>
+      <Image
+        source={require('../../assets/images/iphyto.png')}
+        style={styles.logo}
+      />
+      <Text style={styles.title}>
+        Bienvenue sur <Text style={styles.green}>IPHYTO</Text> 🌿
+      </Text>
 
-        <View style={styles.verticallySpaced}>
-          <Input
-            label="Email"
-            leftIcon={{ type: 'material', name: 'email' }}
-            onChangeText={setEmail}
-            value={email}
-            placeholder="email@address.com"
-            autoCapitalize="none"
-            containerStyle={styles.inputContainer}
-            inputStyle={styles.inputText}
-          />
-        </View>
+      <Input
+        placeholder="Adresse e-mail"
+        leftIcon={{ type: 'material', name: 'email' }}
+        value={email}
+        onChangeText={setEmail}
+        containerStyle={styles.inputContainer}
+        inputStyle={styles.inputText}
+      />
 
-        <View style={styles.verticallySpaced}>
-          <Input
-            label="Password"
-            leftIcon={{ type: 'font-awesome', name: 'lock' }}
-            onChangeText={setPassword}
-            value={password}
-            secureTextEntry={!showPassword}
-            placeholder="Password"
-            autoCapitalize="none"
-            containerStyle={styles.inputContainer}
-            inputStyle={styles.inputText}
-            rightIcon={
-              <TouchableOpacity onPress={() => setShowPassword(!showPassword)}>
-                <Icon name={showPassword ? 'visibility-off' : 'visibility'} />
-              </TouchableOpacity>
-            }
-          />
+      <Input
+        placeholder="Mot de passe"
+        leftIcon={{ type: 'font-awesome', name: 'lock' }}
+        secureTextEntry={!showPassword}
+        value={password}
+        onChangeText={setPassword}
+        inputStyle={styles.inputText}
+        containerStyle={styles.inputContainer}
+        rightIcon={
+          <TouchableOpacity onPress={() => setShowPassword(!showPassword)}>
+            <Icon name={showPassword ? 'visibility-off' : 'visibility'} />
+          </TouchableOpacity>
+        }
+      />
 
-          <Button
-            title="Mot de passe oublié ?"
-            type="clear"
-            onPress={resetPassword}
-            titleStyle={styles.forgotPasswordText}
-            buttonStyle={styles.forgotPasswordButton}
-            containerStyle={{ padding: 0, margin: 0 }}
-          />
-        </View>
+      <TouchableOpacity onPress={resetPassword}>
+        <Text style={styles.link}>Mot de passe oublié ?</Text>
+      </TouchableOpacity>
 
-        <View style={styles.verticallySpaced}>
-          <Button
-            title="Se connecter"
-            disabled={loading}
-            onPress={signInWithEmail}
-            buttonStyle={styles.signInButton}
-            titleStyle={styles.buttonText}
-            loading={loading}
-            raised={false}
-            containerStyle={{ padding: 0, margin: 0 }}
-          />
-        </View>
+      <Button
+        title="Se connecter"
+        loading={loading}
+        onPress={signInWithEmail}
+        buttonStyle={styles.loginButton}
+        titleStyle={styles.loginText}
+        containerStyle={{ width: '100%', marginTop: 20 }}
+      />
 
-        <View style={styles.buttonContainer}>
-          <Text style={styles.text}>Vous n'avez pas de compte ?</Text>
-          <Button
-            title="Créer un compte"
-            disabled={loading}
-            onPress={() => router.push('/(auth)/signup')}
-            buttonStyle={styles.signUpButton}
-            titleStyle={styles.buttonText}
-            containerStyle={{ padding: 0, margin: 0 }}
-            raised={false}
-          />
-        </View>
-      </View>
+      <Text style={styles.or}>Ou</Text>
+
+      <Button
+        title="Créer un compte"
+        type="outline"
+        onPress={() => router.push('/(auth)/signup')}
+        titleStyle={styles.signupText}
+        buttonStyle={styles.signupButton}
+        containerStyle={{ width: '100%' }}
+      />
     </ScrollView>
   );
 }
 
 const styles = StyleSheet.create({
-  scrollContainer: {
-    flexGrow: 1,
-    justifyContent: 'flex-start',
-    alignItems: 'center',
-    paddingVertical: 50,
-    backgroundColor: '#f5f5f5',
-  },
   container: {
-    width: '100%',
-    maxWidth: 400,
-    paddingHorizontal: 20,
+    flexGrow: 1,
     alignItems: 'center',
+    padding: 30,
+    backgroundColor: '#fff',
   },
-  image: {
-    width: 200,
-    height: 150,
-    borderRadius: 100,
-    marginBottom: 10,
+  logo: {
+    width: 190,
+    height: 160,
+    marginBottom: 20,
+    borderRadius: 80,
   },
-  welcomeText: {
+  title: {
     fontSize: 20,
     fontWeight: 'bold',
+    fontStyle: 'italic',
+    color: '#333',
     marginBottom: 20,
+    textAlign: 'center',
+  },
+  green: {
     color: '#008000',
   },
-  verticallySpaced: {
-    paddingVertical: 10,
-    alignSelf: 'stretch',
-  },
   inputContainer: {
+    width: '100%',
     marginBottom: 10,
   },
   inputText: {
@@ -218,66 +195,35 @@ const styles = StyleSheet.create({
     paddingHorizontal: 10,
     color: '#333',
   },
-  signInButton: {
-    backgroundColor: '#008000',
-    borderRadius: 8,
-    width: '70%',
-    height: 42,
-    marginVertical: 8,
-    elevation: 0,
-    shadowColor: 'transparent',
-    borderWidth: 0,
-    borderColor: '#008000',
-    padding: 0,
-    margin: 0,
-    alignSelf: 'center',
-  },
-  signUpButton: {
-    backgroundColor: '#008000',
-    borderRadius: 8,
-    width: '80%',
-    height: 45,
-    marginVertical: 8,
-    elevation: 0,
-    shadowColor: 'transparent',
-    borderWidth: 0,
-    borderColor: '#008000',
-    padding: 0,
-    margin: 0,
-    alignSelf: 'center',
-  },
-  buttonText: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#ffffff',
-    textAlign: 'center',
-  },
-  buttonContainer: {
-    width: '100%',
-    alignItems: 'center',
-    marginTop: 16,
-    backgroundColor: 'transparent',
-    padding: 0,
-    borderWidth: 0,
-    justifyContent: 'center',
-  },
-  text: {
-    fontSize: 14,
-    color: '#666',
-    marginBottom: 8,
-  },
-  forgotPasswordText: {
+  link: {
+    alignSelf: 'flex-end',
     color: '#008000',
-    fontSize: 14,
     fontWeight: '600',
+    marginBottom: 20,
   },
-  forgotPasswordButton: {
-    marginTop: 8,
-    marginBottom: 16,
-    backgroundColor: 'transparent',
-    borderWidth: 0,
-    borderColor: 'transparent',
-    padding: 0,
+  loginButton: {
+    backgroundColor: '#008000',
+    borderRadius: 8,
+    paddingVertical: 12,
+  },
+  loginText: {
+    color: '#fff',
+    fontSize: 16,
+  },
+  or: {
+    marginVertical: 16,
+    fontSize: 14,
+    color: '#999',
+  },
+  signupButton: {
+    borderColor: '#008000',
+    borderWidth: 1,
+    borderRadius: 8,
+    paddingVertical: 12,
+  },
+  signupText: {
+    color: '#008000',
+    fontWeight: '600',
+    fontSize: 16,
   },
 });
-

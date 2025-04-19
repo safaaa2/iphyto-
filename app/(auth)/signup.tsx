@@ -25,23 +25,43 @@ export default function SignUp() {
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
   const handleSignUp = async () => {
+    // Vérification si tous les champs sont remplis
     if (!username || !email || !password || !confirmPassword) {
       Alert.alert('Erreur', 'Veuillez remplir tous les champs.');
       return;
     }
-
+  
+    // Vérification si les mots de passe sont identiques
     if (password !== confirmPassword) {
       Alert.alert('Erreur', 'Les mots de passe ne correspondent pas.');
       return;
     }
-
+    const passwordRegex = /^(?=.*[a-zA-Z])(?=.*\d)(?=.*[!@#$%^&*(),.?":{}|<>]).{6,}$/;
+    // Explication de l'expression régulière :
+    // (?=.*[a-zA-Z]) => Au moins une lettre (majuscule ou minuscule)
+    // (?=.*\d) => Au moins un chiffre
+    // (?=.*[!@#$%^&*(),.?":{}|<>]) => Au moins un caractère spécial
+    // .{6,} => Minimum 6 caractères
+    if (!passwordRegex.test(password)) {
+      Alert.alert('Erreur', 'Le mot de passe doit contenir au moins une lettre, un chiffre et un caractère spécial.');
+      return;
+    }
+    // Vérification si le mot de passe a au moins 6 caractères
     if (password.length < 6) {
       Alert.alert('Erreur', 'Le mot de passe doit contenir au moins 6 caractères.');
       return;
     }
-
+  
+    // Validation de l'email avec une expression régulière
+    const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
+    if (!emailRegex.test(email)) {
+      Alert.alert('Erreur', 'L\'email n\'est pas valide.');
+      return;
+    }
+  
     setLoading(true);
-
+  
+    // Tentative de création de compte avec Supabase
     const { data: { session }, error } = await supabase.auth.signUp({
       email,
       password,
@@ -51,14 +71,16 @@ export default function SignUp() {
         },
       },
     });
-
+  
+    // Gestion des erreurs de Supabase
     if (error) {
       Alert.alert('Erreur', error.message);
     } else {
+      // Si l'inscription est réussie, on stocke la session et redirige l'utilisateur
       await AsyncStorage.setItem('session', JSON.stringify(session));
       router.replace('/(tabs)/home');
     }
-
+  
     setLoading(false);
   };
 
@@ -67,18 +89,24 @@ export default function SignUp() {
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
       style={styles.keyboardAvoidingView}
     >
-      <ScrollView contentContainerStyle={styles.scrollContainer}>
+      <ScrollView
+        contentContainerStyle={styles.scrollContainer}
+        keyboardShouldPersistTaps="handled"
+      >
         <View style={styles.container}>
           <Image
             source={require('../../assets/images/iphyto.png')}
             style={styles.logo}
             resizeMode="contain"
           />
-          <Text style={styles.title}>S'inscrire à iPhyto!</Text>
+
+          <Text style={styles.title}>Bienvenue sur iPhyto!</Text>
+          <Text style={styles.subtitle}>
+            Créez votre compte pour accéder à toutes les fonctionnalités de iPhyto 🌱
+          </Text>
 
           <Input
             placeholder="Nom d'utilisateur"
-            label="Nom d'utilisateur"
             value={username}
             onChangeText={setUsername}
             autoCapitalize="none"
@@ -90,7 +118,6 @@ export default function SignUp() {
 
           <Input
             placeholder="Email"
-            label="Email"
             value={email}
             onChangeText={setEmail}
             autoCapitalize="none"
@@ -102,7 +129,6 @@ export default function SignUp() {
 
           <Input
             placeholder="Mot de passe"
-            label="Mot de passe"
             value={password}
             onChangeText={setPassword}
             secureTextEntry={!showPassword}
@@ -119,7 +145,6 @@ export default function SignUp() {
 
           <Input
             placeholder="Confirmer mot de passe"
-            label="Confirmer le mot de passe"
             value={confirmPassword}
             onChangeText={setConfirmPassword}
             secureTextEntry={!showConfirmPassword}
@@ -137,16 +162,17 @@ export default function SignUp() {
             labelStyle={styles.label}
           />
 
-          <Button
-            title="Créer un compte"
-            loading={loading}
-            disabled={loading}
+          <TouchableOpacity
             onPress={handleSignUp}
-            buttonStyle={styles.button}
-            titleStyle={styles.buttonText}
-            containerStyle={{ padding: 0, margin: 0 }}
-            raised={false}
-          />
+            disabled={loading}
+            style={[styles.buttonContainer, loading && { opacity: 0.7 }]}
+          >
+            <View style={styles.button}>
+              <Text style={styles.buttonText}>
+                {loading ? 'Chargement...' : 'Créer un compte'}
+              </Text>
+            </View>
+          </TouchableOpacity>
 
           <TouchableOpacity onPress={() => router.back()} style={styles.linkContainer}>
             <Text style={styles.link}>J'ai déjà un compte</Text>
@@ -174,20 +200,28 @@ const styles = StyleSheet.create({
     paddingBottom: 60,
   },
   logo: {
-    width: 200,
-    height: 150,
-    marginBottom: 10,
+    width: 150,
+    height: 120,
+    marginBottom: 5,
   },
   title: {
-    fontSize: 20,
+    fontSize: 22,
     fontWeight: 'bold',
+    fontStyle: 'italic',
     color: '#008000',
-    marginBottom: 30,
-    fontStyle:'italic'
+    marginBottom: 10,
+    textAlign: 'center',
+  },
+  subtitle: {
+    fontSize: 14,
+    color: 'gray',
+    marginBottom: 25,
+    textAlign: 'center',
+    paddingHorizontal: 10,
   },
   inputContainer: {
-    width: '100%',
-    marginBottom: 15,
+    width: '90%',
+    marginBottom: 12,
   },
   input: {
     fontSize: 16,
@@ -199,19 +233,19 @@ const styles = StyleSheet.create({
     fontSize: 14,
     marginBottom: 4,
   },
+  buttonContainer: {
+    width: '100%',
+    alignItems: 'center', // مركز الزر
+    justifyContent: 'center',
+  },
   button: {
     backgroundColor: '#008000',
-    borderRadius: 8,
-    width: '80%',
-    height: 45,
-    marginVertical: 8,
-    elevation: 0,
-    shadowColor: 'transparent',
-    borderWidth: 0,
-    borderColor: '#008000',
-    padding: 0,
-    margin: 0,
-    alignSelf: 'center',
+    borderRadius: 12,
+    width: '90%',
+    height: 50,
+    justifyContent: 'center', // مركز النص داخل الزر
+    alignItems: 'center',
+    marginTop: 20,   // مركز النص داخل الزر
   },
   buttonText: {
     fontSize: 16,
