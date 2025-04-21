@@ -8,27 +8,19 @@ import { SessionProvider, useSession } from './session/sessionContext' // Import
 import './global.css'
 
 const Main = () => {
-  const { session, setSession } = useSession() // Access session from context
+  const { session } = useSession() // Access session from context
   const router = useRouter() // Initialize the router
 
   useEffect(() => {
-    const getSession = async () => {
-      const { data: { session } } = await supabase.auth.getSession()
-      setSession(session)
-    }
-
-    getSession()
-
     // Listen for changes in auth state
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-      setSession(session)
       if (session && session.user) {
-        router.replace('/home')
+        router.replace('/(tabs)/home')
       }
     })
 
     return () => subscription?.unsubscribe()
-  }, [router, setSession])
+  }, [router])
 
   return (
     <View>

@@ -67,6 +67,7 @@ export default function Auth(): JSX.Element {
         Alert.alert('Error', sessionError.message);
       } else {
         await AsyncStorage.setItem('session', JSON.stringify(session));
+        router.replace('/(tabs)/home');
       }
     }
     setLoading(false);

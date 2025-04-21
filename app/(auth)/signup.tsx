@@ -17,6 +17,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 
 export default function SignUp() {
   const [username, setUsername] = useState('');
+  const [full_name, fullName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
@@ -25,65 +26,151 @@ export default function SignUp() {
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
   const handleSignUp = async () => {
-    // Vérification si tous les champs sont remplis
     if (!username || !email || !password || !confirmPassword) {
       Alert.alert('Erreur', 'Veuillez remplir tous les champs.');
       return;
     }
-  
-    // Vérification si les mots de passe sont identiques
+
     if (password !== confirmPassword) {
       Alert.alert('Erreur', 'Les mots de passe ne correspondent pas.');
       return;
     }
+
     const passwordRegex = /^(?=.*[a-zA-Z])(?=.*\d)(?=.*[!@#$%^&*(),.?":{}|<>]).{6,}$/;
-    // Explication de l'expression régulière :
-    // (?=.*[a-zA-Z]) => Au moins une lettre (majuscule ou minuscule)
-    // (?=.*\d) => Au moins un chiffre
-    // (?=.*[!@#$%^&*(),.?":{}|<>]) => Au moins un caractère spécial
-    // .{6,} => Minimum 6 caractères
     if (!passwordRegex.test(password)) {
-      Alert.alert('Erreur', 'Le mot de passe doit contenir au moins une lettre, un chiffre et un caractère spécial.');
+      Alert.alert(
+        'Erreur',
+        'Le mot de passe doit contenir au moins une lettre, un chiffre et un caractère spécial.'
+      );
       return;
     }
-    // Vérification si le mot de passe a au moins 6 caractères
+
     if (password.length < 6) {
       Alert.alert('Erreur', 'Le mot de passe doit contenir au moins 6 caractères.');
       return;
     }
-  
-    // Validation de l'email avec une expression régulière
+
     const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
     if (!emailRegex.test(email)) {
-      Alert.alert('Erreur', 'L\'email n\'est pas valide.');
+      Alert.alert('Erreur', "L'email n'est pas valide.");
       return;
     }
-  
-    setLoading(true);
-  
-    // Tentative de création de compte avec Supabase
-    const { data: { session }, error } = await supabase.auth.signUp({
-      email,
-      password,
-      options: {
-        data: {
-          username,
-        },
-      },
-    });
-  
-    // Gestion des erreurs de Supabase
-    if (error) {
-      Alert.alert('Erreur', error.message);
-    } else {
-      // Si l'inscription est réussie, on stocke la session et redirige l'utilisateur
-      await AsyncStorage.setItem('session', JSON.stringify(session));
-      router.replace('/(tabs)/home');
-    }
-  
-    setLoading(false);
-  };
 
+    const { data: userData, error: userError } = await supabase
+      .from('profiles')
+      .select('username')
+      .eq('username', username)
+      .maybeSingle();
+
+    if (userError) {
+      Alert.alert('Erreur', "Erreur lors de la vérification du nom d'utilisateur.");
+      return;
+    }
+
+    if (userData) {
+      Alert.alert('Erreur', "Ce nom d'utilisateur est déjà pris.");
+      return;
+    }
+
+    setLoading(true);
+
+    try {
+      const { data, error } = await supabase.auth.signUp({
+        email,
+        password,
+        options: {
+          data: {
+            username: username,
+            full_name: full_name
+          }
+        }
+      });
+
+      if (error) {
+        console.error("Erreur lors de l'inscription:", error);
+        setLoading(false);
+        Alert.alert('Erreur', error.message);
+        return;
+      }
+
+      if (!data?.user) {
+        console.error("Pas d'utilisateur créé après l'inscription");
+        setLoading(false);
+        Alert.alert('Erreur', "L'inscription a échoué. Veuillez réessayer.");
+        return;
+      }
+
+      // Vérifier si l'utilisateur existe déjà dans la table profiles
+      const { data: existingProfile, error: profileCheckError } = await supabase
+        .from('profiles')
+        .select('id')
+        .eq('id', data.user.id)
+        .maybeSingle();
+
+      if (profileCheckError) {
+        console.error("Erreur lors de la vérification du profil:", profileCheckError);
+        setLoading(false);
+        Alert.alert('Erreur', "Erreur lors de la création du profil.");
+        return;
+      }
+
+      if (!existingProfile) {
+        const { error: profileError } = await supabase
+          .from('profiles')
+          .insert({
+            id: data.user.id,
+            username,
+            email,
+            full_name: full_name
+          });
+         
+        if (profileError) {
+          console.error("Erreur lors de la création du profil:", profileError);
+          setLoading(false);
+          Alert.alert('Erreur', 'Erreur lors de la création du profil.');
+          return;
+        }
+      }
+
+      if (data?.session) {
+        console.log("Session créée avec succès", data.session);
+        await AsyncStorage.setItem('session', JSON.stringify(data.session));
+        setLoading(false);
+        router.replace('/(tabs)/home');
+      } else {
+        console.log("Pas de session après inscription, tentative de connexion...");
+        // Attendre un peu avant de tenter la connexion
+        await new Promise(resolve => setTimeout(resolve, 1000));
+        
+        const { data: signInData, error: signInError } = await supabase.auth.signInWithPassword({
+          email,
+          password
+        });
+        
+        if (signInError) {
+          console.error("Erreur de connexion après inscription:", signInError);
+          setLoading(false);
+          Alert.alert('Erreur', 'Compte créé mais problème de connexion: ' + signInError.message);
+          return;
+        }
+        
+        if (signInData?.session) {
+          console.log("Connexion réussie après inscription", signInData.session);
+          await AsyncStorage.setItem('session', JSON.stringify(signInData.session));
+          setLoading(false);
+          router.replace('/(tabs)/home');
+        } else {
+          console.error("Pas de session après tentative de connexion");
+          setLoading(false);
+          Alert.alert('Erreur', 'Compte créé mais problème de session. Veuillez vous connecter manuellement.');
+        }
+      }
+    } catch (error: any) {
+      console.error("Erreur inattendue lors de l'inscription:", error);
+      setLoading(false);
+      Alert.alert('Erreur', 'Une erreur est survenue: ' + error.message);
+    }
+  };
   return (
     <KeyboardAvoidingView
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
@@ -115,6 +202,17 @@ export default function SignUp() {
             containerStyle={styles.inputContainer}
             labelStyle={styles.label}
           />
+          <Input
+            placeholder="full name"
+            value={full_name}
+            onChangeText={fullName}
+            autoCapitalize="none"
+            leftIcon={{ type: 'material', name: 'person', color: '#008000' }}
+            inputStyle={styles.input}
+            containerStyle={styles.inputContainer}
+            labelStyle={styles.label}
+          />
+
 
           <Input
             placeholder="Email"
@@ -235,7 +333,7 @@ const styles = StyleSheet.create({
   },
   buttonContainer: {
     width: '100%',
-    alignItems: 'center', // مركز الزر
+    alignItems: 'center',
     justifyContent: 'center',
   },
   button: {
@@ -243,9 +341,9 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     width: '90%',
     height: 50,
-    justifyContent: 'center', // مركز النص داخل الزر
+    justifyContent: 'center',
     alignItems: 'center',
-    marginTop: 20,   // مركز النص داخل الزر
+    marginTop: 20,
   },
   buttonText: {
     fontSize: 16,
