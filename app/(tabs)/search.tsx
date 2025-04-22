@@ -2,25 +2,16 @@ import React, { useState, useEffect } from 'react';
 import { View, TextInput, Text, StyleSheet, TouchableOpacity, ActivityIndicator, FlatList, Alert } from 'react-native';
 import Icon from 'react-native-vector-icons/MaterialIcons';
 import { supabase } from '../../lib/supabase';
+import { useFavorites } from '../../lib/FavoritesContext';
 
-type SavedProduct = {
+interface SavedProduct {
   user_id: string;
   "Numéro homologation": string;
   Produits: string;
   Cible: string;
   Cultures: string;
-  Categorie: string;
-  "Valable jusqu'au"?: string;
-  "Matière active"?: string;
-  Fournisseur?: string;
-  Détenteur?: string;
-  Dose?: string;
-  DAR?: string;
-  "Nbr_d'app"?: string;
-  Formulation?: string;
-  "Tableau toxicologique"?: string;
-  Teneur?: string;
-};
+  [key: string]: string | null | undefined;
+}
 
 type utilisation = {
   'Numéro homologation': string;
@@ -41,20 +32,20 @@ type utilisation = {
 };
 
 interface ProductData {
-  'Numéro homologation': string;
+  "Numéro homologation": string;
   Produits: string;
   Cible: string;
   Cultures: string;
-  'Matière active'?: string;
-  'Valable jusqu\'au'?: string;
-  Dose?: string;
-  DAR?: string;
-  'Nbr_d\'app'?: string;
+  Categorie?: string | null;
+  "Valable jusqu'au"?: string | null;
+  "Matière active"?: string | null;
   Fournisseur?: string | null;
   Détenteur?: string | null;
-  'Tableau toxicologique'?: string | null;
-  Categorie?: string | null;
+  Dose?: string | null;
+  DAR?: string | null;
+  "Nbr_d'app"?: string | null;
   Formulation?: string | null;
+  "Tableau toxicologique"?: string | null;
   Teneur?: string | null;
 }
 
@@ -63,6 +54,24 @@ interface FilterState {
   Matière_active: string;
   Cultures: string;
   Cible: string;
+}
+
+interface Product {
+  "Numéro homologation": string;
+  Produits: string;
+  Cible: string;
+  Cultures: string;
+  Categorie?: string | null;
+  "Valable jusqu'au"?: string | null;
+  "Matière active"?: string | null;
+  Fournisseur?: string | null;
+  Détenteur?: string | null;
+  Dose?: string | null;
+  DAR?: string | null;
+  "Nbr_d'app"?: string | null;
+  Formulation?: string | null;
+  "Tableau toxicologique"?: string | null;
+  Teneur?: string | null;
 }
 
 export default function SearchScreen() {
@@ -78,56 +87,105 @@ export default function SearchScreen() {
   });
   const [hasAppliedFilters, setHasAppliedFilters] = useState(false);
   const [savedProducts, setSavedProducts] = useState<Set<string>>(new Set());
+  const { refreshFavorites, triggerRefresh } = useFavorites();
   
+  useEffect(() => {
+    const fetchSavedProducts = async () => {
+      try {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) return;
+
+        const { data: savedProductsData, error } = await supabase
+          .from('saved_products')
+          .select('*')
+          .eq('user_id', user.id);
+
+        if (error) {
+          console.error('Erreur lors de la récupération des favoris:', error);
+          return;
+        }
+
+        console.log('Mise à jour des favoris:', savedProductsData);
+        const savedProductsSet = new Set(
+          savedProductsData.map(product => `${product.Produits}-${product.Cultures}`)
+        );
+        setSavedProducts(savedProductsSet);
+      } catch (error) {
+        console.error('Erreur:', error);
+      }
+    };
+
+    fetchSavedProducts();
+  }, [refreshFavorites]);
   
   const handleSearch = () => {
     setLoading(true);
   };
-  const handleSaveProduct = async (product: utilisation) => {
-    const { data: userData } = await supabase.auth.getUser();
-    const userId = userData?.user?.id;
-
-    if (!userId) {
-      Alert.alert('Erreur', 'Vous devez être connecté pour sauvegarder un produit.');
-      return;
-    }
-    
+  const handleSaveProduct = async (product: ProductData) => {
     try {
-      const { error } = await supabase.from('saved_products').insert([
-        {
-          user_id: userId,
-          "Numéro homologation": product["Numéro homologation"] || null,
-          Produits: product.Produits,
-          Cible: product.Cible,
-          Cultures: product.Cultures,
-          Categorie: product.Categorie,
-          "Valable jusqu'au": product["Valable jusqu'au"] || null,
-          "Matière active": product["Matière active"] || null,
-          Fournisseur: product.Fournisseur || null,
-          Détenteur: product.Détenteur || null,
-          Dose: product.Dose || null,
-          DAR: product.DAR || null,
-          "Nbr_d'app": product["Nbr_d'app"] || null,
-          Formulation: product.Formulation || null,
-          "Tableau toxicologique": product["Tableau toxicologique"] || null,
-          Teneur: product.Teneur || null,
-        }
-      ]);
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        Alert.alert('Erreur', 'Vous devez être connecté pour sauvegarder des produits.');
+        return;
+      }
+
+      // Vérifier si le produit est déjà sauvegardé pour cette culture spécifique
+      const { data: existingProduct } = await supabase
+        .from('saved_products')
+        .select('*')
+        .eq('user_id', user.id)
+        .eq('Numéro homologation', product['Numéro homologation'])
+        .eq('Cultures', product.Cultures)
+        .single();
+
+      if (existingProduct) {
+        Alert.alert('Information', 'Ce produit est déjà dans vos favoris pour cette culture.');
+        return;
+      }
+
+      const productData = {
+        user_id: user.id,
+        "Numéro homologation": product['Numéro homologation'],
+        Produits: product.Produits,
+        Cible: product.Cible,
+        Cultures: product.Cultures,
+        Categorie: product.Categorie || null,
+        "Valable jusqu'au": product["Valable jusqu'au"] || null,
+        "Matière active": product["Matière active"] || null,
+        Fournisseur: product.Fournisseur || null,
+        Détenteur: product.Détenteur || null,
+        Dose: product.Dose || null,
+        DAR: product.DAR || null,
+        "Nbr_d'app": product["Nbr_d'app"] || null,
+        Formulation: product.Formulation || null,
+        "Tableau toxicologique": product["Tableau toxicologique"] || null,
+        Teneur: product.Teneur || null,
+      };
+
+      const { error } = await supabase
+        .from('saved_products')
+        .insert(productData);
 
       if (error) {
-        console.error("Erreur lors de la sauvegarde :", error.message);
+        console.error('Erreur lors de la sauvegarde:', error);
         Alert.alert('Erreur', 'Impossible de sauvegarder le produit.');
-      } else {
-        console.log("Produit sauvegardé !");
-        setSavedProducts(prev => new Set([...prev, product.Produits]));
-        Alert.alert('Succès', 'Produit sauvegardé avec succès !');
+        return;
       }
+
+      // Mettre à jour l'état local des produits sauvegardés
+      setSavedProducts(prev => new Set([...prev, `${product.Produits}-${product.Cultures}`]));
+      
+      Alert.alert('Succès', 'Produit sauvegardé avec succès!');
+      triggerRefresh();
     } catch (error) {
-      console.error("Erreur lors de la sauvegarde :", error);
+      console.error('Erreur:', error);
       Alert.alert('Erreur', 'Une erreur est survenue lors de la sauvegarde.');
     }
   };
- 
+
+  const isProductSaved = (product: ProductData) => {
+    return savedProducts.has(`${product.Produits}-${product.Cultures}`);
+  };
 
   const handleFilterChange = (field: keyof FilterState, value: string) => {
     console.log('Changement de filtre:', field, value);
@@ -146,95 +204,131 @@ export default function SearchScreen() {
   const handleApplyFilters = async (currentFilters = filters) => {
     setLoading(true);
     setHasAppliedFilters(true);
-
-    console.log('Filtres actuels:', currentFilters);
+    setShowFilters(false);
 
     try {
-      // Si on recherche par Cible
+      console.log('Début de la recherche avec filtres:', currentFilters);
+
+      // Construire la requête de base
+      let query = supabase
+        .from('utilisation')
+        .select('*');
+
+      // Appliquer les filtres pour tous les champs
+      if (currentFilters.Produits) {
+        console.log('Recherche Produits:', currentFilters.Produits);
+        query = query.ilike('Produits', `${currentFilters.Produits}%`);
+      }
+      if (currentFilters.Matière_active) {
+        console.log('Recherche Matière active:', currentFilters.Matière_active);
+        query = query.ilike('Matière active', `${currentFilters.Matière_active}%`);
+      }
+      if (currentFilters.Cultures) {
+        console.log('Recherche Cultures:', currentFilters.Cultures);
+        query = query.ilike('Cultures', `${currentFilters.Cultures}%`);
+      }
       if (currentFilters.Cible) {
-        console.log('Recherche par Cible - Valeur recherchée:', currentFilters.Cible);
+        console.log('Recherche Cible:', currentFilters.Cible);
         
-        // Requête directe sur la table utilisation
-        const { data, error } = await supabase
+        // Rechercher avec et sans espace au début
+        const { data: exactData, error: exactError } = await supabase
           .from('utilisation')
           .select('*')
-          .ilike('Cible', `${currentFilters.Cible}%`)
+          .or(`Cible.ilike.${currentFilters.Cible}%,Cible.ilike. ${currentFilters.Cible}%`)
           .order('Cible');
 
-        console.log('Requête Cible - Données brutes:', data);
-        console.log('Requête Cible - Erreur:', error);
+        console.log('Résultats de la recherche exacte:', exactData?.length || 0);
+        
+        if (exactData && exactData.length > 0) {
+          // Récupérer les détails des produits
+          const productDetails = await Promise.all(
+            exactData.map(async (item) => {
+              try {
+                const { data: productData, error: productError } = await supabase
+                  .from('Produits')
+                  .select('*')
+                  .eq('Numéro homologation', item['Numéro homologation']);
 
-        if (error) {
-          console.error('Erreur de recherche:', error);
+                console.log('Détails du produit:', productData);
+                
+                if (productError) {
+                  console.error('Erreur lors de la récupération des détails:', productError);
+                  return item;
+                }
+
+                return {
+                  ...item,
+                  Fournisseur: productData?.[0]?.Fournisseur || 'Non spécifié',
+                  Détenteur: productData?.[0]?.Détenteur || 'Non spécifié',
+                  'Tableau toxicologique': productData?.[0]?.['Tableau toxicologique'] || 'Non spécifié',
+                  Categorie: productData?.[0]?.Categorie || 'Non spécifié',
+                  Formulation: productData?.[0]?.Formulation || 'Non spécifié',
+                  Teneur: productData?.[0]?.Teneur || 'Non spécifié'
+                };
+              } catch (error) {
+                console.error('Erreur lors de la récupération des détails:', error);
+                return item;
+              }
+            })
+          );
+
+          setFilteredProducts(productDetails);
           setLoading(false);
           return;
         }
 
-        if (!data || data.length === 0) {
-          console.log('Aucune maladie trouvée');
-          setFilteredProducts([]);
-          setLoading(false);
-          return;
-        }
+        // Si pas de résultats, essayer une recherche plus large
+        query = query.or(`Cible.ilike.%${currentFilters.Cible}%,Cible.ilike.% ${currentFilters.Cible}%`);
+      }
 
-        setFilteredProducts(data);
-      } else {
-        // Pour les autres filtres, on garde la logique existante
-        let query = supabase
-          .from('utilisation')
-          .select('*');
+      console.log('Exécution de la requête finale...');
+      const { data, error } = await query.order('Produits', { ascending: true });
 
-        if (currentFilters.Produits) {
-          query = query.ilike('Produits', `${currentFilters.Produits}%`);
-        }
-        if (currentFilters.Matière_active) {
-          query = query.ilike('Matière active', `${currentFilters.Matière_active}%`);
-        }
-        if (currentFilters.Cultures) {
-          query = query.ilike('Cultures', `${currentFilters.Cultures}%`);
-        }
+      if (error) {
+        console.error('Erreur de recherche:', error);
+        setLoading(false);
+        return;
+      }
 
-        const { data, error } = await query.order('Produits', { ascending: true });
+      console.log('Résultats trouvés:', data?.length || 0);
+      if (!data || data.length === 0) {
+        setFilteredProducts([]);
+        setLoading(false);
+        return;
+      }
 
-        if (error) {
-          console.error('Erreur de recherche:', error);
-          setLoading(false);
-          return;
-        }
+      const productDetails = await Promise.all(
+        data.map(async (item) => {
+          try {
+            const { data: productData, error: productError } = await supabase
+              .from('Produits')
+              .select('*')
+              .eq('Numéro homologation', item['Numéro homologation']);
 
-        if (!data || data.length === 0) {
-          setFilteredProducts([]);
-          setLoading(false);
-          return;
-        }
-
-        const productDetails = await Promise.all(
-          data.map(async (item) => {
-            try {
-              const { data: productData } = await supabase
-                .from('Produits')
-                .select('*')
-                .eq('Numéro homologation', item['Numéro homologation'])
-                .single();
-
-              return {
-                ...item,
-                Fournisseur: productData?.Fournisseur || null,
-                Détenteur: productData?.Détenteur || null,
-                'Tableau toxicologique': productData?.['Tableau toxicologique'] || null,
-                Categorie: productData?.Categorie || null,
-                Formulation: productData?.Formulation || null,
-                Teneur: productData?.Teneur || null
-              };
-            } catch (error) {
-              console.error('Erreur lors de la récupération des détails:', error);
+            console.log('Détails du produit:', productData);
+            
+            if (productError) {
+              console.error('Erreur lors de la récupération des détails:', productError);
               return item;
             }
-          })
-        );
 
-        setFilteredProducts(productDetails);
-      }
+            return {
+              ...item,
+              Fournisseur: productData?.[0]?.Fournisseur || 'Non spécifié',
+              Détenteur: productData?.[0]?.Détenteur || 'Non spécifié',
+              'Tableau toxicologique': productData?.[0]?.['Tableau toxicologique'] || 'Non spécifié',
+              Categorie: productData?.[0]?.Categorie || 'Non spécifié',
+              Formulation: productData?.[0]?.Formulation || 'Non spécifié',
+              Teneur: productData?.[0]?.Teneur || 'Non spécifié'
+            };
+          } catch (error) {
+            console.error('Erreur lors de la récupération des détails:', error);
+            return item;
+          }
+        })
+      );
+
+      setFilteredProducts(productDetails);
     } catch (error) {
       console.error('Erreur:', error);
     } finally {
@@ -320,9 +414,9 @@ export default function SearchScreen() {
                   onPress={() => handleSaveProduct(item)}
                 >
                   <Icon 
-                    name={savedProducts.has(item.Produits) ? "bookmark" : "bookmark-border"} 
+                    name={isProductSaved(item) ? "bookmark" : "bookmark-border"} 
                     size={24} 
-                    color={savedProducts.has(item.Produits) ? "#008000" : "#666"}
+                    color={isProductSaved(item) ? "#008000" : "#666"}
                   />
                 </TouchableOpacity>
 
@@ -398,14 +492,7 @@ const fetchProductDetails = async (items: any[]): Promise<utilisation[]> => {
         try {
           const { data: productData, error } = await supabase
             .from('Produits')
-            .select(`
-              Fournisseur,
-              Détenteur,
-              "Tableau toxicologique",
-              Categorie,
-              Formulation,
-              Teneur
-            `)
+            .select('*')
             .eq('Numéro homologation', item['Numéro homologation'])
             .single();
 
@@ -440,12 +527,12 @@ const fetchProductDetails = async (items: any[]): Promise<utilisation[]> => {
             Dose: item.Dose,
             DAR: item.DAR,
             'Nbr_d\'app': item['Nbr_d\'app'],
-            Fournisseur: productData?.Fournisseur ?? null,
-            Détenteur: productData?.Détenteur ?? null,
-            'Tableau toxicologique': productData?.['Tableau toxicologique'] ?? null,
-            Categorie: productData?.Categorie ?? null,
-            Formulation: productData?.Formulation ?? null,
-            Teneur: productData?.Teneur ?? null
+            Fournisseur: productData?.Fournisseur || null,
+            Détenteur: productData?.Détenteur || null,
+            'Tableau toxicologique': productData?.['Tableau toxicologique'] || null,
+            Categorie: productData?.Categorie || null,
+            Formulation: productData?.Formulation || null,
+            Teneur: productData?.Teneur || null
           };
         } catch (error) {
           console.error('Error in product details processing:', error);
