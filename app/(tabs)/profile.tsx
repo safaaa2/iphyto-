@@ -544,25 +544,19 @@ const Profile = () => {
               ]}
               titleStyle={currentLanguage === 'ar' ? styles.selectedLanguageText : styles.languageButtonText}
             />
-            <Button
-              title="ⵜⴰⵎⴰⵣⵉⵖⵜ"
-              onPress={() => handleLanguageChange('ber')}
-              buttonStyle={[
-                styles.languageButton,
-                currentLanguage === 'ber' && styles.selectedLanguage
-              ]}
-              titleStyle={currentLanguage === 'ber' ? styles.selectedLanguageText : styles.languageButtonText}
-            />
           </View>
         </Card>
 
         {/* Bouton Déconnexion */}
-        <Button 
-          title={t('signOut')} 
-          onPress={signOut} 
-          buttonStyle={styles.signOutButton} 
-          icon={<Ionicons name="log-out-outline" size={22} color="white" style={{ marginRight: 10 }} />}
-        />
+        <View style={styles.signOutContainer}>
+          <Button 
+            title={t('signOut')} 
+            onPress={signOut} 
+            buttonStyle={styles.signOutButton}
+            titleStyle={styles.signOutButtonText}
+            icon={<Ionicons name="log-out-outline" size={20} color="white" style={{ marginRight: 8 }} />}
+          />
+        </View>
       </View>
     </ScrollView>
   );
@@ -571,146 +565,143 @@ const Profile = () => {
 const styles = StyleSheet.create({
   scrollView: {
     flex: 1,
-    backgroundColor: '#ffffff',
+    backgroundColor: '#f5f5f5',
   },
   scrollViewContent: {
     flexGrow: 1,
-    paddingBottom: 100,
+    paddingBottom: 40,
+    paddingTop: 10,
   },
   container: {
     flex: 1,
-    backgroundColor: '#ffffff',
+    backgroundColor: '#f5f5f5',
     alignItems: 'center',
-    padding: 20,
-    paddingBottom: 40,
+    padding: 15,
+    minHeight: '100%',
   },
   headerContainer: {
     width: '100%',
     backgroundColor: '#ffffff',
-    paddingVertical: 30,
+    paddingVertical: 20,
     alignItems: 'center',
-    borderBottomLeftRadius: 20,
-    borderBottomRightRadius: 20,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 3 },
-    shadowOpacity: 0.1,
-    shadowRadius: 6,
-  },
-  headerText: {
-    color: '#333',
-    fontSize: 26,
-    fontWeight: 'bold',
-  },
-  welcomeText: {
-    fontSize: 18,
-    color: '#666',
-    marginTop: 10,
-    fontStyle: 'italic',
-    fontWeight:'bold'
-  },
-  profileWrapper: {
-    marginTop: -25,
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: '#fff',
-    borderRadius: 100,
-    padding: 5,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.1,
-    shadowRadius: 10,
-  },
-  profileImage: {
-    width: 120,
-    height: 120,
-    borderRadius: 60,
-    borderWidth: 2,
-    borderColor: '#ddd',
-  },
-  card: {
-    width: '100%',
-    backgroundColor: '#fff',
     borderRadius: 15,
-    padding: 20,
-    marginTop: 20,
+    marginBottom: 15,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
-    shadowRadius: 6,
+    shadowRadius: 4,
+    elevation: 3,
   },
-  cardTitle: {
+  welcomeText: {
     fontSize: 18,
     color: '#333',
-    fontWeight: 'bold',
-  },
-  inputText: {
-    fontSize: 16,
-    color: '#555',
-  },
-  updateButton: {
-    backgroundColor: '#008000',
-    borderRadius: 12,
-    marginVertical: 10,
-    paddingVertical: 12,
-  },
-  signOutButton: {
-    backgroundColor: '#b82b2b',
-    borderRadius: 12,
-    width: '100%',
-    paddingVertical: 12,
-    marginTop: 20,
+    fontWeight: '600',
   },
   profileSection: {
     alignItems: 'center',
-    marginBottom: 20,
+    marginBottom: 15,
+  },
+  profileWrapper: {
+    position: 'relative',
+    width: 100,
+    height: 100,
+    borderRadius: 50,
+    backgroundColor: '#fff',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  profileImage: {
+    width: 100,
+    height: 100,
+    borderRadius: 50,
   },
   editIconContainer: {
     position: 'absolute',
     bottom: 0,
     right: 0,
-    backgroundColor: 'green',
-    borderRadius: 15,
-    padding: 6,
+    backgroundColor: '#008000',
+    borderRadius: 12,
+    padding: 4,
     borderWidth: 2,
     borderColor: 'white',
   },
-  loadingContainer: {
-    width: 120,
-    height: 120,
-    borderRadius: 60,
-    backgroundColor: '#f0f0f0',
-    justifyContent: 'center',
-    alignItems: 'center',
+  card: {
+    width: '100%',
+    backgroundColor: '#fff',
+    borderRadius: 15,
+    padding: 15,
+    marginBottom: 15,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
   },
-  errorImage: {
-    borderColor: 'red',
-    borderWidth: 2,
+  cardTitle: {
+    fontSize: 16,
+    color: '#333',
+    fontWeight: '600',
+    marginBottom: 10,
+  },
+  inputText: {
+    fontSize: 14,
+    color: '#555',
+  },
+  updateButton: {
+    backgroundColor: '#008000',
+    borderRadius: 8,
+    paddingVertical: 8,
+    marginTop: 10,
+    minWidth: 120,
+  },
+  signOutContainer: {
+    width: '100%',
+    paddingHorizontal: 15,
+    marginTop: 15,
+    marginBottom: 20,
+  },
+  signOutButton: {
+    backgroundColor: '#dc3545',
+    borderRadius: 6,
+    paddingVertical: 8,
+    width: '100%',
+    maxWidth: 200,
+    alignSelf: 'center',
+  },
+  signOutButtonText: {
+    color: '#ffffff',
+    fontSize: 14,
+    fontWeight: '500',
   },
   languageCard: {
-    marginBottom: 10,
+    marginBottom: 15,
   },
   languageButtons: {
     flexDirection: 'row',
-    justifyContent: 'space-around',
+    justifyContent: 'center',
+    gap: 10,
     marginTop: 10,
   },
   languageButton: {
     backgroundColor: '#f0f0f0',
     borderRadius: 8,
-    paddingHorizontal: 15,
-    paddingVertical: 8,
-    minWidth: 100,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    minWidth: 90,
   },
   selectedLanguage: {
     backgroundColor: '#008000',
   },
   languageButtonText: {
     color: '#333',
-    fontSize: 14,
+    fontSize: 13,
   },
   selectedLanguageText: {
     color: '#ffffff',
-    fontSize: 14,
+    fontSize: 13,
   },
 });
 

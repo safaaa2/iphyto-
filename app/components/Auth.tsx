@@ -134,9 +134,7 @@ export default function Auth(): JSX.Element {
         style={styles.logo}
       />
       <Text style={styles.title}>{t('welcomeToIPhyto')}</Text>
-      <Text style={styles.subtitle}>
-        {t('createAccountMessage')} 🌱
-      </Text>
+      
 
       <Input
         placeholder={t('email')}
@@ -226,18 +224,6 @@ export default function Auth(): JSX.Element {
               currentLanguage === 'ar' && styles.selectedLanguageButtonText
             ]}
           />
-          <Button
-            title="ⵜⴰⵎⴰⵣⵉⵖⵜ"
-            onPress={() => handleLanguageChange('ber')}
-            buttonStyle={[
-              styles.languageButton,
-              currentLanguage === 'ber' && styles.selectedLanguageButton
-            ]}
-            titleStyle={[
-              styles.languageButtonText,
-              currentLanguage === 'ber' && styles.selectedLanguageButtonText
-            ]}
-          />
         </View>
       </View>
     </ScrollView>
@@ -319,6 +305,7 @@ const styles = StyleSheet.create({
     color: '#999',
   },
   signupButton: {
+    backgroundColor: '#ffffff',
     borderColor: '#008000',
     borderWidth: 1,
     borderRadius: 8,

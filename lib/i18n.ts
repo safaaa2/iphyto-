@@ -214,7 +214,6 @@ const resources = {
       french: 'French',
       arabic: 'Arabic',
       english: 'English',
-      amazigh: 'Tamazight',
       error: 'Error',
       success: 'Success',
       fillAllFields: 'Please fill in all fields',
