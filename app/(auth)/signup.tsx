@@ -14,8 +14,10 @@ import { Input, Button, Icon } from '@rneui/themed';
 import { router } from 'expo-router';
 import { supabase } from '../../lib/supabase';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { useTranslation } from 'react-i18next';
 
 export default function SignUp() {
+  const { t } = useTranslation();
   const [username, setUsername] = useState('');
   const [full_name, fullName] = useState('');
   const [email, setEmail] = useState('');
@@ -27,32 +29,32 @@ export default function SignUp() {
 
   const handleSignUp = async () => {
     if (!username || !email || !password || !confirmPassword) {
-      Alert.alert('Erreur', 'Veuillez remplir tous les champs.');
+      Alert.alert(t('error'), t('fillAllFields'));
       return;
     }
 
     if (password !== confirmPassword) {
-      Alert.alert('Erreur', 'Les mots de passe ne correspondent pas.');
+      Alert.alert(t('error'), t('passwordsDontMatch'));
       return;
     }
 
     const passwordRegex = /^(?=.*[a-zA-Z])(?=.*\d)(?=.*[!@#$%^&*(),.?":{}|<>]).{6,}$/;
     if (!passwordRegex.test(password)) {
       Alert.alert(
-        'Erreur',
-        'Le mot de passe doit contenir au moins une lettre, un chiffre et un caractère spécial.'
+        t('error'),
+        t('passwordRequirements')
       );
       return;
     }
 
     if (password.length < 6) {
-      Alert.alert('Erreur', 'Le mot de passe doit contenir au moins 6 caractères.');
+      Alert.alert(t('error'), t('passwordLength'));
       return;
     }
 
     const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
     if (!emailRegex.test(email)) {
-      Alert.alert('Erreur', "L'email n'est pas valide.");
+      Alert.alert(t('error'), t('invalidEmail'));
       return;
     }
 
@@ -63,12 +65,12 @@ export default function SignUp() {
       .maybeSingle();
 
     if (userError) {
-      Alert.alert('Erreur', "Erreur lors de la vérification du nom d'utilisateur.");
+      Alert.alert(t('error'), t('usernameCheckError'));
       return;
     }
 
     if (userData) {
-      Alert.alert('Erreur', "Ce nom d'utilisateur est déjà pris.");
+      Alert.alert(t('error'), t('usernameTaken'));
       return;
     }
 
@@ -87,16 +89,16 @@ export default function SignUp() {
       });
 
       if (error) {
-        console.error("Erreur lors de l'inscription:", error);
+        console.error(t('signupError'), error);
         setLoading(false);
-        Alert.alert('Erreur', error.message);
+        Alert.alert(t('error'), error.message);
         return;
       }
 
       if (!data?.user) {
-        console.error("Pas d'utilisateur créé après l'inscription");
+        console.error(t('noUserCreated'));
         setLoading(false);
-        Alert.alert('Erreur', "L'inscription a échoué. Veuillez réessayer.");
+        Alert.alert(t('error'), t('signupFailed'));
         return;
       }
 
@@ -108,9 +110,9 @@ export default function SignUp() {
         .maybeSingle();
 
       if (profileCheckError) {
-        console.error("Erreur lors de la vérification du profil:", profileCheckError);
+        console.error(t('profileCheckError'), profileCheckError);
         setLoading(false);
-        Alert.alert('Erreur', "Erreur lors de la création du profil.");
+        Alert.alert(t('error'), t('profileCreationError'));
         return;
       }
 
@@ -125,20 +127,20 @@ export default function SignUp() {
           });
          
         if (profileError) {
-          console.error("Erreur lors de la création du profil:", profileError);
+          console.error(t('profileCreationError'), profileError);
           setLoading(false);
-          Alert.alert('Erreur', 'Erreur lors de la création du profil.');
+          Alert.alert(t('error'), t('profileCreationError'));
           return;
         }
       }
 
       if (data?.session) {
-        console.log("Session créée avec succès", data.session);
+        console.log(t('sessionCreated'), data.session);
         await AsyncStorage.setItem('session', JSON.stringify(data.session));
         setLoading(false);
         router.replace('/(tabs)/home');
       } else {
-        console.log("Pas de session après inscription, tentative de connexion...");
+        console.log(t('noSessionAfterSignup'));
         // Attendre un peu avant de tenter la connexion
         await new Promise(resolve => setTimeout(resolve, 1000));
         
@@ -148,27 +150,27 @@ export default function SignUp() {
         });
         
         if (signInError) {
-          console.error("Erreur de connexion après inscription:", signInError);
+          console.error(t('signInErrorAfterSignup'), signInError);
           setLoading(false);
-          Alert.alert('Erreur', 'Compte créé mais problème de connexion: ' + signInError.message);
+          Alert.alert(t('error'), t('accountCreatedButLoginError') + signInError.message);
           return;
         }
         
         if (signInData?.session) {
-          console.log("Connexion réussie après inscription", signInData.session);
+          console.log(t('loginSuccessAfterSignup'), signInData.session);
           await AsyncStorage.setItem('session', JSON.stringify(signInData.session));
           setLoading(false);
           router.replace('/(tabs)/home');
         } else {
-          console.error("Pas de session après tentative de connexion");
+          console.error(t('noSessionAfterLoginAttempt'));
           setLoading(false);
-          Alert.alert('Erreur', 'Compte créé mais problème de session. Veuillez vous connecter manuellement.');
+          Alert.alert(t('error'), t('accountCreatedButSessionError'));
         }
       }
     } catch (error: any) {
-      console.error("Erreur inattendue lors de l'inscription:", error);
+      console.error(t('unexpectedError'), error);
       setLoading(false);
-      Alert.alert('Erreur', 'Une erreur est survenue: ' + error.message);
+      Alert.alert(t('error'), t('unexpectedError') + ': ' + error.message);
     }
   };
   return (
@@ -187,13 +189,13 @@ export default function SignUp() {
             resizeMode="contain"
           />
 
-          <Text style={styles.title}>Bienvenue sur iPhyto!</Text>
+          <Text style={styles.title}>{t('welcomeToIPhyto')}</Text>
           <Text style={styles.subtitle}>
-            Créez votre compte pour accéder à toutes les fonctionnalités de iPhyto 🌱
+            {t('createAccountMessage')} 🌱
           </Text>
 
           <Input
-            placeholder="Nom d'utilisateur"
+            placeholder={t('username')}
             value={username}
             onChangeText={setUsername}
             autoCapitalize="none"
@@ -203,7 +205,7 @@ export default function SignUp() {
             labelStyle={styles.label}
           />
           <Input
-            placeholder="full name"
+            placeholder={t('fullName')}
             value={full_name}
             onChangeText={fullName}
             autoCapitalize="none"
@@ -213,9 +215,8 @@ export default function SignUp() {
             labelStyle={styles.label}
           />
 
-
           <Input
-            placeholder="Email"
+            placeholder={t('email')}
             value={email}
             onChangeText={setEmail}
             autoCapitalize="none"
@@ -226,7 +227,7 @@ export default function SignUp() {
           />
 
           <Input
-            placeholder="Mot de passe"
+            placeholder={t('password')}
             value={password}
             onChangeText={setPassword}
             secureTextEntry={!showPassword}
@@ -242,17 +243,14 @@ export default function SignUp() {
           />
 
           <Input
-            placeholder="Confirmer mot de passe"
+            placeholder={t('confirmPassword')}
             value={confirmPassword}
             onChangeText={setConfirmPassword}
             secureTextEntry={!showConfirmPassword}
             leftIcon={{ type: 'font-awesome', name: 'lock', color: '#008000' }}
             rightIcon={
               <TouchableOpacity onPress={() => setShowConfirmPassword(!showConfirmPassword)}>
-                <Icon
-                  name={showConfirmPassword ? 'visibility-off' : 'visibility'}
-                  color="#008000"
-                />
+                <Icon name={showConfirmPassword ? 'visibility-off' : 'visibility'} color="#008000" />
               </TouchableOpacity>
             }
             inputStyle={styles.input}
@@ -267,13 +265,13 @@ export default function SignUp() {
           >
             <View style={styles.button}>
               <Text style={styles.buttonText}>
-                {loading ? 'Chargement...' : 'Créer un compte'}
+                {loading ? t('loading') : t('createAccount')}
               </Text>
             </View>
           </TouchableOpacity>
 
           <TouchableOpacity onPress={() => router.back()} style={styles.linkContainer}>
-            <Text style={styles.link}>J'ai déjà un compte</Text>
+            <Text style={styles.link}>{t('alreadyHaveAccount')}</Text>
           </TouchableOpacity>
         </View>
       </ScrollView>

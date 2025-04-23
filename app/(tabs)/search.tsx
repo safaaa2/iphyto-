@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { View, TextInput, Text, StyleSheet, TouchableOpacity, ActivityIndicator, FlatList, Alert } from 'react-native';
-import Icon from 'react-native-vector-icons/MaterialIcons';
+import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import { supabase } from '../../lib/supabase';
 import { useFavorites } from '../../lib/FavoritesContext';
+import { useTranslation } from 'react-i18next';
 
 interface SavedProduct {
   user_id: string;
@@ -75,10 +76,12 @@ interface Product {
 }
 
 export default function SearchScreen() {
+  const { t } = useTranslation();
   const [searchQuery, setSearchQuery] = useState('');
   const [filteredProducts, setFilteredProducts] = useState<ProductData[]>([]);
   const [loading, setLoading] = useState(false);
   const [showFilters, setShowFilters] = useState(false);
+  const [expandedProduct, setExpandedProduct] = useState<string | null>(null);
   const [filters, setFilters] = useState<FilterState>({
     Produits: '',
     Matière_active: '',
@@ -125,7 +128,7 @@ export default function SearchScreen() {
     try {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) {
-        Alert.alert('Erreur', 'Vous devez être connecté pour sauvegarder des produits.');
+        Alert.alert(t('error'), t('mustBeLoggedIn'));
         return;
       }
 
@@ -139,7 +142,7 @@ export default function SearchScreen() {
         .single();
 
       if (existingProduct) {
-        Alert.alert('Information', 'Ce produit est déjà dans vos favoris pour cette culture.');
+        Alert.alert(t('info'), t('productAlreadySaved'));
         return;
       }
 
@@ -168,18 +171,18 @@ export default function SearchScreen() {
 
       if (error) {
         console.error('Erreur lors de la sauvegarde:', error);
-        Alert.alert('Erreur', 'Impossible de sauvegarder le produit.');
+        Alert.alert(t('error'), t('saveError'));
         return;
       }
 
       // Mettre à jour l'état local des produits sauvegardés
       setSavedProducts(prev => new Set([...prev, `${product.Produits}-${product.Cultures}`]));
       
-      Alert.alert('Succès', 'Produit sauvegardé avec succès!');
+      Alert.alert(t('success'), t('productSaved'));
       triggerRefresh();
     } catch (error) {
       console.error('Erreur:', error);
-      Alert.alert('Erreur', 'Une erreur est survenue lors de la sauvegarde.');
+      Alert.alert(t('error'), t('saveError'));
     }
   };
 
@@ -190,15 +193,12 @@ export default function SearchScreen() {
   const handleFilterChange = (field: keyof FilterState, value: string) => {
     console.log('Changement de filtre:', field, value);
     
-    // Mettre à jour le filtre immédiatement
+    // Mettre à jour le filtre sans déclencher la recherche
     setFilters(prev => {
       const newFilters = { ...prev, [field]: value };
       console.log('Nouveaux filtres:', newFilters);
       return newFilters;
     });
-    
-    // Déclencher la recherche immédiatement pour tous les champs
-    handleApplyFilters({ ...filters, [field]: value });
   };
 
   const handleApplyFilters = async (currentFilters = filters) => {
@@ -355,25 +355,29 @@ export default function SearchScreen() {
     }
   }, [hasAppliedFilters]);
 
+  const toggleProductDetails = (productId: string) => {
+    setExpandedProduct(expandedProduct === productId ? null : productId);
+  };
+
   return (
     <View style={styles.container}>
       <TouchableOpacity style={styles.filterButton} onPress={() => setShowFilters(!showFilters)}>
-        <Icon name="filter-list" size={20} color="white" style={styles.icon} />
-        <Text style={styles.buttonText}>Filtrer les produits</Text>
+        <Icon name="filter-variant" size={24} color="white" style={styles.icon} />
+        <Text style={styles.buttonText}>{t('filterProducts')}</Text>
       </TouchableOpacity>
       {showFilters && (
         <View style={styles.filtersContainer}>
           <View style={styles.searchContainer}>
             {[
-              { label: 'Nom de produit', field: 'Produits' },
-              { label: 'Matière active', field: 'Matière_active' },
-              { label: 'Culture Concernée', field: 'Cultures' },
-              { label: 'Maladie/Cible', field: 'Cible' }
+              { label: t('productName'), field: 'Produits', icon: 'leaf' },
+              { label: t('activeIngredient'), field: 'Matière_active', icon: 'flask' },
+              { label: t('targetCrop'), field: 'Cultures', icon: 'tree' },
+              { label: t('targetDisease'), field: 'Cible', icon: 'bug' }
             ].map((field, index) => (
               <View key={index} style={styles.inputGroup}>
                 <Text style={styles.label}>{field.label}</Text>
                 <View style={styles.inputWrapper}>
-                  <Icon name="search" size={20} color="gray" style={styles.inputIcon} />
+                  <Icon name={field.icon} size={20} color="green" style={styles.inputIcon} />
                   <TextInput
                     style={styles.input}
                     placeholder={field.label}
@@ -387,12 +391,12 @@ export default function SearchScreen() {
           </View>
           <View style={styles.buttonContainer}>
             <TouchableOpacity style={styles.clearButton} onPress={handleClearAll}>
-              <Icon name="clear" size={20} color="white" style={styles.icon} />
-              <Text style={styles.buttonText}>Clear All</Text>
+              <Icon name="close-circle" size={20} color="white" style={styles.icon} />
+              <Text style={styles.buttonText}>{t('clearAll')}</Text>
             </TouchableOpacity>
             <TouchableOpacity style={styles.applyButton} onPress={() => handleApplyFilters()}>
-              <Icon name="filter-list" size={20} color="white" style={styles.icon} />
-              <Text style={styles.buttonText}>Apply Filters</Text>
+              <Icon name="check-circle" size={20} color="white" style={styles.icon} />
+              <Text style={styles.buttonText}>{t('applyFilters')}</Text>
             </TouchableOpacity>
           </View>
         </View>
@@ -400,7 +404,7 @@ export default function SearchScreen() {
       {loading && (
         <View style={styles.loadingContainer}>
           <ActivityIndicator size="large" color="#008000" />
-          <Text style={styles.loadingText}>Searching...</Text>
+          <Text style={styles.loadingText}>{t('searching')}</Text>
         </View>
       )}
       {!loading && filteredProducts.length > 0 && (
@@ -409,69 +413,93 @@ export default function SearchScreen() {
           renderItem={({ item }) => (
             <View style={styles.cardContainer}>
               <View style={styles.card}>
-                <TouchableOpacity
-                  style={styles.saveIcon}
-                  onPress={() => handleSaveProduct(item)}
+                <View style={styles.cardHeader}>
+                  <View style={styles.headerLeft}>
+                    <View style={styles.productTitleRow}>
+                      <Icon name="leaf" size={18} color="green" style={styles.titleIcon} />
+                      <Text style={styles.productName}>{item.Produits}</Text>
+                    </View>
+                    {item.Categorie && (
+                      <Text style={styles.productCategory}>{item.Categorie}</Text>
+                    )}
+                  </View>
+                  <View style={styles.headerRight}>
+                    <TouchableOpacity
+                      style={styles.saveIcon}
+                      onPress={() => handleSaveProduct(item)}
+                    >
+                      <Icon 
+                        name={isProductSaved(item) ? "bookmark" : "bookmark-outline"} 
+                        size={24} 
+                        color={isProductSaved(item) ? "#008000" : "#666"}
+                      />
+                    </TouchableOpacity>
+                  </View>
+                </View>
+
+                {item.Formulation && (
+                  <View style={styles.formulationRow}>
+                    <Icon name="flask" size={16} color="green" style={styles.icon} />
+                    <Text style={styles.formulationText}>{item.Formulation}</Text>
+                  </View>
+                )}
+
+                <View style={styles.cultureRow}>
+                  <Icon name="tree" size={20} color="green" style={styles.icon} />
+                  <View style={styles.cultureBadge}>
+                    <Text style={styles.cultureText}>{item.Cultures}</Text>
+                  </View>
+                </View>
+
+                <View style={styles.targetRow}>
+                  <Icon name="bug" size={18} color="green" style={styles.icon} />
+                  <View style={styles.targetBadge}>
+                    <Text style={styles.targetText}>
+                      {item.Cultures} / {item.Cible}
+                    </Text>
+                  </View>
+                </View>
+
+                {item["Valable jusqu'au"] && (
+                  <View style={styles.dateRow}>
+                    <Icon name="calendar" size={16} color="green" style={styles.icon} />
+                    <Text style={{ fontSize: 14, color: 'black' }}>
+                    Valable jusqu'au : {new Date(item["Valable jusqu'au"]).toLocaleDateString('en-US', {
+                      year: 'numeric', month: 'short', day: 'numeric'
+                    })}
+                  </Text>
+                  </View>
+                )}
+
+                <TouchableOpacity 
+                  style={styles.showDetailsButton}
+                  onPress={() => toggleProductDetails(item['Numéro homologation'])}
                 >
                   <Icon 
-                    name={isProductSaved(item) ? "bookmark" : "bookmark-border"} 
-                    size={24} 
-                    color={isProductSaved(item) ? "#008000" : "#666"}
+                    name={expandedProduct === item['Numéro homologation'] ? "chevron-up" : "chevron-down"} 
+                    size={20} 
+                    color="#008000" 
+                    style={styles.icon} 
                   />
+                  <Text style={styles.showDetailsText}>
+                    {expandedProduct === item['Numéro homologation'] ? t('hideDetails') : t('showDetails')}
+                  </Text>
                 </TouchableOpacity>
 
-                <Text style={styles.productName}>
-                  <Icon name="local-offer" size={16} color="green" /> {item.Produits}
-                </Text>
-                <Text style={styles.productDetail1}>
-                  <Icon name="" size={16} color="green" /> {item.Categorie || 'Non spécifié'}
-                </Text>
-                <Text style={styles.productDetail}>
-                  <Icon name="science" size={16} color="green" /> {item['Matière active'] || 'Non spécifié'}
-                </Text>
-                <Text style={styles.productDetail}>
-                  <Icon name="agriculture" size={16} color="green" /> <Text style={styles.boldDate}>{item.Cultures || 'Non spécifié'}</Text>
-                </Text>
-                <Text style={styles.productDetail}>
-                  <Icon name="bug-report" size={16} color="green" /> {item.Cible || 'Non spécifié'}
-                </Text>
-                <Text style={styles.productDetail}>
-                  <Icon name="opacity" size={16} color="green" /> Dose:<Text style={styles.boldDate}>{item.Dose || 'Non spécifié'}</Text>
-                </Text>
-                <Text style={styles.productDetail}>
-                  <Icon name="hourglass-bottom" size={16} color="green" /> Délais Avant récolte: {item.DAR || 'Non spécifié'}
-                </Text>
-                <Text style={styles.productDetail}>
-                  <Icon name="confirmation-number" size={16} color="green" /> Numéro homologation: <Text style={styles.boldDate}>{item["Numéro homologation"] || 'Non spécifié'}</Text>
-                </Text>
-                <Text style={styles.productDetail}>
-                  <Icon name="local-shipping" size={16} color="green" /> Fournisseur:<Text style={styles.boldDate}> {item.Fournisseur || 'Non spécifié'}</Text>
-                </Text>
-                <Text style={styles.productDetail}>
-                  <Icon name="person" size={16} color="green" /> Détenteur: {item.Détenteur ? item.Détenteur : 'Non spécifié'}
-                </Text>
-                <Text style={styles.productDetail}>
-                  <Icon name="report-problem" size={16} color="red" /> Tableau toxicologique: <Text style={styles.boldDate}>{item["Tableau toxicologique"] ? item["Tableau toxicologique"] : 'Non spécifié'}</Text>
-                </Text>
-                <Text style={styles.productDetail}>
-                  <Icon name="science" size={16} color="green" /> Formulation: <Text style={styles.boldDate}>{item.Formulation ? item.Formulation : 'Non spécifié'}</Text>
-                </Text>
-                <Text style={styles.productDetail}>
-                  <Icon name="percent" size={16} color="green" /> Teneur: <Text style={styles.boldDate}>{item.Teneur ? item.Teneur : 'Non spécifié'}</Text>
-                </Text>
-                <Text style={styles.productDetail}>
-                  <Icon name="event" size={16} color="black" />
-                  Valable jusqu'au: <Text style={styles.boldDate}>
-                    {item["Valable jusqu'au"]
-                      ? new Date(item["Valable jusqu'au"]).toLocaleDateString('en-US', {
-                        year: 'numeric',
-                        month: 'short',
-                        day: 'numeric',
-                      })
-                      : 'Non spécifié'}
-                  </Text>
-                </Text>
-
+                {expandedProduct === item['Numéro homologation'] && (
+                  <View style={styles.detailsContainer}>
+                    <Text style={styles.detailsTitle}>{t('details')}:</Text>
+                    {item.Fournisseur && <Text style={styles.detailText}>{t('supplier')}: <Text style={styles.boldText}>{item.Fournisseur}</Text></Text>}
+                    {item.Détenteur && <Text style={styles.detailText}>{t('holder')}: <Text style={styles.boldText}>{item.Détenteur}</Text></Text>}
+                    {item["Matière active"] && <Text style={styles.detailText}>{t('activeMatter')}: <Text style={styles.boldText}>{item["Matière active"]}</Text></Text>}
+                    {item.Teneur && <Text style={styles.detailText}>{t('content')}: <Text style={styles.boldText}>{item.Teneur}</Text></Text>}
+                    {item.Dose && <Text style={styles.detailText}>{t('dose')}: <Text style={styles.boldText}>{item.Dose}</Text></Text>}
+                    {item.DAR && <Text style={styles.detailText}>{t('dar')}: <Text style={styles.boldText}>{item.DAR}</Text></Text>}
+                    {item["Nbr_d'app"] && <Text style={styles.detailText}>{t('applicationsNumber')}: <Text style={styles.boldText}>{item["Nbr_d'app"]}</Text></Text>}
+                    {item["Numéro homologation"] && <Text style={styles.detailText}>{t('homologationNumber')}: <Text style={styles.boldText}>{item["Numéro homologation"]}</Text></Text>}
+                    {item["Tableau toxicologique"] && <Text style={styles.detailText}>{t('toxicologicalTable')}: <Text style={styles.boldText}>{item["Tableau toxicologique"]}</Text></Text>}
+                  </View>
+                )}
               </View>
             </View>
           )}
@@ -479,7 +507,7 @@ export default function SearchScreen() {
         />
       )}
       {filteredProducts.length === 0 && !loading && hasAppliedFilters && (
-        <Text style={styles.noResultsText}>Aucun produit trouvé.</Text>
+        <Text style={styles.noResultsText}>{t('noProductsFound')}</Text>
       )}
     </View>
   );
@@ -575,20 +603,24 @@ const styles = StyleSheet.create({
   },
   filterButton: {
     backgroundColor: '#008000',
-    paddingVertical: 10,
-    borderRadius: 5,
+    paddingVertical: 12,
+    paddingHorizontal: 20,
+    borderRadius: 8,
     alignItems: 'center',
-    marginBottom: 10,
+    marginBottom: 15,
     flexDirection: 'row',
     justifyContent: 'center',
-  },
-  boldDate: {
-    fontWeight: 'bold',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
   },
   buttonText: {
     color: 'white',
     fontWeight: 'bold',
-    marginLeft: 5,
+    fontSize: 14,
+    marginLeft: 8,
   },
   filtersContainer: {
     padding: 10,
@@ -624,11 +656,13 @@ const styles = StyleSheet.create({
   input: {
     flex: 1,
     height: 40,
+    color: 'black',
   },
   buttonContainer: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     marginTop: 10,
+    gap: 15,
   },
   clearButton: {
     backgroundColor: 'black',
@@ -640,8 +674,8 @@ const styles = StyleSheet.create({
   },
   applyButton: {
     backgroundColor: '#008000',
-    paddingVertical: 10,
-    paddingHorizontal: 15,
+    paddingVertical: 6,
+    paddingHorizontal: 10,
     borderRadius: 5,
     flexDirection: 'row',
     alignItems: 'center',
@@ -658,34 +692,134 @@ const styles = StyleSheet.create({
     color: 'gray',
   },
   cardContainer: {
-    marginBottom: 10,
+    marginBottom: 15,
   },
   card: {
     padding: 15,
-    backgroundColor: '#fff',
-    borderRadius: 5,
+    marginVertical: 5,
+    backgroundColor: '#f9f9f9',
+    borderRadius: 10,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
-    shadowRadius: 5,
+    shadowRadius: 4,
     elevation: 3,
+  },
+  cardHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
+    marginBottom: 10,
+  },
+  headerLeft: {
+    flex: 1,
+  },
+  headerRight: {
+    marginLeft: 10,
+  },
+  productTitleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 5,
+  },
+  titleIcon: {
+    marginRight: 8,
   },
   productName: {
     fontSize: 18,
     fontWeight: 'bold',
-    color: '#008000',
+    color: '#333',
   },
-  productDetail: {
+  productCategory: {
     fontSize: 14,
     color: 'black',
-    marginTop: 5,
+    marginBottom: 10,
   },
-  productDetail1: {
+  formulationRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 4,
+  },
+  formulationText: {
     fontSize: 14,
-    color: "black",
-    marginTop: 5,
-    fontStyle: "italic",
-    fontWeight: "bold"
+    color: 'black',
+  },
+  cultureRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: 8,
+  },
+  cultureBadge: {
+    borderWidth: 1,
+    borderColor: 'black',
+    backgroundColor: 'white',
+    borderRadius: 20,
+    paddingVertical: 4,
+    paddingHorizontal: 12,
+  },
+  cultureText: {
+    fontSize: 14,
+    color: 'black',
+  },
+  targetRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: 8,
+  },
+  targetBadge: {
+    backgroundColor: '#2e7d32',
+    borderRadius: 20,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+  },
+  targetText: {
+    color: 'white',
+    fontSize: 13,
+    fontWeight: '600',
+  },
+  dateRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: 8,
+  },
+  dateText: {
+    fontSize: 14,
+    color: '#333',
+  },
+  showDetailsButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginTop: 10,
+    paddingVertical: 8,
+    borderTopWidth: 1,
+    borderTopColor: '#e0e0e0',
+  },
+  showDetailsText: {
+    color: '#008000',
+    fontWeight: 'bold',
+    marginLeft: 5,
+  },
+  detailsContainer: {
+    marginTop: 10,
+    backgroundColor: '#e6f5ea',
+    borderRadius: 10,
+    padding: 12,
+  },
+  detailsTitle: {
+    fontWeight: 'bold',
+    fontSize: 16,
+    marginBottom: 5,
+    color: '#333',
+  },
+  detailText: {
+    marginBottom: 4,
+    color: '#333',
+    fontSize: 14,
+  },
+  boldText: {
+    fontWeight: 'bold',
+    color: 'black',
   },
   noResultsText: {
     textAlign: 'center',

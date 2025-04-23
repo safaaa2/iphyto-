@@ -6,28 +6,64 @@ import { supabase } from '../../lib/supabase';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
+import { useTranslation } from 'react-i18next';
+import { changeLanguage, getSavedLanguage } from '../../lib/i18n';
 
 const Profile = () => {
+  const { t } = useTranslation();
   const { session } = useSession();
   const router = useRouter();
   const [loading, setLoading] = useState(false);
   const [username, setUsername] = useState('');
-  const [avatarUrl, setAvatarUrl] = useState('');
+  const [avatarUrl, setAvatarUrl] = useState('https://cdn-icons-png.flaticon.com/512/149/149071.png');
   const [currentPassword, setCurrentPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [uploading, setUploading] = useState(false);
   const [isImageLoading, setIsImageLoading] = useState(false);
+  const [imageError, setImageError] = useState(false);
+  const [currentLanguage, setCurrentLanguage] = useState('fr');
 
   const DEFAULT_AVATAR = 'https://cdn-icons-png.flaticon.com/512/149/149071.png';
 
   useEffect(() => {
     if (session?.user) {
       getProfile();
-      // Nettoyer les fichiers obsolètes
-      cleanupOldFiles();
+      loadSavedLanguage();
     }
   }, [session]);
+
+  const loadSavedLanguage = async () => {
+    const savedLanguage = await getSavedLanguage();
+    setCurrentLanguage(savedLanguage);
+  };
+
+  const handleLanguageChange = async (language: string) => {
+    await changeLanguage(language);
+    setCurrentLanguage(language);
+  };
+
+  const getProfile = async () => {
+    try {
+      if (!session?.user) return;
+
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('username, avatar_url')
+        .eq('id', session.user.id)
+        .single();
+
+      if (profile) {
+        setUsername(profile.username || '');
+        if (profile.avatar_url) {
+          const avatarUrl = await getAvatarUrl(session.user.id, profile.avatar_url);
+          setAvatarUrl(avatarUrl);
+        }
+      }
+    } catch (error) {
+      console.error('Erreur lors de la récupération du profil:', error);
+    }
+  };
 
   const getAvatarUrl = async (userId: string, currentUrl?: string) => {
     try {
@@ -48,7 +84,6 @@ const Profile = () => {
         .list(userId);
 
       if (!fileExists?.some(file => file.name === fileName)) {
-        console.log('Fichier non trouvé, utilisation de l\'image par défaut');
         return DEFAULT_AVATAR;
       }
 
@@ -58,40 +93,12 @@ const Profile = () => {
         .createSignedUrl(filePath, 60 * 60 * 24 * 7); // 7 jours
 
       if (error || !signedUrl?.signedUrl) {
-        console.error('Erreur génération URL signée:', error);
         return DEFAULT_AVATAR;
       }
 
       return signedUrl.signedUrl;
     } catch (error) {
-      console.error('Erreur lors de la récupération de l\'URL:', error);
       return DEFAULT_AVATAR;
-    }
-  };
-
-  const getProfile = async () => {
-    try {
-      if (!session?.user) return;
-
-      const { data: profile } = await supabase
-        .from('profiles')
-        .select('username, avatar_url')
-        .eq('id', session.user.id)
-        .single();
-
-      if (profile) {
-        setUsername(profile.username || '');
-        if (profile.avatar_url) {
-          const { data: { publicUrl } } = supabase.storage
-            .from('avatars')
-            .getPublicUrl(profile.avatar_url.split('/').pop() || '');
-          setAvatarUrl(publicUrl || DEFAULT_AVATAR);
-        } else {
-          setAvatarUrl(DEFAULT_AVATAR);
-        }
-      }
-    } catch (error) {
-      setAvatarUrl(DEFAULT_AVATAR);
     }
   };
 
@@ -104,14 +111,14 @@ const Profile = () => {
       console.log('2. Statut de la permission:', status);
       
       if (status !== 'granted') {
-        Alert.alert('Permission nécessaire', 'Veuillez autoriser l\'accès à la galerie dans les paramètres de l\'application.');
+        Alert.alert(t('permissionRequired'), t('galleryPermission'));
         return;
       }
 
       // Ouvrir le sélecteur d'image
       console.log('3. Ouverture du sélecteur d\'image');
       const result = await ImagePicker.launchImageLibraryAsync({
-        mediaTypes: 'images',
+        mediaTypes: ImagePicker.MediaTypeOptions.Images,
         allowsEditing: true,
         aspect: [1, 1],
         quality: 1,
@@ -119,7 +126,6 @@ const Profile = () => {
 
       console.log('4. Résultat de la sélection:', JSON.stringify(result, null, 2));
 
-      // Vérifier le résultat
       if (result.canceled) {
         console.log('Sélection annulée par l\'utilisateur');
         return;
@@ -133,7 +139,6 @@ const Profile = () => {
       const selectedImage = result.assets[0];
       console.log('5. Image sélectionnée:', selectedImage.uri);
 
-      // Vérifier que l'URI existe
       if (!selectedImage.uri) {
         console.log('URI de l\'image manquant');
         return;
@@ -145,7 +150,7 @@ const Profile = () => {
       
     } catch (error) {
       console.error('Erreur lors de la sélection de l\'image:', error);
-      Alert.alert('Erreur', 'Impossible de sélectionner l\'image');
+      Alert.alert(t('error'), t('imageSelectionError'));
     } finally {
       setUploading(false);
     }
@@ -160,7 +165,7 @@ const Profile = () => {
       console.log('2. Statut de la permission:', status);
       
       if (status !== 'granted') {
-        Alert.alert('Permission nécessaire', 'Veuillez autoriser l\'accès à la caméra dans les paramètres de l\'application.');
+        Alert.alert(t('permissionRequired'), t('cameraPermission'));
         return;
       }
 
@@ -201,7 +206,7 @@ const Profile = () => {
       
     } catch (error) {
       console.error('Erreur lors de la prise de photo:', error);
-      Alert.alert('Erreur', 'Impossible de prendre la photo');
+      Alert.alert(t('error'), t('photoError'));
     } finally {
       setUploading(false);
     }
@@ -268,71 +273,63 @@ const Profile = () => {
     }
   };
 
+  const handleImageLoad = () => {
+    setIsImageLoading(false);
+    setImageError(false);
+  };
+
+  const handleImageError = () => {
+    setImageError(true);
+    setAvatarUrl(DEFAULT_AVATAR);
+  };
+
   const uploadImage = async (uri: string) => {
     try {
+      setUploading(true);
+      setImageError(false);
+      
       if (!session?.user) return;
 
       const response = await fetch(uri);
       const blob = await response.blob();
-      const filePath = `${session.user.id}/avatar_${Date.now()}.jpg`;
-
-      // Supprimer l'ancienne image si elle existe
-      const { data: oldFiles } = await supabase.storage
-        .from('avatars')
-        .list(session.user.id);
       
-      if (oldFiles && oldFiles.length > 0) {
-        await supabase.storage
-          .from('avatars')
-          .remove(oldFiles.map(file => `${session.user.id}/${file.name}`));
-      }
+      const fileExt = uri.split('.').pop();
+      const fileName = `${session.user.id}/avatar_${Date.now()}.${fileExt}`;
 
-      const { error: uploadError } = await supabase.storage
+      const { data: uploadData, error: uploadError } = await supabase.storage
         .from('avatars')
-        .upload(filePath, blob);
+        .upload(fileName, blob, {
+          cacheControl: '3600',
+          upsert: true
+        });
 
       if (uploadError) throw uploadError;
+      if (!uploadData) throw new Error('Upload failed');
 
-      const { data: { publicUrl } } = supabase.storage
+      const { data: signedUrlData, error: signedUrlError } = await supabase.storage
         .from('avatars')
-        .getPublicUrl(filePath);
+        .createSignedUrl(fileName, 60 * 60 * 24 * 7);
 
-      if (!publicUrl) throw new Error('Impossible de générer l\'URL');
+      if (signedUrlError || !signedUrlData?.signedUrl) {
+        throw new Error('Could not generate signed URL');
+      }
 
       await supabase
         .from('profiles')
         .update({ 
-          avatar_url: publicUrl,
+          avatar_url: signedUrlData.signedUrl,
           updated_at: new Date().toISOString()
         })
         .eq('id', session.user.id);
 
-      setAvatarUrl(publicUrl);
-      Alert.alert('Succès', 'Photo de profil mise à jour');
+      setAvatarUrl(signedUrlData.signedUrl);
+      Alert.alert(t('success'), t('profileUpdated'));
       
     } catch (error) {
-      Alert.alert('Erreur', 'Impossible de mettre à jour la photo');
-    }
-  };
-
-  const handleImageLoad = () => {
-    console.log('Image chargée avec succès');
-    setIsImageLoading(false);
-  };
-
-  const handleImageError = (e: any) => {
-    console.error('Erreur de chargement de l\'image:', e.nativeEvent.error);
-    console.log('URL qui a échoué:', avatarUrl);
-    setIsImageLoading(false);
-    
-    if (avatarUrl && avatarUrl !== DEFAULT_AVATAR) {
-      // Essayer de recharger l'image avec une URL différente
-      const baseUrl = avatarUrl.split('?')[0];
-      const newUrl = `${baseUrl}?t=${Date.now()}`;
-      console.log('Tentative de rechargement avec URL modifiée:', newUrl);
-      setAvatarUrl(newUrl);
-    } else {
-      setAvatarUrl(DEFAULT_AVATAR);
+      setImageError(true);
+      Alert.alert(t('error'), t('uploadError'));
+    } finally {
+      setUploading(false);
     }
   };
 
@@ -366,12 +363,12 @@ const Profile = () => {
   async function changePassword() {
     try {
       if (!currentPassword || !newPassword || !confirmPassword) {
-        Alert.alert('Erreur', 'Veuillez remplir tous les champs');
+        Alert.alert(t('error'), t('fillAllFields'));
         return;
       }
 
       if (newPassword !== confirmPassword) {
-        Alert.alert('Erreur', 'Les nouveaux mots de passe ne correspondent pas');
+        Alert.alert(t('error'), t('passwordsDontMatch'));
         return;
       }
 
@@ -384,7 +381,7 @@ const Profile = () => {
       });
 
       if (signInError) {
-        Alert.alert('Erreur', 'Mot de passe actuel incorrect');
+        Alert.alert(t('error'), t('incorrectPassword'));
         return;
       }
 
@@ -397,12 +394,12 @@ const Profile = () => {
         throw updateError;
       }
 
-      Alert.alert('Succès', 'Mot de passe mis à jour avec succès');
+      Alert.alert(t('success'), t('passwordUpdated'));
       setCurrentPassword('');
       setNewPassword('');
       setConfirmPassword('');
     } catch (error) {
-      Alert.alert('Erreur', 'Une erreur est survenue lors du changement de mot de passe');
+      Alert.alert(t('error'), t('passwordChangeError'));
     } finally {
       setLoading(false);
     }
@@ -422,9 +419,8 @@ const Profile = () => {
   return (
     <ScrollView style={styles.scrollView} contentContainerStyle={styles.scrollViewContent}>
       <View style={styles.container}>
-        {/* En-tête avec message de bienvenue */}
         <View style={styles.headerContainer}>
-          <Text style={styles.welcomeText}>Bonjour {username || 'Utilisateur'} !</Text>
+          <Text style={styles.welcomeText}>{t('welcome')} {username || t('user')} !</Text>
         </View>
 
         {/* Photo de profil avec option de modification */}
@@ -434,53 +430,28 @@ const Profile = () => {
             onPress={pickImage}
             disabled={uploading}
           >
-            {isImageLoading && (
-              <View style={styles.loadingContainer}>
-                <ActivityIndicator size="large" color="green" />
-              </View>
-            )}
             <Image 
-              source={{ uri: avatarUrl || DEFAULT_AVATAR }} 
-              style={[
-                styles.profileImage,
-                isImageLoading && styles.hiddenImage
-              ]}
-              onLoadStart={() => setIsImageLoading(true)}
-              onLoad={() => setIsImageLoading(false)}
-              onError={() => setAvatarUrl(DEFAULT_AVATAR)}
+              source={{ 
+                uri: imageError ? DEFAULT_AVATAR : avatarUrl,
+                cache: 'reload'
+              }} 
+              style={styles.profileImage}
+              onError={handleImageError}
+              defaultSource={{ uri: DEFAULT_AVATAR }}
             />
-            {!isImageLoading && (
-              <View style={styles.editIconContainer}>
-                <Ionicons name="camera" size={20} color="white" />
-              </View>
-            )}
+            <View style={styles.editIconContainer}>
+              <Ionicons name="camera" size={20} color="white" />
+            </View>
           </TouchableOpacity>
-          
-          <View style={styles.photoButtonsContainer}>
-            <Button 
-              title="Choisir" 
-              onPress={pickImage}
-              buttonStyle={styles.photoButton}
-              disabled={uploading}
-              icon={<Ionicons name="images-outline" size={16} color="white" style={{ marginRight: 5 }} />}
-            />
-            <Button 
-              title="Photo" 
-              onPress={takePhoto}
-              buttonStyle={styles.photoButton}
-              disabled={uploading}
-              icon={<Ionicons name="camera-outline" size={16} color="white" style={{ marginRight: 5 }} />}
-            />
-          </View>
         </View>
 
         {/* Carte d'informations utilisateur */}
         <Card containerStyle={styles.card}>
-          <Card.Title style={styles.cardTitle}>Informations personnelles</Card.Title>
+          <Card.Title style={styles.cardTitle}>{t('personalInfo')}</Card.Title>
           <Card.Divider />
 
           <Input 
-            label="Email" 
+            label={t('email')}
             value={session?.user?.email || ''} 
             disabled 
             inputStyle={styles.inputText}
@@ -488,8 +459,8 @@ const Profile = () => {
           />
 
           <Input 
-            label="Nom d'utilisateur"
-            placeholder="Entrez votre nom d'utilisateur" 
+            label={t('username')}
+            placeholder={t('enterUsername')} 
             value={username} 
             onChangeText={(text: string) => {
               setUsername(text);
@@ -501,7 +472,7 @@ const Profile = () => {
 
           {/* Bouton Modifier */}
           <Button 
-            title={loading ? 'Mise à jour...' : 'Mettre à jour'} 
+            title={loading ? t('updating') : t('update')} 
             onPress={() => updateProfile(username)} 
             disabled={loading} 
             buttonStyle={styles.updateButton}
@@ -511,11 +482,11 @@ const Profile = () => {
 
         {/* Carte de changement de mot de passe */}
         <Card containerStyle={styles.card}>
-          <Card.Title style={styles.cardTitle}>Changer le mot de passe</Card.Title>
+          <Card.Title style={styles.cardTitle}>{t('changePassword')}</Card.Title>
           <Card.Divider />
 
           <Input 
-            label="Mot de passe actuel"
+            label={t('currentPassword')}
             value={currentPassword}
             onChangeText={setCurrentPassword}
             secureTextEntry
@@ -524,7 +495,7 @@ const Profile = () => {
           />
 
           <Input 
-            label="Nouveau mot de passe"
+            label={t('newPassword')}
             value={newPassword}
             onChangeText={setNewPassword}
             secureTextEntry
@@ -533,7 +504,7 @@ const Profile = () => {
           />
 
           <Input 
-            label="Confirmer le nouveau mot de passe"
+            label={t('confirmPassword')}
             value={confirmPassword}
             onChangeText={setConfirmPassword}
             secureTextEntry
@@ -542,7 +513,7 @@ const Profile = () => {
           />
 
           <Button 
-            title={loading ? 'Changement en cours...' : 'Changer le mot de passe'} 
+            title={loading ? t('updating') : t('update')} 
             onPress={changePassword} 
             disabled={loading} 
             buttonStyle={styles.updateButton}
@@ -550,9 +521,44 @@ const Profile = () => {
           />
         </Card>
 
+        {/* Sélecteur de langue */}
+        <Card containerStyle={[styles.card, styles.languageCard]}>
+          <Card.Title style={styles.cardTitle}>{t('language')}</Card.Title>
+          <Card.Divider />
+          <View style={styles.languageButtons}>
+            <Button
+              title="Français"
+              onPress={() => handleLanguageChange('fr')}
+              buttonStyle={[
+                styles.languageButton,
+                currentLanguage === 'fr' && styles.selectedLanguage
+              ]}
+              titleStyle={currentLanguage === 'fr' ? styles.selectedLanguageText : styles.languageButtonText}
+            />
+            <Button
+              title="العربية"
+              onPress={() => handleLanguageChange('ar')}
+              buttonStyle={[
+                styles.languageButton,
+                currentLanguage === 'ar' && styles.selectedLanguage
+              ]}
+              titleStyle={currentLanguage === 'ar' ? styles.selectedLanguageText : styles.languageButtonText}
+            />
+            <Button
+              title="ⵜⴰⵎⴰⵣⵉⵖⵜ"
+              onPress={() => handleLanguageChange('ber')}
+              buttonStyle={[
+                styles.languageButton,
+                currentLanguage === 'ber' && styles.selectedLanguage
+              ]}
+              titleStyle={currentLanguage === 'ber' ? styles.selectedLanguageText : styles.languageButtonText}
+            />
+          </View>
+        </Card>
+
         {/* Bouton Déconnexion */}
         <Button 
-          title="Déconnexion" 
+          title={t('signOut')} 
           onPress={signOut} 
           buttonStyle={styles.signOutButton} 
           icon={<Ionicons name="log-out-outline" size={22} color="white" style={{ marginRight: 10 }} />}
@@ -569,6 +575,7 @@ const styles = StyleSheet.create({
   },
   scrollViewContent: {
     flexGrow: 1,
+    paddingBottom: 100,
   },
   container: {
     flex: 1,
@@ -667,19 +674,6 @@ const styles = StyleSheet.create({
     borderWidth: 2,
     borderColor: 'white',
   },
-  photoButtonsContainer: {
-    flexDirection: 'row',
-    justifyContent: 'center',
-    marginTop: 15,
-    gap: 8,
-  },
-  photoButton: {
-    backgroundColor: 'green',
-    borderRadius: 8,
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    minWidth: 100,
-  },
   loadingContainer: {
     width: 120,
     height: 120,
@@ -688,8 +682,35 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
   },
-  hiddenImage: {
-    opacity: 0,
+  errorImage: {
+    borderColor: 'red',
+    borderWidth: 2,
+  },
+  languageCard: {
+    marginBottom: 10,
+  },
+  languageButtons: {
+    flexDirection: 'row',
+    justifyContent: 'space-around',
+    marginTop: 10,
+  },
+  languageButton: {
+    backgroundColor: '#f0f0f0',
+    borderRadius: 8,
+    paddingHorizontal: 15,
+    paddingVertical: 8,
+    minWidth: 100,
+  },
+  selectedLanguage: {
+    backgroundColor: '#008000',
+  },
+  languageButtonText: {
+    color: '#333',
+    fontSize: 14,
+  },
+  selectedLanguageText: {
+    color: '#ffffff',
+    fontSize: 14,
   },
 });
 

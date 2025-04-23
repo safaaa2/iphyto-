@@ -8,6 +8,8 @@ import * as Google from 'expo-auth-session/providers/google';
 import { makeRedirectUri } from 'expo-auth-session';
 import { useNavigation } from '@react-navigation/native';
 import { router } from 'expo-router';
+import { useTranslation } from 'react-i18next';
+import { changeLanguage, getSavedLanguage } from '../../lib/i18n';
 
 WebBrowser.maybeCompleteAuthSession();
 
@@ -16,10 +18,12 @@ type RootStackParamList = {
 };
 
 export default function Auth(): JSX.Element {
+  const { t } = useTranslation();
   const [email, setEmail] = useState<string>('');
   const [password, setPassword] = useState<string>('');
   const [loading, setLoading] = useState<boolean>(false);
   const [showPassword, setShowPassword] = useState<boolean>(false);
+  const [currentLanguage, setCurrentLanguage] = useState('fr');
   const navigation = useNavigation();
 
   const [request, response, promptAsync] = Google.useAuthRequest({
@@ -34,6 +38,27 @@ export default function Auth(): JSX.Element {
       signInWithGoogle(id_token);
     }
   }, [response]);
+
+  useEffect(() => {
+    loadSavedLanguage();
+  }, []);
+
+  const loadSavedLanguage = async () => {
+    const savedLanguage = await getSavedLanguage();
+    setCurrentLanguage(savedLanguage);
+  };
+
+  const handleLanguageChange = async (language: string) => {
+    try {
+      await changeLanguage(language);
+      setCurrentLanguage(language);
+      // Forcer le rechargement de l'application pour appliquer le changement de langue
+      router.replace('/');
+    } catch (error) {
+      console.error('Erreur lors du changement de langue:', error);
+      Alert.alert(t('error'), t('languageChangeError'));
+    }
+  };
 
   async function signInWithGoogle(idToken: string) {
     try {
@@ -108,57 +133,113 @@ export default function Auth(): JSX.Element {
         source={require('../../assets/images/iphyto.png')}
         style={styles.logo}
       />
-      <Text style={styles.title}>
-        Bienvenue sur <Text style={styles.green}>IPHYTO</Text> 🌿
+      <Text style={styles.title}>{t('welcomeToIPhyto')}</Text>
+      <Text style={styles.subtitle}>
+        {t('createAccountMessage')} 🌱
       </Text>
 
       <Input
-        placeholder="Adresse e-mail"
-        leftIcon={{ type: 'material', name: 'email' }}
+        placeholder={t('email')}
         value={email}
         onChangeText={setEmail}
+        autoCapitalize="none"
+        leftIcon={{ type: 'material', name: 'email', color: '#008000' }}
+        inputStyle={styles.input}
         containerStyle={styles.inputContainer}
-        inputStyle={styles.inputText}
+        labelStyle={styles.label}
       />
 
       <Input
-        placeholder="Mot de passe"
-        leftIcon={{ type: 'font-awesome', name: 'lock' }}
-        secureTextEntry={!showPassword}
+        placeholder={t('password')}
         value={password}
         onChangeText={setPassword}
-        inputStyle={styles.inputText}
-        containerStyle={styles.inputContainer}
+        secureTextEntry={!showPassword}
+        leftIcon={{ type: 'font-awesome', name: 'lock', color: '#008000' }}
         rightIcon={
           <TouchableOpacity onPress={() => setShowPassword(!showPassword)}>
-            <Icon name={showPassword ? 'visibility-off' : 'visibility'} />
+            <Icon name={showPassword ? 'visibility-off' : 'visibility'} color="#008000" />
           </TouchableOpacity>
         }
+        inputStyle={styles.input}
+        containerStyle={styles.inputContainer}
+        labelStyle={styles.label}
       />
 
-      <TouchableOpacity onPress={resetPassword}>
-        <Text style={styles.link}>Mot de passe oublié ?</Text>
+      <TouchableOpacity onPress={() => router.push('/(auth)')}>
+        <Text style={styles.forgotPassword}>{t('forgotPassword')}</Text>
       </TouchableOpacity>
 
-      <Button
-        title="Se connecter"
-        loading={loading}
+      <TouchableOpacity
         onPress={signInWithEmail}
-        buttonStyle={styles.loginButton}
-        titleStyle={styles.loginText}
-        containerStyle={{ width: '100%', marginTop: 20 }}
-      />
+        disabled={loading}
+        style={[styles.buttonContainer, loading && { opacity: 0.7 }]}
+      >
+        <View style={styles.button}>
+          <Text style={styles.buttonText}>
+            {loading ? t('loading') : t('login')}
+          </Text>
+        </View>
+      </TouchableOpacity>
 
-      <Text style={styles.or}>Ou</Text>
+      <View style={styles.separator}>
+        <View style={styles.separatorLine} />
+        <Text style={styles.separatorText}>{t('or')}</Text>
+        <View style={styles.separatorLine} />
+      </View>
 
-      <Button
-        title="Créer un compte"
-        type="outline"
+      <TouchableOpacity
         onPress={() => router.push('/(auth)/signup')}
-        titleStyle={styles.signupText}
-        buttonStyle={styles.signupButton}
-        containerStyle={{ width: '100%' }}
-      />
+        disabled={loading}
+        style={[styles.buttonContainer, loading && { opacity: 0.7 }]}
+      >
+        <View style={[styles.button, styles.signupButton]}>
+          <Text style={[styles.buttonText, styles.signupButtonText]}>
+            {t('signup')}
+          </Text>
+        </View>
+      </TouchableOpacity>
+
+      <View style={styles.languageSelector}>
+        <Text style={styles.languageLabel}>{t('selectLanguage')}</Text>
+        <View style={styles.languageButtons}>
+          <Button
+            title="Français"
+            onPress={() => handleLanguageChange('fr')}
+            buttonStyle={[
+              styles.languageButton,
+              currentLanguage === 'fr' && styles.selectedLanguageButton
+            ]}
+            titleStyle={[
+              styles.languageButtonText,
+              currentLanguage === 'fr' && styles.selectedLanguageButtonText
+            ]}
+          />
+          <Button
+            title="العربية"
+            onPress={() => handleLanguageChange('ar')}
+            buttonStyle={[
+              styles.languageButton,
+              currentLanguage === 'ar' && styles.selectedLanguageButton
+            ]}
+            titleStyle={[
+              styles.languageButtonText,
+              currentLanguage === 'ar' && styles.selectedLanguageButtonText
+            ]}
+          />
+          <Button
+            title="ⵜⴰⵎⴰⵣⵉⵖⵜ"
+            onPress={() => handleLanguageChange('ber')}
+            buttonStyle={[
+              styles.languageButton,
+              currentLanguage === 'ber' && styles.selectedLanguageButton
+            ]}
+            titleStyle={[
+              styles.languageButtonText,
+              currentLanguage === 'ber' && styles.selectedLanguageButtonText
+            ]}
+          />
+        </View>
+      </View>
     </ScrollView>
   );
 }
@@ -184,35 +265,56 @@ const styles = StyleSheet.create({
     marginBottom: 20,
     textAlign: 'center',
   },
-  green: {
-    color: '#008000',
+  subtitle: {
+    fontSize: 16,
+    color: '#666',
+    textAlign: 'center',
   },
   inputContainer: {
     width: '100%',
     marginBottom: 10,
   },
-  inputText: {
+  input: {
     fontSize: 16,
     paddingHorizontal: 10,
     color: '#333',
   },
-  link: {
+  label: {
+    color: '#666',
+  },
+  forgotPassword: {
     alignSelf: 'flex-end',
     color: '#008000',
     fontWeight: '600',
     marginBottom: 20,
   },
-  loginButton: {
+  buttonContainer: {
+    width: '100%',
+    marginTop: 20,
+  },
+  button: {
     backgroundColor: '#008000',
     borderRadius: 8,
     paddingVertical: 12,
   },
-  loginText: {
+  buttonText: {
     color: '#fff',
     fontSize: 16,
+    fontWeight: 'bold',
+    textAlign: 'center',
   },
-  or: {
+  separator: {
+    flexDirection: 'row',
+    alignItems: 'center',
     marginVertical: 16,
+  },
+  separatorLine: {
+    flex: 1,
+    height: 1,
+    backgroundColor: '#e0e0e0',
+  },
+  separatorText: {
+    marginHorizontal: 10,
     fontSize: 14,
     color: '#999',
   },
@@ -222,9 +324,48 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     paddingVertical: 12,
   },
-  signupText: {
+  signupButtonText: {
     color: '#008000',
     fontWeight: '600',
     fontSize: 16,
+  },
+  languageSelector: {
+    width: '100%',
+    marginTop: 30,
+    paddingTop: 20,
+    borderTopWidth: 1,
+    borderTopColor: '#e0e0e0',
+  },
+  languageLabel: {
+    fontSize: 16,
+    color: '#666',
+    marginBottom: 15,
+  },
+  languageButtons: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    gap: 10,
+  },
+  languageButton: {
+    backgroundColor: '#f5f5f5',
+    borderRadius: 20,
+    paddingHorizontal: 15,
+    paddingVertical: 8,
+    minWidth: 90,
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: '#e0e0e0',
+  },
+  selectedLanguageButton: {
+    backgroundColor: '#008000',
+    borderColor: '#008000',
+  },
+  languageButtonText: {
+    color: '#666',
+    fontSize: 14,
+    fontWeight: '500',
+  },
+  selectedLanguageButtonText: {
+    color: '#ffffff',
   },
 });
