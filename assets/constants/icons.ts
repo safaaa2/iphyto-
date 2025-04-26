@@ -1,13 +1,7 @@
-import home from "../icons/home.png";
-import search from "../icons/search.png";
-import person from "../icons/person.png";
-import alert from "../icons/bell-regular.png";
-import favoris from "../icons/safa.png";
-
 export const icons = {
-  home,
-  search,
-  alert,
-  favoris,
-  person,
+  home: require('../icons/home.png'),
+  search: require('../icons/search.png'),
+  person: require('../icons/person.png'),
+  alert: require('../icons/bell-regular.png'),
+  favoris: require('../icons/safa.png'),
 };

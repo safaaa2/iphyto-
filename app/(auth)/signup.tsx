@@ -96,34 +96,27 @@ export default function SignUp() {
       const userRole = email === 'safaeny652@gmail.com' ? 'admin' : 'user';
       console.log('Rôle attribué:', userRole);
 
-      // Créer ou mettre à jour le profil dans la table profiles
-      try {
-        console.log('Tentative de création/mise à jour du profil...');
-        const { data: profileData, error: profileError } = await supabase
-          .from('profiles')
-          .upsert({
+      // Créer le profil dans la table profiles
+      const { error: profileError } = await supabase
+        .from('profiles')
+        .upsert([
+          {
             id: data.user.id,
-            email: email,
             username: username,
             full_name: full_name,
+            email: email,
             role: userRole,
-            avatar_url: 'https://cdn-icons-png.flaticon.com/512/149/149071.png',
+            avatar_url: null,
             updated_at: new Date().toISOString()
-          })
-          .select();
+          }
+        ], {
+          onConflict: 'id'
+        });
 
-        if (profileError) {
-          console.error('Erreur détaillée lors de la création/mise à jour du profil:', profileError);
-          setLoading(false);
-          Alert.alert(t('error'), `Erreur lors de la création du profil: ${profileError.message}`);
-          return;
-        }
-
-        console.log('Profil créé/mis à jour avec succès:', profileData);
-      } catch (error) {
-        console.error('Erreur inattendue lors de la création/mise à jour du profil:', error);
+      if (profileError) {
+        console.error('Erreur lors de la création du profil:', profileError);
         setLoading(false);
-        Alert.alert(t('error'), 'Une erreur inattendue est survenue lors de la création du profil');
+        Alert.alert(t('error'), 'Erreur lors de la création du profil');
         return;
       }
 

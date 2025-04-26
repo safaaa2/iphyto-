@@ -1,0 +1,76 @@
+import { Tabs } from 'expo-router';
+import { SessionProvider } from '../session/sessionContext';
+import { icons } from '@/assets/constants/icons';
+import { Image, Text, TouchableOpacity } from 'react-native';
+import { supabase } from '../../lib/supabase';
+import { useRouter } from 'expo-router';
+
+const AdminLayout = () => {
+  const router = useRouter();
+
+  const handleLogout = async () => {
+    try {
+      await supabase.auth.signOut();
+      router.replace('/(auth)');
+    } catch (error) {
+      console.error('Erreur lors de la déconnexion:', error);
+    }
+  };
+
+  const screenOptions = {
+    headerStyle: { backgroundColor: 'green' },
+    headerTintColor: 'white',
+    headerTitleAlign: 'left' as const,
+    headerTitle: () => (
+      <Text style={{ fontWeight: 'bold', color: 'white', fontSize: 20 }}>
+        Iphyto Admin
+      </Text>
+    ),
+    tabBarStyle: { position: 'absolute' as const, bottom: 0, left: 0, right: 0, height: 70 },
+    tabBarActiveTintColor: '#1DB954',
+    tabBarInactiveTintColor: '#B0B0B0',
+    headerRight: () => (
+      <TouchableOpacity 
+        onPress={handleLogout}
+        style={{ marginRight: 15 }}
+      >
+        <Text style={{ color: 'white', fontSize: 16 }}>Déconnexion</Text>
+      </TouchableOpacity>
+    ),
+  };
+
+  const iconStyle = (focused: boolean) => ({
+    width: 24,
+    height: 24,
+    tintColor: focused ? '#1DB954' : '#B0B0B0'
+  });
+
+  return (
+    <SessionProvider>
+      <Tabs screenOptions={screenOptions}>
+        <Tabs.Screen
+          name="index"
+          options={{
+            title: 'Admin',
+            headerShown: true,
+            tabBarIcon: ({ focused }: { focused: boolean }) => (
+              <Image source={icons.person} style={iconStyle(focused)} />
+            ),
+          }}
+        />
+        <Tabs.Screen
+          name="profile"
+          options={{
+            title: 'Profile',
+            headerShown: false,
+            tabBarIcon: ({ focused }: { focused: boolean }) => (
+              <Image source={icons.person} style={iconStyle(focused)} />
+            ),
+          }}
+        />
+      </Tabs>
+    </SessionProvider>
+  );
+};
+
+export default AdminLayout; 
