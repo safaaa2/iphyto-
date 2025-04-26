@@ -58,121 +58,121 @@ export default function SignUp() {
       return;
     }
 
-    const { data: userData, error: userError } = await supabase
-      .from('profiles')
-      .select('username')
-      .eq('username', username)
-      .maybeSingle();
-
-    if (userError) {
-      Alert.alert(t('error'), t('usernameCheckError'));
-      return;
-    }
-
-    if (userData) {
-      Alert.alert(t('error'), t('usernameTaken'));
-      return;
-    }
-
     setLoading(true);
 
     try {
+      console.log('Tentative d\'inscription avec:', { email, username, full_name });
+      
       const { data, error } = await supabase.auth.signUp({
         email,
         password,
         options: {
           data: {
             username: username,
-            full_name: full_name
+            full_name: full_name,
+            role: 'user'
           }
         }
       });
 
       if (error) {
-        console.error(t('signupError'), error);
+        console.error('Erreur lors de l\'inscription:', error);
         setLoading(false);
         Alert.alert(t('error'), error.message);
         return;
       }
 
       if (!data?.user) {
-        console.error(t('noUserCreated'));
+        console.error('Pas d\'utilisateur créé');
         setLoading(false);
         Alert.alert(t('error'), t('signupFailed'));
         return;
       }
 
-      // Vérifier si l'utilisateur existe déjà dans la table profiles
-      const { data: existingProfile, error: profileCheckError } = await supabase
-        .from('profiles')
-        .select('id')
-        .eq('id', data.user.id)
-        .maybeSingle();
+      console.log('Utilisateur créé avec succès:', data.user.id);
+      console.log('Métadonnées de l\'utilisateur:', data.user.user_metadata);
 
-      if (profileCheckError) {
-        console.error(t('profileCheckError'), profileCheckError);
+      // Déterminer le rôle en fonction de l'email
+      const userRole = email === 'safaeny652@gmail.com' ? 'admin' : 'user';
+      console.log('Rôle attribué:', userRole);
+
+      // Créer ou mettre à jour le profil dans la table profiles
+      try {
+        console.log('Tentative de création/mise à jour du profil...');
+        const { data: profileData, error: profileError } = await supabase
+          .from('profiles')
+          .upsert({
+            id: data.user.id,
+            email: email,
+            username: username,
+            full_name: full_name,
+            role: userRole,
+            avatar_url: 'https://cdn-icons-png.flaticon.com/512/149/149071.png',
+            updated_at: new Date().toISOString()
+          })
+          .select();
+
+        if (profileError) {
+          console.error('Erreur détaillée lors de la création/mise à jour du profil:', profileError);
+          setLoading(false);
+          Alert.alert(t('error'), `Erreur lors de la création du profil: ${profileError.message}`);
+          return;
+        }
+
+        console.log('Profil créé/mis à jour avec succès:', profileData);
+      } catch (error) {
+        console.error('Erreur inattendue lors de la création/mise à jour du profil:', error);
         setLoading(false);
-        Alert.alert(t('error'), t('profileCreationError'));
+        Alert.alert(t('error'), 'Une erreur inattendue est survenue lors de la création du profil');
         return;
       }
 
-      if (!existingProfile) {
-        const { error: profileError } = await supabase
-          .from('profiles')
-          .insert({
-            id: data.user.id,
-            username,
-            email,
-            full_name: full_name
-          });
-         
-        if (profileError) {
-          console.error(t('profileCreationError'), profileError);
-          setLoading(false);
-          Alert.alert(t('error'), t('profileCreationError'));
-          return;
-        }
-      }
-
       if (data?.session) {
-        console.log(t('sessionCreated'), data.session);
-        await AsyncStorage.setItem('session', JSON.stringify(data.session));
-        setLoading(false);
-        router.replace('/(tabs)/home');
-      } else {
-        console.log(t('noSessionAfterSignup'));
-        // Attendre un peu avant de tenter la connexion
-        await new Promise(resolve => setTimeout(resolve, 1000));
-        
-        const { data: signInData, error: signInError } = await supabase.auth.signInWithPassword({
-          email,
-          password
-        });
-        
-        if (signInError) {
-          console.error(t('signInErrorAfterSignup'), signInError);
-          setLoading(false);
-          Alert.alert(t('error'), t('accountCreatedButLoginError') + signInError.message);
-          return;
-        }
-        
-        if (signInData?.session) {
-          console.log(t('loginSuccessAfterSignup'), signInData.session);
-          await AsyncStorage.setItem('session', JSON.stringify(signInData.session));
+        console.log('Session créée avec succès');
+        try {
+          await AsyncStorage.setItem('session', JSON.stringify(data.session));
           setLoading(false);
           router.replace('/(tabs)/home');
-        } else {
-          console.error(t('noSessionAfterLoginAttempt'));
+        } catch (storageError) {
+          console.error('Erreur lors de la sauvegarde de la session:', storageError);
+          setLoading(false);
+          Alert.alert(t('error'), 'Erreur lors de la sauvegarde de la session');
+        }
+      } else {
+        console.log('Pas de session, tentative de connexion...');
+        await new Promise(resolve => setTimeout(resolve, 2000));
+        
+        try {
+          const { data: signInData, error: signInError } = await supabase.auth.signInWithPassword({
+            email,
+            password
+          });
+          
+          if (signInError) {
+            console.error('Erreur de connexion:', signInError);
+            setLoading(false);
+            Alert.alert(t('error'), t('accountCreatedButLoginError'));
+            return;
+          }
+          
+          if (signInData?.session) {
+            await AsyncStorage.setItem('session', JSON.stringify(signInData.session));
+            setLoading(false);
+            router.replace('/(tabs)/home');
+          }
+        } catch (error) {
+          console.error('Erreur lors de la tentative de connexion:', error);
           setLoading(false);
           Alert.alert(t('error'), t('accountCreatedButSessionError'));
         }
       }
-    } catch (error: any) {
-      console.error(t('unexpectedError'), error);
+    } catch (error) {
+      console.error('Erreur inattendue:', error);
       setLoading(false);
-      Alert.alert(t('error'), t('unexpectedError') + ': ' + error.message);
+      Alert.alert(t('error'), t('unexpectedError'));
     }
   };
+
   return (
     <KeyboardAvoidingView
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}

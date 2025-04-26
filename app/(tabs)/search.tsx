@@ -4,8 +4,10 @@ import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import { supabase } from '../../lib/supabase';
 import { useFavorites } from '../../lib/FavoritesContext';
 import { useTranslation } from 'react-i18next';
+import { Ionicons } from '@expo/vector-icons';
 
-interface SavedProduct {
+
+interface SavedProduct { 
   user_id: string;
   "Numéro homologation": string;
   Produits: string;
@@ -48,6 +50,8 @@ interface ProductData {
   Formulation?: string | null;
   "Tableau toxicologique"?: string | null;
   Teneur?: string | null;
+  prix?: number;
+
 }
 
 interface FilterState {
@@ -91,7 +95,7 @@ export default function SearchScreen() {
   const [hasAppliedFilters, setHasAppliedFilters] = useState(false);
   const [savedProducts, setSavedProducts] = useState<Set<string>>(new Set());
   const { refreshFavorites, triggerRefresh } = useFavorites();
-  
+
   useEffect(() => {
     const fetchSavedProducts = async () => {
       try {
@@ -120,7 +124,7 @@ export default function SearchScreen() {
 
     fetchSavedProducts();
   }, [refreshFavorites]);
-  
+
   const handleSearch = () => {
     setLoading(true);
   };
@@ -177,7 +181,7 @@ export default function SearchScreen() {
 
       // Mettre à jour l'état local des produits sauvegardés
       setSavedProducts(prev => new Set([...prev, `${product.Produits}-${product.Cultures}`]));
-      
+
       Alert.alert(t('success'), t('productSaved'));
       triggerRefresh();
     } catch (error) {
@@ -192,7 +196,7 @@ export default function SearchScreen() {
 
   const handleFilterChange = (field: keyof FilterState, value: string) => {
     console.log('Changement de filtre:', field, value);
-    
+
     // Mettre à jour le filtre sans déclencher la recherche
     setFilters(prev => {
       const newFilters = { ...prev, [field]: value };
@@ -229,7 +233,7 @@ export default function SearchScreen() {
       }
       if (currentFilters.Cible) {
         console.log('Recherche Cible:', currentFilters.Cible);
-        
+
         // Rechercher avec et sans espace au début
         const { data: exactData, error: exactError } = await supabase
           .from('utilisation')
@@ -238,7 +242,7 @@ export default function SearchScreen() {
           .order('Cible');
 
         console.log('Résultats de la recherche exacte:', exactData?.length || 0);
-        
+
         if (exactData && exactData.length > 0) {
           // Récupérer les détails des produits
           const productDetails = await Promise.all(
@@ -250,7 +254,7 @@ export default function SearchScreen() {
                   .eq('Numéro homologation', item['Numéro homologation']);
 
                 console.log('Détails du produit:', productData);
-                
+
                 if (productError) {
                   console.error('Erreur lors de la récupération des détails:', productError);
                   return item;
@@ -306,7 +310,7 @@ export default function SearchScreen() {
               .eq('Numéro homologation', item['Numéro homologation']);
 
             console.log('Détails du produit:', productData);
-            
+
             if (productError) {
               console.error('Erreur lors de la récupération des détails:', productError);
               return item;
@@ -408,78 +412,86 @@ export default function SearchScreen() {
         </View>
       )}
       {!loading && filteredProducts.length > 0 && (
-        <FlatList
-          data={filteredProducts}
-          renderItem={({ item }) => (
-            <View style={styles.cardContainer}>
-              <View style={styles.card}>
-                <View style={styles.cardHeader}>
-                  <View style={styles.headerLeft}>
-                    <View style={styles.productTitleRow}>
-                      <Icon name="leaf" size={18} color="green" style={styles.titleIcon} />
-                      <Text style={styles.productName}>{item.Produits}</Text>
-                    </View>
-                    {item.Categorie && (
-                      <Text style={styles.productCategory}>{item.Categorie}</Text>
-                    )}
-                  </View>
-                  <View style={styles.headerRight}>
-                    <TouchableOpacity
-                      style={styles.saveIcon}
-                      onPress={() => handleSaveProduct(item)}
-                    >
-                      <Icon 
-                        name={isProductSaved(item) ? "bookmark" : "bookmark-outline"} 
-                        size={24} 
-                        color={isProductSaved(item) ? "#008000" : "#666"}
-                      />
-                    </TouchableOpacity>
-                  </View>
-                </View>
+       <FlatList
+       data={filteredProducts}
+       renderItem={({ item }) => (
+         <View style={styles.cardContainer}>
+           <View style={styles.card}>
+             <View style={styles.cardHeader}>
+               <View style={styles.headerLeft}>
+                 <View style={styles.productTitleRow}>
+                   <Icon name="leaf" size={18} color="green" style={styles.titleIcon} />
+                   <Text style={styles.productName}>{item.Produits}</Text>
+                 </View>
+                 {item.Categorie && (
+                   <Text style={styles.productCategory}>{item.Categorie}</Text>
+                 )}
+               </View>
+     
+               <View style={styles.headerRight}>
+                 <View style={styles.priceRow}>
+                   <Ionicons name="pricetag" size={16} color="green" style={styles.icon} />
+                   <Text style={styles.detailText}>
+                     {t('price')}: <Text style={styles.boldText}>{item.prix ?? "150"} MAD</Text>
+                   </Text>
+                 </View>
+     
+                 <TouchableOpacity
+                   style={styles.saveIcon}
+                   onPress={() => handleSaveProduct(item)}
+                 >
+                   <Icon
+                     name={isProductSaved(item) ? "bookmark" : "bookmark-outline"}
+                     size={24}
+                     color={isProductSaved(item) ? "#008000" : "#666"}
+                   />
+                 </TouchableOpacity>
+               </View>
+             </View>
+     
+             {item.Formulation && (
+               <View style={styles.formulationRow}>
+                 <Icon name="flask" size={16} color="green" style={styles.icon} />
+                 <Text style={styles.formulationText}>{item.Formulation}</Text>
+               </View>
+             )}
+     
+             <View style={styles.cultureRow}>
+               <Icon name="tree" size={20} color="green" style={styles.icon} />
+               <View style={styles.cultureBadge}>
+                 <Text style={styles.cultureText}>{item.Cultures}</Text>
+               </View>
+             </View>
+     
+             <View style={styles.targetRow}>
+               <Icon name="bug" size={18} color="green" style={styles.icon} />
+               <View style={styles.targetBadge}>
+                 <Text style={styles.targetText}>
+                   {item.Cultures} / {item.Cible}
+                 </Text>
+               </View>
+             </View>
+     
+             {item["Valable jusqu'au"] && (
+               <View style={styles.dateRow}>
+                 <Icon name="calendar" size={16} color="green" style={styles.icon} />
+                 <Text style={{ fontSize: 14, color: 'black' }}>
+                   Valable jusqu'au : {new Date(item["Valable jusqu'au"]).toLocaleDateString('en-US', {
+                     year: 'numeric', month: 'short', day: 'numeric'
+                   })}
+                 </Text>
+               </View>
+             )}
 
-                {item.Formulation && (
-                  <View style={styles.formulationRow}>
-                    <Icon name="flask" size={16} color="green" style={styles.icon} />
-                    <Text style={styles.formulationText}>{item.Formulation}</Text>
-                  </View>
-                )}
-
-                <View style={styles.cultureRow}>
-                  <Icon name="tree" size={20} color="green" style={styles.icon} />
-                  <View style={styles.cultureBadge}>
-                    <Text style={styles.cultureText}>{item.Cultures}</Text>
-                  </View>
-                </View>
-
-                <View style={styles.targetRow}>
-                  <Icon name="bug" size={18} color="green" style={styles.icon} />
-                  <View style={styles.targetBadge}>
-                    <Text style={styles.targetText}>
-                      {item.Cultures} / {item.Cible}
-                    </Text>
-                  </View>
-                </View>
-
-                {item["Valable jusqu'au"] && (
-                  <View style={styles.dateRow}>
-                    <Icon name="calendar" size={16} color="green" style={styles.icon} />
-                    <Text style={{ fontSize: 14, color: 'black' }}>
-                    Valable jusqu'au : {new Date(item["Valable jusqu'au"]).toLocaleDateString('en-US', {
-                      year: 'numeric', month: 'short', day: 'numeric'
-                    })}
-                  </Text>
-                  </View>
-                )}
-
-                <TouchableOpacity 
+                <TouchableOpacity
                   style={styles.showDetailsButton}
                   onPress={() => toggleProductDetails(item['Numéro homologation'])}
                 >
-                  <Icon 
-                    name={expandedProduct === item['Numéro homologation'] ? "chevron-up" : "chevron-down"} 
-                    size={20} 
-                    color="#008000" 
-                    style={styles.icon} 
+                  <Icon
+                    name={expandedProduct === item['Numéro homologation'] ? "chevron-up" : "chevron-down"}
+                    size={20}
+                    color="#008000"
+                    style={styles.icon}
                   />
                   <Text style={styles.showDetailsText}>
                     {expandedProduct === item['Numéro homologation'] ? t('hideDetails') : t('showDetails')}
@@ -541,7 +553,8 @@ const fetchProductDetails = async (items: any[]): Promise<utilisation[]> => {
               'Tableau toxicologique': null,
               Categorie: null,
               Formulation: null,
-              Teneur: null
+              Teneur: null,
+              Prix: Math.floor(Math.random() * (200 - 100 + 1)) + 100
             };
           }
 
@@ -560,7 +573,8 @@ const fetchProductDetails = async (items: any[]): Promise<utilisation[]> => {
             'Tableau toxicologique': productData?.['Tableau toxicologique'] || null,
             Categorie: productData?.Categorie || null,
             Formulation: productData?.Formulation || null,
-            Teneur: productData?.Teneur || null
+            Teneur: productData?.Teneur || null,
+            Prix: Math.floor(Math.random() * (200 - 100 + 1)) + 100,
           };
         } catch (error) {
           console.error('Error in product details processing:', error);
@@ -597,7 +611,7 @@ const styles = StyleSheet.create({
   },
   saveIcon: {
     position: 'absolute',
-    top: 10,
+    top: 30,
     right: 10,
     zIndex: 1,
   },
@@ -839,5 +853,16 @@ const styles = StyleSheet.create({
     marginTop: 20,
     color: 'black',
     fontStyle: 'italic',
+  },
+  priceRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: 5,
+  },
+  priceText: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    color: 'green',
+    marginLeft: 5,
   },
 });

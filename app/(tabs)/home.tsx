@@ -1,249 +1,187 @@
-import { View, Text, FlatList, ActivityIndicator, TouchableOpacity } from 'react-native';
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
+import { View, Text, FlatList, Image, TouchableOpacity, ActivityIndicator, RefreshControl } from 'react-native';
+import { useNavigation } from '@react-navigation/native';
 import { supabase } from '../../lib/supabase';
-import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 
-type Utilisation = {
-  Produits: string;
-  Cible: string;
-  Cultures: string;
-  "Numéro homologation"?: string;
-  "Valable jusqu'au"?: string;
-  "Matière active"?: string;
-  Fournisseur?: string;
-  Détenteur?: string;
-  Dose?: string;
-  DAR?: string;
-  "Nbr_d'app"?: string;
-  Formulation?: string;
-  Categorie?: string | null;
-  "Tableau toxicologique"?: string;
-  Teneur?: string;
-};
+interface Actualite {
+  id: number;
+  titre: string;
+  contenu: string;
+  date_publication: string;
+  image_url?: string;
+  image_alt?: string;
+  source_url?: string;
+  auteur?: string;
+  categorie: 'maladies' | 'tendances' | 'sante' | 'partenariats';
+  statut: 'brouillon' | 'publié' | 'archivé';
+}
 
-const PAGE_SIZE = 12;
+const CATEGORIES = [
+  { id: 'toutes', title: 'Toutes les actualités' },
+  { id: 'maladies', title: 'Maladies des Cultures' },
+  { id: 'tendances', title: 'Tendances Agricoles' },
+  { id: 'sante', title: 'Santé des Cultures' },
+  { id: 'partenariats', title: 'Partenariats' },
+];
 
-const Home = () => {
-  const [utilisations, setUtilisations] = useState<Utilisation[]>([]);
-  const [loading, setLoading] = useState<boolean>(true);
-  const [page, setPage] = useState<number>(1);
-  const [hasMore, setHasMore] = useState<boolean>(true);
-  const [errorMsg, setErrorMsg] = useState<string | null>(null);
-  const [selectedIndex, setSelectedIndex] = useState<number | null>(null);
+const HomeScreen = () => {
+  const [actualites, setActualites] = useState<Actualite[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [selectedCategory, setSelectedCategory] = useState('toutes');
+  const [refreshing, setRefreshing] = useState(false);
+  const navigation = useNavigation<any>();
 
-  const fetchUtilisations = async () => {
-    setErrorMsg(null);
-    const from = (page - 1) * PAGE_SIZE;
-    const to = from + PAGE_SIZE - 1;
+  const fetchActualites = useCallback(async () => {
+    try {
+      let query = supabase
+        .from('actualites')
+        .select('*')
+        .eq('statut', 'publié')
+        .order('date_publication', { ascending: false });
 
-    const { count, error } = await supabase
-      .from('utilisation')
-      .select('*', { count: 'exact' });
+      if (selectedCategory !== 'toutes') {
+        query = query.eq('categorie', selectedCategory);
+      }
 
-    if (error) {
-      console.error('Erreur lors de la récupération du nombre total:', error);
-      setErrorMsg("Erreur lors de la récupération des données.");
+      const { data, error: fetchError } = await query;
+
+      if (fetchError) throw fetchError;
+      
+      setActualites(data || []);
+    } catch (err) {
+      console.error('Erreur:', err);
+      setError(err instanceof Error ? err.message : 'Une erreur est survenue');
+    } finally {
       setLoading(false);
-      return;
+      setRefreshing(false);
     }
-
-    const adjustedTo = to >= count! ? count! - 1 : to;
-
-    const { data, error: fetchError } = await supabase
-      .from('utilisation')
-      .select('*')
-      .range(from, adjustedTo)
-      .order('Produits', { ascending: true });
-
-    if (fetchError) {
-      console.error('Erreur lors de la récupération:', fetchError);
-      setErrorMsg("Erreur lors du chargement des données.");
-      setLoading(false);
-      return;
-    }
-
-    const utilisationsWithDetails = await Promise.all(
-      data.map(async (utilisation: Utilisation) => {
-        const { data: produitData, error: produitError } = await supabase
-          .from('Produits')
-          .select('Categorie, Formulation, Détenteur, Fournisseur, "Tableau toxicologique", "Matière active", Teneur')
-          .eq('Numéro homologation', utilisation["Numéro homologation"])
-          .single();
-
-        if (produitError) {
-          console.error('Erreur lors de la récupération des infos produit:', produitError);
-        }
-
-        return {
-          ...utilisation,
-          Categorie: produitData?.Categorie || null,
-          Formulation: produitData?.Formulation || null,
-          Détenteur: produitData?.Détenteur || null,
-          Fournisseur: produitData?.Fournisseur || null,
-          "Tableau toxicologique": produitData?.["Tableau toxicologique"] || null,
-          "Matière active": produitData?.["Matière active"] || null,
-          Teneur: produitData?.Teneur || null,
-        };
-      })
-    );
-
-    setUtilisations(utilisationsWithDetails);
-    setHasMore(adjustedTo < count! - 1);
-    setLoading(false);
-  };
+  }, [selectedCategory]);
 
   useEffect(() => {
-    fetchUtilisations();
-  }, [page]);
+    fetchActualites();
+  }, [fetchActualites]);
 
-  const loadMore = () => {
-    if (hasMore) setPage((prev) => prev + 1);
-  };
+  const onRefresh = useCallback(() => {
+    setRefreshing(true);
+    fetchActualites();
+  }, [fetchActualites]);
 
-  const goBack = () => {
-    if (page > 1) setPage((prev) => prev - 1);
-  };
-
-  return (
-    <View style={{ flex: 1, padding: 20 }}>
-      <Text style={{ fontSize: 22, fontWeight: 'bold', marginBottom: 10 }}>
-        Liste des Produits
-      </Text>
-
-      {/* Pagination */}
-      <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', marginBottom: 10 }}>
-        <TouchableOpacity
-          onPress={goBack}
-          disabled={page === 1}
-          style={{
-            backgroundColor: page === 1 ? '#ddd' : 'green',
-            paddingVertical: 6,
-            paddingHorizontal: 10,
-            borderRadius: 5,
-            flexDirection: 'row',
-            alignItems: 'center',
-            width: 100,
-            marginRight: 10,
+  if (error) {
+    return (
+      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', padding: 20 }}>
+        <Text style={{ color: 'red', textAlign: 'center' }}>{error}</Text>
+        <TouchableOpacity 
+          style={{ marginTop: 20, padding: 10, backgroundColor: '#22c55e', borderRadius: 5 }}
+          onPress={() => {
+            setLoading(true);
+            setError(null);
+            fetchActualites();
           }}
         >
-          <Icon name="chevron-left" size={16} color="white" />
-          <Text style={{ color: 'white', marginLeft: -1, fontSize: 13, fontWeight: 'bold' }}>Précédent</Text>
-        </TouchableOpacity>
-
-        <Text style={{ fontWeight: 'bold', fontSize: 15, textAlign: 'center', marginHorizontal: 10 }}>
-          Page {page}
-        </Text>
-
-        <TouchableOpacity
-          onPress={loadMore}
-          disabled={!hasMore}
-          style={{
-            backgroundColor: !hasMore ? '#ddd' : 'green',
-            paddingVertical: 6,
-            paddingHorizontal: 10,
-            borderRadius: 5,
-            flexDirection: 'row',
-            alignItems: 'center',
-            width: 100,
-            marginLeft: 10,
-          }}
-        >
-          <Text style={{ color: 'white', marginRight: 1, fontSize: 13, fontWeight: 'bold' }}>Suivant</Text>
-          <Icon name="chevron-right" size={16} color="white" />
+          <Text style={{ color: 'white' }}>Réessayer</Text>
         </TouchableOpacity>
       </View>
+    );
+  }
 
-      {errorMsg && (
-        <Text style={{ color: 'red', textAlign: 'center', marginBottom: 10 }}>{errorMsg}</Text>
-      )}
-
-      {loading ? (
-        <ActivityIndicator size="large" />
-      ) : (
-        <FlatList
-          data={utilisations}
-          keyExtractor={(item, index) => `${item.Produits}-${index}`}
-          renderItem={({ item, index }) => (
-            <View style={{ padding: 15, marginVertical: 5, backgroundColor: '#f9f9f9', borderRadius: 10 }}>
-              <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 5 }}>
-                <Icon name="leaf" size={18} color="green" style={{ marginRight: 8 }} />
-                <Text style={{ fontSize: 18, fontWeight: 'bold' }}>{item.Produits}</Text>
-              </View>
-
-              {item.Categorie && (
-                <Text style={{ fontSize: 14, color: 'black', marginBottom: 20}}>{item.Categorie}</Text>
-              )}
-
-              {item.Formulation && (
-                <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 4 }}>
-                  <Icon name="flask" size={16} color="green" style={{ marginRight: 8 }} />
-                  <Text style={{ fontSize: 14 }}>{item.Formulation}</Text>
-                </View>
-              )}
-
-              <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: 8 }}>
-                <Icon name="tree" size={20} color="green" style={{ marginRight: 6 }} />
-                <View style={{
-                  borderWidth: 1,
-                  borderColor: 'black',
-                  backgroundColor: 'white',
-                  borderRadius: 20,
-                  paddingVertical: 4,
-                  paddingHorizontal: 12,
-                }}>
-                  <Text style={{ fontSize: 14, color: 'black' }}>{item.Cultures}</Text>
-                </View>
-              </View>
-
-              <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: 6 }}>
-                <Icon name="bug" size={18} color="green" style={{ marginRight: 8 }} />
-                <TouchableOpacity
-                  style={{
-                    backgroundColor: '#2e7d32',
-                    borderRadius: 20,
-                    paddingHorizontal: 12,
-                    paddingVertical: 6,
-                  }}
-                  onPress={() => setSelectedIndex(selectedIndex === index ? null : index)}
-                >
-                  <Text style={{ color: 'white', fontSize: 13, fontWeight: '600' }}>
-                    {item.Cultures} / {item.Cible}
-                  </Text>
-                </TouchableOpacity>
-              </View>
-
-              {item["Valable jusqu'au"] && (
-                <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: 8 }}>
-                  <Icon name="calendar" size={16} color="green" style={{ marginRight: 6 }} />
-                  <Text style={{ fontSize: 14, color: 'black' }}>
-                    Valable jusqu’au : {new Date(item["Valable jusqu'au"]).toLocaleDateString('en-US', {
-                      year: 'numeric', month: 'short', day: 'numeric'
-                    })}
-                  </Text>
-                </View>
-              )}
-
-              {selectedIndex === index && (
-                <View style={{ marginTop: 10, backgroundColor: '#e6f5ea', borderRadius: 10, padding: 12 }}>
-                  <Text style={{ fontWeight: 'bold', fontSize: 16, marginBottom: 5 }}>Détails :</Text>
-
-                  {item.Fournisseur && <Text style={{ marginBottom: 4 }}>Fournisseur : {item.Fournisseur}</Text>}
-                  {item.Détenteur && <Text style={{ marginBottom: 4 }}>Détenteur : {item.Détenteur}</Text>}
-                  {item["Matière active"] && <Text style={{ marginBottom: 4 }}>Matière active : {item["Matière active"]}</Text>}
-                  {item.Teneur && <Text style={{ marginBottom: 4 }}>Teneur : {item.Teneur}</Text>}
-                  {item.Dose && <Text style={{ marginBottom: 4 }}>Dose : {item.Dose}</Text>}
-                  {item.DAR && <Text style={{ marginBottom: 4 }}>DAR : {item.DAR}</Text>}
-                  {item["Nbr_d'app"] && <Text style={{ marginBottom: 4 }}>Nombre d'applications : {item["Nbr_d'app"]}</Text>}
-                  {item["Numéro homologation"] && <Text style={{ marginBottom: 4 }}>Numéro homologation: {item["Numéro homologation"]}</Text>}
-                  {item["Tableau toxicologique"] && <Text style={{ marginBottom: 4 }}>Tableau toxicologique : {item["Tableau toxicologique"]}</Text>}
-                </View>
-              )}
-            </View>
-          )}
+  const renderItem = ({ item }: { item: Actualite }) => (
+    <View
+      style={{
+        backgroundColor: 'white',
+        borderRadius: 20,
+        padding: 16,
+        marginVertical: 8,
+        marginHorizontal: 16,
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.1,
+        shadowRadius: 4,
+        elevation: 3,
+      }}
+    >
+      {item.image_url && (
+        <Image
+          source={{ uri: item.image_url }}
+          style={{
+            width: '100%',
+            height: 200,
+            borderRadius: 12,
+            marginBottom: 12,
+          }}
+          alt={item.image_alt}
         />
       )}
+      <Text style={{ fontSize: 18, fontWeight: 'bold', color: '#14532d' }}>{item.titre}</Text>
+      <Text style={{ fontSize: 12, color: '#6b7280', marginTop: 4 }}>
+        {new Date(item.date_publication).toLocaleDateString('fr-FR')} {item.auteur ? `• ${item.auteur}` : ''}
+      </Text>
+      <Text style={{ fontSize: 14, marginTop: 8 }} numberOfLines={3}>
+        {item.contenu}
+      </Text>
+      {item.source_url && (
+        <TouchableOpacity
+          onPress={() => navigation.push('webview', { url: item.source_url })}
+        >
+          <Text style={{ color: '#22c55e', marginTop: 8 }}>Lire plus ➤</Text>
+        </TouchableOpacity>
+      )}
+    </View>
+  );
+
+  return (
+    <View style={{ flex: 1, backgroundColor: '#f0fdf4' }}>
+      <Text style={{ fontSize: 24, fontWeight: 'bold', margin: 16, color: '#14532d' }}>
+        📰 Dernières actualités
+      </Text>
+      
+      <View style={{ flexDirection: 'row', paddingHorizontal: 16, marginBottom: 16 }}>
+        <FlatList
+          horizontal
+          data={CATEGORIES}
+          keyExtractor={(item) => item.id}
+          renderItem={({ item }) => (
+            <TouchableOpacity
+              onPress={() => setSelectedCategory(item.id)}
+              style={{
+                paddingHorizontal: 16,
+                paddingVertical: 8,
+                marginRight: 8,
+                borderRadius: 20,
+                backgroundColor: selectedCategory === item.id ? '#22c55e' : '#e5e7eb',
+              }}
+            >
+              <Text
+                style={{
+                  color: selectedCategory === item.id ? 'white' : '#374151',
+                  fontWeight: '500',
+                }}
+              >
+                {item.title}
+              </Text>
+            </TouchableOpacity>
+          )}
+          showsHorizontalScrollIndicator={false}
+        />
+      </View>
+
+      <FlatList
+        data={actualites}
+        keyExtractor={(item) => item.id.toString()}
+        renderItem={renderItem}
+        refreshControl={
+          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+        }
+        ListEmptyComponent={
+          loading ? null : (
+            <View style={{ alignItems: 'center', padding: 20 }}>
+              <Text style={{ color: '#6b7280' }}>Aucune actualité disponible</Text>
+            </View>
+          )
+        }
+      />
     </View>
   );
 };
 
-export default Home;
+export default HomeScreen;
