@@ -4,4 +4,5 @@ export const icons = {
   person: require('../icons/person.png'),
   alert: require('../icons/bell-regular.png'),
   favoris: require('../icons/safa.png'),
+  espace:require('../icons/espace.png')
 };

@@ -1,7 +1,7 @@
 import { Tabs } from 'expo-router';
 import { SessionProvider } from '../session/sessionContext';
 import { icons } from '@/assets/constants/icons';
-import { Image, Text, TouchableOpacity } from 'react-native';
+import { Image, Text, TouchableOpacity, View } from 'react-native';
 import { supabase } from '../../lib/supabase';
 import { useRouter } from 'expo-router';
 
@@ -26,22 +26,23 @@ const AdminLayout = () => {
         Iphyto Admin
       </Text>
     ),
-    tabBarStyle: { position: 'absolute' as const, bottom: 0, left: 0, right: 0, height: 70 },
+    tabBarStyle: { 
+      position: 'absolute' as const, 
+      bottom: 0, 
+      left: 0, 
+      right: 0, 
+      height: 70,
+      backgroundColor: 'white',
+      borderTopWidth: 1,
+      borderTopColor: '#e0e0e0'
+    },
     tabBarActiveTintColor: '#1DB954',
     tabBarInactiveTintColor: '#B0B0B0',
-    headerRight: () => (
-      <TouchableOpacity 
-        onPress={handleLogout}
-        style={{ marginRight: 15 }}
-      >
-        <Text style={{ color: 'white', fontSize: 16 }}>Déconnexion</Text>
-      </TouchableOpacity>
-    ),
   };
 
   const iconStyle = (focused: boolean) => ({
-    width: 24,
-    height: 24,
+    width: 15,
+    height: 20,
     tintColor: focused ? '#1DB954' : '#B0B0B0'
   });
 
@@ -51,10 +52,15 @@ const AdminLayout = () => {
         <Tabs.Screen
           name="index"
           options={{
-            title: 'Admin',
+            title: 'Espace Admin',
             headerShown: true,
             tabBarIcon: ({ focused }: { focused: boolean }) => (
-              <Image source={icons.person} style={iconStyle(focused)} />
+              <View style={{ alignItems: 'center', justifyContent: 'center' }}>
+                <Image 
+                  source={icons.espace} 
+                  style={iconStyle(focused)}
+                />
+              </View>
             ),
           }}
         />
@@ -64,7 +70,12 @@ const AdminLayout = () => {
             title: 'Profile',
             headerShown: false,
             tabBarIcon: ({ focused }: { focused: boolean }) => (
-              <Image source={icons.person} style={iconStyle(focused)} />
+              <View style={{ alignItems: 'center', justifyContent: 'center' }}>
+                <Image 
+                  source={icons.person} 
+                  style={iconStyle(focused)}
+                />
+              </View>
             ),
           }}
         />

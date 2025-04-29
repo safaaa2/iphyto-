@@ -25,16 +25,57 @@ export default function AdminPage() {
   const [username, setUsername] = useState('');
   const [email, setEmail] = useState('');
   const [role, setRole] = useState('');
+  const [userCount, setUserCount] = useState(0);
+  const [plantCount, setPlantCount] = useState(0);
 
   useEffect(() => {
-    if (activeTab === 'users') {
+    if (activeTab === 'dashboard') {
+      fetchUserCount();
+      fetchPlantCount();
+    } else if (activeTab === 'users') {
       fetchUsers();
     }
   }, [activeTab]);
 
+  const fetchUserCount = async () => {
+    try {
+      const { count, error } = await supabase
+        .from('profiles')
+        .select('*', { count: 'exact', head: true });
+
+      if (error) {
+        console.error('Error counting users:', error.message);
+      } else {
+        setUserCount(count || 0);
+      }
+    } catch (error) {
+      console.error('Error in fetchUserCount:', error);
+    }
+  };
+
+  const fetchPlantCount = async () => {
+    try {
+      const { count, error } = await supabase
+        .from('cultures')
+        .select('*', { count: 'exact', head: true });
+
+      if (error) {
+        console.error('Error counting plants:', error.message);
+      } else {
+        setPlantCount(count || 0);
+      }
+    } catch (error) {
+      console.error('Error in fetchPlantCount:', error);
+    }
+  };
+
   const fetchUsers = async () => {
     try {
-      const { data, error } = await supabase.from('profiles').select('id, full_name, username, email, role, is_active');
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('id, full_name, username, email, role, is_active')
+        .order('full_name', { ascending: true });
+
       if (error) {
         console.error('Error fetching users:', error.message);
         Alert.alert('Erreur', 'Impossible de charger les utilisateurs');
@@ -165,16 +206,12 @@ export default function AdminPage() {
             <Text style={styles.sectionTitle}>Tableau de bord</Text>
             <View style={styles.statsContainer}>
               <View style={styles.statCard}>
-                <Text style={styles.statNumber}>10</Text>
+                <Text style={styles.statNumber}>{userCount}</Text>
                 <Text style={styles.statLabel}>Utilisateurs</Text>
               </View>
               <View style={styles.statCard}>
-                <Text style={styles.statNumber}>45</Text>
-                <Text style={styles.statLabel}>Plantes</Text>
-              </View>
-              <View style={styles.statCard}>
-                <Text style={styles.statNumber}>12</Text>
-                <Text style={styles.statLabel}>Alertes</Text>
+                <Text style={styles.statNumber}>{plantCount}</Text>
+                <Text style={styles.statLabel}>Cultures</Text>
               </View>
             </View>
           </View>
@@ -205,7 +242,7 @@ export default function AdminPage() {
     <View style={styles.container}>
       <View style={styles.header}>
         <Text style={styles.title}>Administration</Text>
-        <Text style={styles.subtitle}>Bienvenue, {session?.user.email}</Text>
+        <Text style={styles.subtitle}>{session?.user.email}</Text>
       </View>
 
       <View style={styles.tabs}>
@@ -292,17 +329,26 @@ const styles = StyleSheet.create({
   header: {
     padding: 20,
     backgroundColor: 'green',
+    borderBottomLeftRadius: 15,
+    borderBottomRightRadius: 15,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 3.84,
+    elevation: 5,
   },
   title: {
-    fontSize: 24,
+    fontSize: 28,
     fontWeight: 'bold',
     color: 'white',
+    textAlign: 'center',
     marginBottom: 5,
   },
   subtitle: {
-    fontSize: 16,
+    fontSize: 14,
     color: 'white',
-    opacity: 0.8,
+    opacity: 0.9,
+    textAlign: 'center',
   },
   tabs: {
     flexDirection: 'row',
