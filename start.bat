@@ -1,0 +1,3 @@
+@echo off
+echo Démarrage de l'application...
+npx expo start --tunnel 

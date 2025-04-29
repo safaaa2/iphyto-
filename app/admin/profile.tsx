@@ -1,4 +1,5 @@
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView, TextInput, Alert } from 'react-native';
+import React from 'react';
+import { View, Text, StyleSheet, TouchableOpacity, ScrollView, TextInput, Alert, Image } from 'react-native';
 import { useSession } from '../session/sessionContext';
 import { useState, useEffect } from 'react';
 import { supabase } from '../../lib/supabase';
@@ -10,7 +11,15 @@ export default function AdminProfile() {
   const router = useRouter();
   const [isEditing, setIsEditing] = useState(false);
   const [email, setEmail] = useState('');
+  const [username, setUsername] = useState('');
+  const [fullName, setFullName] = useState('');
   const [loading, setLoading] = useState(true);
+  const [currentPassword, setCurrentPassword] = useState('');
+  const [newPassword, setNewPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
+  const [showNewPassword, setShowNewPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
   useEffect(() => {
     if (session?.user) {
@@ -88,6 +97,57 @@ export default function AdminProfile() {
     }
   };
 
+  const handleChangePassword = async () => {
+    try {
+      if (!currentPassword || !newPassword || !confirmPassword) {
+        Alert.alert('Erreur', 'Veuillez remplir tous les champs');
+        return;
+      }
+
+      if (newPassword !== confirmPassword) {
+        Alert.alert('Erreur', 'Les mots de passe ne correspondent pas');
+        return;
+      }
+
+      if (newPassword.length < 6) {
+        Alert.alert('Erreur', 'Le mot de passe doit contenir au moins 6 caractères');
+        return;
+      }
+
+      setLoading(true);
+
+      // Vérifier le mot de passe actuel
+      const { error: signInError } = await supabase.auth.signInWithPassword({
+        email: session?.user?.email || '',
+        password: currentPassword,
+      });
+
+      if (signInError) {
+        Alert.alert('Erreur', 'Mot de passe actuel incorrect');
+        return;
+      }
+
+      // Mettre à jour le mot de passe
+      const { error: updateError } = await supabase.auth.updateUser({
+        password: newPassword
+      });
+
+      if (updateError) {
+        throw updateError;
+      }
+
+      Alert.alert('Succès', 'Mot de passe modifié avec succès');
+      setCurrentPassword('');
+      setNewPassword('');
+      setConfirmPassword('');
+    } catch (error: any) {
+      console.error('Erreur lors du changement de mot de passe:', error.message);
+      Alert.alert('Erreur', 'Impossible de modifier le mot de passe');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   if (loading) {
     return (
       <View style={styles.container}>
@@ -99,13 +159,26 @@ export default function AdminProfile() {
   return (
     <ScrollView style={styles.container}>
       <View style={styles.header}>
-        <Icon name="user-circle" size={100} color="green" />
+        <View style={styles.profileImageContainer}>
+          <Image 
+            source={{ uri: 'https://cdn-icons-png.flaticon.com/512/149/149071.png' }}
+            style={styles.profileImage}
+          />
+          <TouchableOpacity style={styles.editImageButton}>
+            <Icon name="camera" size={20} color="white" />
+          </TouchableOpacity>
+        </View>
         <Text style={styles.title}>Profil Administrateur</Text>
+        <Text style={styles.subtitle}>{email}</Text>
       </View>
 
-      <View style={styles.content}>
-        {isEditing ? (
-          <>
+      {isEditing ? (
+        <ScrollView 
+          style={styles.editScrollView}
+          contentContainerStyle={styles.editScrollViewContent}
+        >
+          <View style={styles.card}>
+            <Text style={styles.cardTitle}>Informations personnelles</Text>
             <View style={styles.inputGroup}>
               <Text style={styles.label}>Email</Text>
               <TextInput
@@ -118,26 +191,61 @@ export default function AdminProfile() {
               />
             </View>
 
+            <View style={styles.inputGroup}>
+              <Text style={styles.label}>Nom d'utilisateur</Text>
+              <TextInput
+                style={styles.input}
+                value={username}
+                onChangeText={setUsername}
+                placeholder="Votre nom d'utilisateur"
+              />
+            </View>
+
+            <View style={styles.inputGroup}>
+              <Text style={styles.label}>Nom complet</Text>
+              <TextInput
+                style={styles.input}
+                value={fullName}
+                onChangeText={setFullName}
+                placeholder="Votre nom complet"
+              />
+            </View>
+
             <View style={styles.buttonGroup}>
               <TouchableOpacity
                 style={[styles.button, styles.cancelButton]}
                 onPress={() => setIsEditing(false)}
               >
+                <Icon name="times" size={20} color="white" />
                 <Text style={styles.buttonText}>Annuler</Text>
               </TouchableOpacity>
               <TouchableOpacity
                 style={[styles.button, styles.saveButton]}
                 onPress={handleUpdateProfile}
               >
+                <Icon name="check" size={20} color="white" />
                 <Text style={styles.buttonText}>Enregistrer</Text>
               </TouchableOpacity>
             </View>
-          </>
-        ) : (
-          <>
+          </View>
+        </ScrollView>
+      ) : (
+        <View style={styles.content}>
+          <View style={styles.card}>
+            <Text style={styles.cardTitle}>Informations personnelles</Text>
             <View style={styles.infoGroup}>
-              <Icon name="envelope" size={20} color="#666" />
+              <Icon name="envelope" size={20} color="green" />
               <Text style={styles.infoText}>{email || 'Non défini'}</Text>
+            </View>
+
+            <View style={styles.infoGroup}>
+              <Icon name="user" size={20} color="green" />
+              <Text style={styles.infoText}>{username || 'Non défini'}</Text>
+            </View>
+
+            <View style={styles.infoGroup}>
+              <Icon name="id-card" size={20} color="green" />
+              <Text style={styles.infoText}>{fullName || 'Non défini'}</Text>
             </View>
 
             <TouchableOpacity
@@ -147,7 +255,81 @@ export default function AdminProfile() {
               <Icon name="pencil" size={20} color="white" />
               <Text style={styles.buttonText}>Modifier le profil</Text>
             </TouchableOpacity>
+          </View>
 
+          <View style={styles.card}>
+            <Text style={styles.cardTitle}>Changer le mot de passe</Text>
+            <View style={styles.inputGroup}>
+              <Text style={styles.label}>Mot de passe actuel</Text>
+              <View style={styles.passwordInputContainer}>
+                <TextInput
+                  style={[styles.input, styles.passwordInput]}
+                  value={currentPassword}
+                  onChangeText={setCurrentPassword}
+                  placeholder="Votre mot de passe actuel"
+                  secureTextEntry={!showPassword}
+                />
+                <TouchableOpacity
+                  style={styles.eyeIcon}
+                  onPress={() => setShowPassword(!showPassword)}
+                >
+                  <Icon name={showPassword ? 'eye-slash' : 'eye'} size={20} color="#666" />
+                </TouchableOpacity>
+              </View>
+            </View>
+
+            <View style={styles.inputGroup}>
+              <Text style={styles.label}>Nouveau mot de passe</Text>
+              <View style={styles.passwordInputContainer}>
+                <TextInput
+                  style={[styles.input, styles.passwordInput]}
+                  value={newPassword}
+                  onChangeText={setNewPassword}
+                  placeholder="Votre nouveau mot de passe"
+                  secureTextEntry={!showNewPassword}
+                />
+                <TouchableOpacity
+                  style={styles.eyeIcon}
+                  onPress={() => setShowNewPassword(!showNewPassword)}
+                >
+                  <Icon name={showNewPassword ? 'eye-slash' : 'eye'} size={20} color="#666" />
+                </TouchableOpacity>
+              </View>
+            </View>
+
+            <View style={styles.inputGroup}>
+              <Text style={styles.label}>Confirmer le mot de passe</Text>
+              <View style={styles.passwordInputContainer}>
+                <TextInput
+                  style={[styles.input, styles.passwordInput]}
+                  value={confirmPassword}
+                  onChangeText={setConfirmPassword}
+                  placeholder="Confirmez votre nouveau mot de passe"
+                  secureTextEntry={!showConfirmPassword}
+                />
+                <TouchableOpacity
+                  style={styles.eyeIcon}
+                  onPress={() => setShowConfirmPassword(!showConfirmPassword)}
+                >
+                  <Icon name={showConfirmPassword ? 'eye-slash' : 'eye'} size={20} color="#666" />
+                </TouchableOpacity>
+              </View>
+            </View>
+
+            <TouchableOpacity
+              style={[styles.button, styles.changePasswordButton]}
+              onPress={handleChangePassword}
+              disabled={loading}
+            >
+              <Icon name="key" size={20} color="white" />
+              <Text style={styles.buttonText}>
+                {loading ? 'Modification...' : 'Changer le mot de passe'}
+              </Text>
+            </TouchableOpacity>
+          </View>
+
+          <View style={styles.card}>
+            <Text style={styles.cardTitle}>Actions</Text>
             <TouchableOpacity
               style={[styles.button, styles.logoutButton]}
               onPress={handleLogout}
@@ -155,9 +337,9 @@ export default function AdminProfile() {
               <Icon name="sign-out" size={20} color="white" />
               <Text style={styles.buttonText}>Se déconnecter</Text>
             </TouchableOpacity>
-          </>
-        )}
-      </View>
+          </View>
+        </View>
+      )}
     </ScrollView>
   );
 }
@@ -170,19 +352,62 @@ const styles = StyleSheet.create({
   header: {
     alignItems: 'center',
     padding: 20,
-    paddingTop:50,
+    paddingTop: 50,
     backgroundColor: 'white',
     borderBottomWidth: 1,
     borderBottomColor: '#e0e0e0',
   },
+  profileImageContainer: {
+    position: 'relative',
+    marginBottom: 20,
+  },
+  profileImage: {
+    width: 120,
+    height: 120,
+    borderRadius: 60,
+    borderWidth: 3,
+    borderColor: 'green',
+  },
+  editImageButton: {
+    position: 'absolute',
+    bottom: 0,
+    right: 0,
+    backgroundColor: 'green',
+    padding: 8,
+    borderRadius: 20,
+    borderWidth: 2,
+    borderColor: 'white',
+  },
   title: {
     fontSize: 24,
     fontWeight: 'bold',
-    marginTop: 40,
     color: '#333',
+    marginBottom: 5,
+  },
+  subtitle: {
+    fontSize: 16,
+    color: '#666',
   },
   content: {
+    flex: 1,
     padding: 20,
+  },
+  card: {
+    backgroundColor: 'white',
+    borderRadius: 15,
+    padding: 20,
+    marginBottom: 20,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  cardTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#333',
+    marginBottom: 15,
   },
   inputGroup: {
     marginBottom: 20,
@@ -193,7 +418,7 @@ const styles = StyleSheet.create({
     marginBottom: 5,
   },
   input: {
-    backgroundColor: 'white',
+    backgroundColor: '#f9f9f9',
     padding: 12,
     borderRadius: 8,
     borderWidth: 1,
@@ -203,7 +428,7 @@ const styles = StyleSheet.create({
   infoGroup: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: 'white',
+    backgroundColor: '#f9f9f9',
     padding: 15,
     borderRadius: 8,
     marginBottom: 10,
@@ -238,7 +463,6 @@ const styles = StyleSheet.create({
   },
   logoutButton: {
     backgroundColor: '#8B0000',
-    marginTop: 10,
   },
   buttonText: {
     color: 'white',
@@ -250,5 +474,31 @@ const styles = StyleSheet.create({
     color: '#666',
     textAlign: 'center',
     marginTop: 20,
+  },
+  passwordInputContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#f9f9f9',
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#ddd',
+  },
+  passwordInput: {
+    flex: 1,
+    borderWidth: 0,
+  },
+  eyeIcon: {
+    padding: 10,
+  },
+  changePasswordButton: {
+    backgroundColor: 'green',
+    marginTop: 10,
+  },
+  editScrollView: {
+    flex: 1,
+  },
+  editScrollViewContent: {
+    padding: 20,
+    paddingBottom: 40,
   },
 }); 

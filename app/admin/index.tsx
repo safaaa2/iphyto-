@@ -1,6 +1,6 @@
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, TextInput, FlatList, Switch, Modal, Button } from 'react-native';
+import React, { useState, useEffect } from 'react';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, TextInput, FlatList, Switch, Modal, Button, Alert } from 'react-native';
 import { useSession } from '../session/sessionContext';
-import { useState, useEffect } from 'react';
 import { supabase } from '../../lib/supabase';
 import Icon from 'react-native-vector-icons/FontAwesome';
 
@@ -33,19 +33,25 @@ export default function AdminPage() {
   }, [activeTab]);
 
   const fetchUsers = async () => {
-    const { data, error } = await supabase.from('profiles').select('id, full_name, username, email, role, is_active');
-    if (error) {
-      console.error('Error fetching users:', error.message);
-    } else {
-      setUsers(data as User[]);
-      setFilteredUsers(data as User[]);
+    try {
+      const { data, error } = await supabase.from('profiles').select('id, full_name, username, email, role, is_active');
+      if (error) {
+        console.error('Error fetching users:', error.message);
+        Alert.alert('Erreur', 'Impossible de charger les utilisateurs');
+      } else {
+        setUsers(data as User[]);
+        setFilteredUsers(data as User[]);
+      }
+    } catch (error) {
+      console.error('Error in fetchUsers:', error);
+      Alert.alert('Erreur', 'Une erreur est survenue lors du chargement des utilisateurs');
     }
   };
 
   const filterUsers = (query: string) => {
     setSearchQuery(query);
     const lowerQuery = query.toLowerCase();
-    const filtered = users.filter((user) =>
+    const filtered = users.filter((user: User) =>
       (user.full_name || '').toLowerCase().includes(lowerQuery) ||
       (user.email || '').toLowerCase().includes(lowerQuery)
     );
@@ -104,6 +110,26 @@ export default function AdminPage() {
     }
   };
 
+  const handleDeleteUser = async (userId: string) => {
+    try {
+      const { error } = await supabase
+        .from('profiles')
+        .delete()
+        .eq('id', userId);
+
+      if (error) {
+        console.error('Erreur lors de la suppression:', error.message);
+        Alert.alert('Erreur', 'Impossible de supprimer l\'utilisateur');
+      } else {
+        fetchUsers();
+        Alert.alert('Succès', 'Utilisateur supprimé avec succès');
+      }
+    } catch (error) {
+      console.error('Erreur lors de la suppression:', error);
+      Alert.alert('Erreur', 'Une erreur est survenue lors de la suppression');
+    }
+  };
+
   const renderUserItem = ({ item }: { item: User }) => (
     <View style={styles.userCard}>
       <View style={{ flex: 1 }}>
@@ -114,11 +140,6 @@ export default function AdminPage() {
         <Text style={styles.userRole}>Rôle : {item.role || 'Utilisateur'}</Text>
         <Text style={styles.userName}>Nom d'utilisateur : {item.username || 'Nom inconnu'}</Text>
       </View>
-
-      <Switch
-        value={item.is_active ?? true}
-        onValueChange={() => toggleUserActive(item.id, item.is_active ?? true)}
-      />
 
       <TouchableOpacity
         style={styles.blockButton}
@@ -144,7 +165,7 @@ export default function AdminPage() {
             <Text style={styles.sectionTitle}>Tableau de bord</Text>
             <View style={styles.statsContainer}>
               <View style={styles.statCard}>
-                <Text style={styles.statNumber}>150</Text>
+                <Text style={styles.statNumber}>10</Text>
                 <Text style={styles.statLabel}>Utilisateurs</Text>
               </View>
               <View style={styles.statCard}>
@@ -389,6 +410,15 @@ const styles = StyleSheet.create({
   },
   modifyButton: {
     backgroundColor: 'green',
+    paddingVertical: 6,
+    paddingHorizontal: 12,
+    borderRadius: 6,
+    marginLeft: 8,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  deleteButton: {
+    backgroundColor: '#FF0000',
     paddingVertical: 6,
     paddingHorizontal: 12,
     borderRadius: 6,
