@@ -9,51 +9,54 @@ import { supabase } from '../lib/supabase';
 const queryClient = new QueryClient();
 
 export default function RootLayout() {
-  const [isAdmin, setIsAdmin] = useState<boolean>(false);
   const router = useRouter();
-  const segments = useSegments();
+  const [isReady, setIsReady] = useState(false);
 
   useEffect(() => {
-    const checkAdminStatus = async () => {
+    const initializeApp = async () => {
       try {
         const { data: { session } } = await supabase.auth.getSession();
-        if (session) {
-          const isAdminUser = session.user.email === 'safaeny652@gmail.com';
-          setIsAdmin(isAdminUser);
-          
-          // Vérifier si l'utilisateur est sur la bonne route
-          const inAuthGroup = segments[0] === '(auth)';
-          const inAdminGroup = segments[0] === 'admin';
-          
-          if (isAdminUser && !inAdminGroup) {
-            router.push('/admin');
-          } else if (!isAdminUser && inAdminGroup) {
-            router.push('/(tabs)/home');
-          }
-        } else {
-          // Si pas de session, rediriger vers la page de connexion
-          const inAuthGroup = segments[0] === '(auth)';
-          if (!inAuthGroup) {
-            router.push('/');
-          }
+        if (!session) {
+          router.push('/');
         }
       } catch (error) {
-        console.error('Erreur lors de la vérification du statut admin:', error);
+        console.error('Erreur lors de l\'initialisation:', error);
+        router.push('/');
+      } finally {
+        setIsReady(true);
       }
     };
 
-    checkAdminStatus();
+    initializeApp();
 
-    // Écouter les changements de session
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
-      if (event === 'SIGNED_IN' && session) {
-        const isAdminUser = session.user.email === 'safaeny652@gmail.com';
-        setIsAdmin(isAdminUser);
-        if (isAdminUser) {
-          router.push('/admin');
-        } else {
-          router.push('/(tabs)/home');
-        }
+      if (event === 'SIGNED_IN') {
+        const checkRole = async () => {
+          try {
+            if (session) {
+              const { data: userData, error } = await supabase
+                .from('users')
+                .select('role')
+                .eq('email', session.user.email)
+                .single();
+
+              if (error) throw error;
+
+              if (userData.role === 'admin') {
+                router.push('/admin');
+              } else if (userData.role === 'fournisseur') {
+                router.push('/(supplier)/products');
+              } else {
+                router.push('/(tabs)/home');
+              }
+            }
+          } catch (error) {
+            console.error('Erreur lors de la vérification du rôle:', error);
+            router.push('/');
+          }
+        };
+
+        checkRole();
       } else if (event === 'SIGNED_OUT') {
         router.push('/');
       }
@@ -62,26 +65,40 @@ export default function RootLayout() {
     return () => {
       subscription.unsubscribe();
     };
-  }, [segments]);
+  }, []);
+
+  if (!isReady) {
+    return null;
+  }
 
   return (
     <QueryClientProvider client={queryClient}>
       <SessionProvider>
         <FavoritesProvider>
           <NavigationGuard />
-          <Stack screenOptions={{ headerShown: false }}>
+          <Stack 
+            screenOptions={{ 
+              headerShown: false,
+              animation: 'none',
+              presentation: 'transparentModal',
+              gestureEnabled: false
+            }}
+          >
+            <Stack.Screen 
+              name="index" 
+              options={{
+                headerShown: false,
+                animation: 'none',
+                presentation: 'transparentModal',
+                gestureEnabled: false,
+              }}
+            />
             <Stack.Screen 
               name="(tabs)" 
               options={{
                 headerShown: false,
-              }}
-            />
-            <Stack.Screen 
-              name="(auth)" 
-              options={{
-                headerShown: false,
-                animation: 'fade',
-                presentation: 'modal',
+                animation: 'none',
+                presentation: 'transparentModal',
                 gestureEnabled: false,
               }}
             />
@@ -89,6 +106,18 @@ export default function RootLayout() {
               name="admin" 
               options={{
                 headerShown: false,
+                animation: 'none',
+                presentation: 'transparentModal',
+                gestureEnabled: false,
+              }}
+            />
+            <Stack.Screen 
+              name="(supplier)" 
+              options={{
+                headerShown: false,
+                animation: 'none',
+                presentation: 'transparentModal',
+                gestureEnabled: false,
               }}
             />
           </Stack>

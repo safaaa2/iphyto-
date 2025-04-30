@@ -52,8 +52,8 @@ export default function Auth(): JSX.Element {
     try {
       await changeLanguage(language);
       setCurrentLanguage(language);
-      // Forcer le rechargement de l'application pour appliquer le changement de langue
-      router.replace('/');
+      // Suppression du rechargement de l'application
+      // router.replace('/');
     } catch (error) {
       console.error('Erreur lors du changement de langue:', error);
       Alert.alert(t('error'), t('languageChangeError'));
