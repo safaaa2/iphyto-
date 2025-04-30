@@ -236,6 +236,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     padding: 30,
     backgroundColor: '#fff',
+    paddingBottom: 20,
   },
   logo: {
     width: 190,
@@ -318,10 +319,11 @@ const styles = StyleSheet.create({
   },
   languageSelector: {
     width: '100%',
-    marginTop: 30,
-    paddingTop: 20,
+    marginTop: 20,
+    paddingTop: 15,
     borderTopWidth: 1,
     borderTopColor: '#e0e0e0',
+    marginBottom: 150,
   },
   languageLabel: {
     fontSize: 16,

@@ -26,15 +26,15 @@ export default function RootLayout() {
           const inAdminGroup = segments[0] === 'admin';
           
           if (isAdminUser && !inAdminGroup) {
-            router.replace('/admin');
+            router.push('/admin');
           } else if (!isAdminUser && inAdminGroup) {
-            router.replace('/');
+            router.push('/(tabs)/home');
           }
         } else {
           // Si pas de session, rediriger vers la page de connexion
           const inAuthGroup = segments[0] === '(auth)';
           if (!inAuthGroup) {
-            router.replace('/');
+            router.push('/');
           }
         }
       } catch (error) {
@@ -50,12 +50,12 @@ export default function RootLayout() {
         const isAdminUser = session.user.email === 'safaeny652@gmail.com';
         setIsAdmin(isAdminUser);
         if (isAdminUser) {
-          router.replace('/admin');
+          router.push('/admin');
         } else {
-          router.replace('/');
+          router.push('/(tabs)/home');
         }
       } else if (event === 'SIGNED_OUT') {
-        router.replace('/');
+        router.push('/');
       }
     });
 
@@ -70,9 +70,27 @@ export default function RootLayout() {
         <FavoritesProvider>
           <NavigationGuard />
           <Stack screenOptions={{ headerShown: false }}>
-            <Stack.Screen name="(tabs)" />
-            <Stack.Screen name="(auth)" />
-            <Stack.Screen name="admin" />
+            <Stack.Screen 
+              name="(tabs)" 
+              options={{
+                headerShown: false,
+              }}
+            />
+            <Stack.Screen 
+              name="(auth)" 
+              options={{
+                headerShown: false,
+                animation: 'fade',
+                presentation: 'modal',
+                gestureEnabled: false,
+              }}
+            />
+            <Stack.Screen 
+              name="admin" 
+              options={{
+                headerShown: false,
+              }}
+            />
           </Stack>
         </FavoritesProvider>
       </SessionProvider>

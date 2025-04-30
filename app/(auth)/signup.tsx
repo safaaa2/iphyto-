@@ -125,7 +125,8 @@ export default function SignUp() {
         try {
           await AsyncStorage.setItem('session', JSON.stringify(data.session));
           setLoading(false);
-          router.replace('/(tabs)/home');
+          // Utiliser router.push au lieu de replace pour une transition plus fluide
+          router.push('/(tabs)/home');
         } catch (storageError) {
           console.error('Erreur lors de la sauvegarde de la session:', storageError);
           setLoading(false);
@@ -133,7 +134,6 @@ export default function SignUp() {
         }
       } else {
         console.log('Pas de session, tentative de connexion...');
-        await new Promise(resolve => setTimeout(resolve, 2000));
         
         try {
           const { data: signInData, error: signInError } = await supabase.auth.signInWithPassword({
@@ -151,7 +151,8 @@ export default function SignUp() {
           if (signInData?.session) {
             await AsyncStorage.setItem('session', JSON.stringify(signInData.session));
             setLoading(false);
-            router.replace('/(tabs)/home');
+            // Utiliser router.push au lieu de replace pour une transition plus fluide
+            router.push('/(tabs)/home');
           }
         } catch (error) {
           console.error('Erreur lors de la tentative de connexion:', error);

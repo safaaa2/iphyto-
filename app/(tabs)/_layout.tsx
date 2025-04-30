@@ -41,7 +41,16 @@ const TabsLayout = () => {
         Iphyto
       </Text>
     ),
-    tabBarStyle: { position: 'absolute' as const, bottom: 0, left: 0, right: 0, height: 70 },
+    tabBarStyle: { 
+      position: 'absolute' as const, 
+      bottom: 0, 
+      left: 0, 
+      right: 0, 
+      height: 70,
+      opacity: 0,
+      elevation: 0,
+      backgroundColor: 'transparent'
+    },
     tabBarActiveTintColor: '#1DB954',
     tabBarInactiveTintColor: '#B0B0B0',
   };
