@@ -3,7 +3,7 @@ import { Stack, useRouter, useSegments } from 'expo-router';
 import { SessionProvider } from './session/sessionContext';
 import { FavoritesProvider } from '../lib/FavoritesContext';
 import { NavigationGuard } from './components/NavigationGuard';
-import { useEffect, useState } from 'react';
+import { useEffect, useLayoutEffect, useState } from 'react';
 import { supabase } from '../lib/supabase';
 
 const queryClient = new QueryClient();
@@ -12,7 +12,7 @@ export default function RootLayout() {
   const router = useRouter();
   const [isReady, setIsReady] = useState(false);
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     const initializeApp = async () => {
       try {
         const { data: { session } } = await supabase.auth.getSession();
