@@ -1,16 +1,18 @@
-import { Stack } from 'expo-router';
+import { Stack } from "expo-router";
 
 export default function SupplierLayout() {
   return (
-    <Stack screenOptions={{
-      headerShown: false,
-      animation: 'slide_from_right',
-    }}>
+    <Stack
+      screenOptions={{
+        headerShown: false,
+        animation: "slide_from_right",
+      }}
+    >
       <Stack.Screen
         name="auth"
         options={{
-          animation: 'fade',
-          presentation: 'transparentModal',
+          animation: "fade",
+          presentation: "transparentModal",
         }}
       />
       <Stack.Screen
@@ -22,4 +24,4 @@ export default function SupplierLayout() {
       />
     </Stack>
   );
-} 
+}
