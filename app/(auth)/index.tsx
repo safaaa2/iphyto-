@@ -24,6 +24,55 @@ WebBrowser.maybeCompleteAuthSession();
 type RootStackParamList = {
   Signup: { email: string };
 };
+const getUserRole = async (userId: string): Promise<string | null> => {
+  try {
+    // D'abord, obtenir l'email de l'utilisateur
+    const { data: userData, error: userError } = await supabase.auth.getUser();
+    
+    if (userError || !userData?.user?.email) {
+      console.error("Erreur lors de la récupération de l'email :", userError?.message);
+      return null;
+    }
+
+    const userEmail = userData.user.email;
+    console.log("Email de l'utilisateur:", userEmail);
+
+    // Essayer de trouver l'utilisateur dans la table profiles
+    const { data: profileData, error: profileError } = await supabase
+      .from("profiles")
+      .select("role")
+      .eq("email", userEmail)
+      .single();
+
+    if (!profileError && profileData) {
+      console.log("Rôle trouvé dans profiles:", profileData.role);
+      return profileData.role;
+    }
+
+    // Si pas trouvé dans profiles, essayer dans users
+    const { data: userRoleData, error: userRoleError } = await supabase
+      .from("users")
+      .select("role")
+      .eq("email", userEmail)
+      .single();
+
+    if (userRoleError) {
+      console.error("Erreur lors de la récupération du rôle :", userRoleError.message);
+      return null;
+    }
+
+    console.log("Rôle trouvé dans users:", userRoleData?.role);
+    return userRoleData?.role || null;
+
+  } catch (error) {
+    console.error("Erreur inattendue :", error);
+    return null;
+  }
+};
+
+
+
+
 
 export default function Auth(): JSX.Element {
   const { t } = useTranslation();
@@ -34,7 +83,7 @@ export default function Auth(): JSX.Element {
   const [currentLanguage, setCurrentLanguage] = useState("fr");
   const navigation = useNavigation();
 
-  const [request, response, promptAsync] = Google.useAuthRequest({
+  const [request, response] = Google.useAuthRequest({
     clientId:
       "681948067449-c0smtgqu5qjqdqjc5lqunci9454lr0kf.apps.googleusercontent.com",
     iosClientId:
@@ -44,8 +93,7 @@ export default function Auth(): JSX.Element {
 
   useEffect(() => {
     if (response?.type === "success") {
-      const { id_token } = response.params;
-      signInWithGoogle(id_token);
+     
     }
   }, [response]);
 
@@ -62,96 +110,57 @@ export default function Auth(): JSX.Element {
     try {
       await changeLanguage(language);
       setCurrentLanguage(language);
-      // Suppression du rechargement de l'application
-      // router.replace('/');
+
     } catch (error) {
       console.error("Erreur lors du changement de langue:", error);
       Alert.alert(t("error"), t("languageChangeError"));
     }
   };
 
-  async function signInWithGoogle(idToken: string) {
-    try {
-      setLoading(true);
-      const { data, error } = await supabase.auth.signInWithIdToken({
-        provider: "google",
-        token: idToken,
-      });
-
-      if (error) throw error;
-
-      if (data?.session) {
-        await AsyncStorage.setItem("session", JSON.stringify(data.session));
-      }
-    } catch (error: any) {
-      Alert.alert(
-        "Error",
-        error?.message || "An error occurred during Google sign in"
-      );
-    } finally {
-      setLoading(false);
-    }
-  }
-
   async function signInWithEmail(): Promise<void> {
     setLoading(true);
-    const { error } = await supabase.auth.signInWithPassword({
+    const { data, error } = await supabase.auth.signInWithPassword({
       email,
       password,
     });
-
+  
     if (error) {
-      Alert.alert("Error", error.message);
-    } else {
-      const {
-        data: { session },
-        error: sessionError,
-      } = await supabase.auth.getSession();
-      if (sessionError) {
-        Alert.alert("Error", sessionError.message);
-      } else {
-        await AsyncStorage.setItem("session", JSON.stringify(session));
-        router.replace("/(tabs)/home");
-      }
-    }
-    setLoading(false);
-  }
-
-  async function signUpWithEmail(): Promise<void> {
-    setLoading(true);
-    const {
-      data: { session },
-      error,
-    } = await supabase.auth.signUp({ email, password });
-
-    if (error) {
-      Alert.alert("Error", error.message);
-    } else {
-      await AsyncStorage.setItem("session", JSON.stringify(session));
-    }
-    setLoading(false);
-  }
-
-  async function resetPassword(): Promise<void> {
-    if (!email) {
-      Alert.alert("Error", "Please enter your email to reset your password.");
+      Alert.alert("Erreur", error.message);
+      setLoading(false);
       return;
     }
-
-    setLoading(true);
-    const { error } = await supabase.auth.resetPasswordForEmail(email);
-
-    if (error) {
-      Alert.alert("Error", error.message);
-    } else {
-      Alert.alert(
-        "Success",
-        "A password reset link has been sent to your email."
-      );
+  
+    const session = data.session;
+    if (!session) {
+      Alert.alert("Erreur", "Session non trouvée");
+      setLoading(false);
+      return;
     }
+  
+    await AsyncStorage.setItem("session", JSON.stringify(session));
+  
+    const userId = session.user.id;
+  
+    if (!userId) {
+      Alert.alert("Erreur", "ID de l'utilisateur non trouvé dans la session");
+      setLoading(false);
+      return;
+    }
+  
+    const role = await getUserRole(userId);
+    console.log("Rôle de l'utilisateur:", role); // Pour le débogage
+  
+    if (role === "admin") {
+      router.replace("/admin");
+    } else if (role === "fournisseur") {
+      router.replace("/(supplier)/products");
+    } else {
+      router.replace("/(tabs)/home");
+    }
+  
     setLoading(false);
   }
-
+  
   return (
     <ScrollView contentContainerStyle={styles.container}>
       <Image
