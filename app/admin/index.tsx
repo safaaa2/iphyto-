@@ -27,11 +27,15 @@ export default function AdminPage() {
   const [role, setRole] = useState('');
   const [userCount, setUserCount] = useState(0);
   const [plantCount, setPlantCount] = useState(0);
+  const [activeUserCount, setActiveUserCount] = useState(0);
+  const [supplierCount, setSupplierCount] = useState(0);
 
   useEffect(() => {
     if (activeTab === 'dashboard') {
       fetchUserCount();
       fetchPlantCount();
+      fetchActiveUserCount();
+      fetchSupplierCount();
     } else if (activeTab === 'users') {
       fetchUsers();
     }
@@ -66,6 +70,40 @@ export default function AdminPage() {
       }
     } catch (error) {
       console.error('Error in fetchPlantCount:', error);
+    }
+  };
+
+  const fetchActiveUserCount = async () => {
+    try {
+      const { count, error } = await supabase
+        .from('profiles')
+        .select('*', { count: 'exact', head: true })
+        .eq('is_active', true);
+
+      if (error) {
+        console.error('Error counting active users:', error.message);
+      } else {
+        setActiveUserCount(count || 0);
+      }
+    } catch (error) {
+      console.error('Error in fetchActiveUserCount:', error);
+    }
+  };
+
+  const fetchSupplierCount = async () => {
+    try {
+      const { count, error } = await supabase
+        .from('profiles')
+        .select('*', { count: 'exact', head: true })
+        .eq('role', 'fournisseur');
+
+      if (error) {
+        console.error('Error counting suppliers:', error.message);
+      } else {
+        setSupplierCount(count || 0);
+      }
+    } catch (error) {
+      console.error('Error in fetchSupplierCount:', error);
     }
   };
 
@@ -206,12 +244,26 @@ export default function AdminPage() {
             <Text style={styles.sectionTitle}>Tableau de bord</Text>
             <View style={styles.statsContainer}>
               <View style={styles.statCard}>
+                <Icon name="users" size={30} color="#2E7D32" style={styles.statIcon} />
                 <Text style={styles.statNumber}>{userCount}</Text>
                 <Text style={styles.statLabel}>Utilisateurs</Text>
               </View>
               <View style={styles.statCard}>
+                <Icon name="leaf" size={30} color="#2E7D32" style={styles.statIcon} />
                 <Text style={styles.statNumber}>{plantCount}</Text>
                 <Text style={styles.statLabel}>Cultures</Text>
+              </View>
+            </View>
+            <View style={styles.statsContainer}>
+              <View style={styles.statCard}>
+                <Icon name="user-circle" size={30} color="#2E7D32" style={styles.statIcon} />
+                <Text style={styles.statNumber}>{activeUserCount}</Text>
+                <Text style={styles.statLabel}>Utilisateurs Actifs</Text>
+              </View>
+              <View style={styles.statCard}>
+                <Icon name="truck" size={30} color="#2E7D32" style={styles.statIcon} />
+                <Text style={styles.statNumber}>{supplierCount}</Text>
+                <Text style={styles.statLabel}>Fournisseurs</Text>
               </View>
             </View>
           </View>
@@ -388,29 +440,36 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     marginBottom: 20,
+    paddingHorizontal: 5,
   },
   statCard: {
     flex: 1,
     backgroundColor: 'white',
     padding: 15,
-    borderRadius: 10,
-    marginHorizontal: 5,
+    borderRadius: 12,
+    marginHorizontal: 6,
     alignItems: 'center',
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
-    shadowRadius: 4,
+    shadowRadius: 3,
     elevation: 3,
+    borderWidth: 1,
+    borderColor: '#E0E0E0',
+  },
+  statIcon: {
+    marginBottom: 8,
   },
   statNumber: {
     fontSize: 24,
     fontWeight: 'bold',
-    color: 'green',
-    marginBottom: 5,
+    color: '#2E7D32',
+    marginBottom: 4,
   },
   statLabel: {
     fontSize: 14,
     color: '#666',
+    fontWeight: '500',
   },
   searchInput: {
     height: 40,

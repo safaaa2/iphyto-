@@ -44,28 +44,31 @@ export default function RootLayout() {
 
     const {
       data: { subscription },
-    } = supabase.auth.onAuthStateChange((event, session) => {
+    } = supabase.auth.onAuthStateChange(async (event, session) => {
       if (!isReady) return;
 
       if (event === "SIGNED_IN") {
-        const checkRole = async () => {
-          try {
-            if (session) {
-              if (session.user.user_metadata.role === "admin") {
-                router.replace("/admin");
-              } else if (session.user.user_metadata.role === "fournisseur") {
-                router.replace("/(supplier)/products");
-              } else {
-                router.replace("/(tabs)/home");
-              }
-            }
-          } catch (error) {
-            console.error("Erreur lors de la vérification du rôle:", error);
-            router.replace("/(auth)");
-          }
-        };
+        try {
+          if (session) {
+            // Vérifier le rôle dans la table profiles
+            const { data: profileData } = await supabase
+              .from('profiles')
+              .select('role')
+              .eq('id', session.user.id)
+              .single();
 
-        checkRole();
+            if (profileData?.role === "admin") {
+              router.replace("/admin");
+            } else if (profileData?.role === "fournisseur") {
+              router.replace("/(supplier)/products");
+            } else {
+              router.replace("/(tabs)/home");
+            }
+          }
+        } catch (error) {
+          console.error("Erreur lors de la vérification du rôle:", error);
+          router.replace("/(auth)");
+        }
       } else if (event === "SIGNED_OUT") {
         router.replace("/(auth)");
       }

@@ -15,9 +15,14 @@ const TabsLayout = () => {
       try {
         const { data: { session } } = await supabase.auth.getSession();
         if (session && mounted) {
-          const isAdminUser = session.user.email === 'safaeny652@gmail.com';
+          const { data: profileData } = await supabase
+            .from('profiles')
+            .select('role')
+            .eq('id', session.user.id)
+            .single();
+
           if (mounted) {
-            setIsAdmin(isAdminUser);
+            setIsAdmin(profileData?.role === 'admin');
           }
         }
       } catch (error) {

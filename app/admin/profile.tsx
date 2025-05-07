@@ -30,19 +30,78 @@ export default function AdminProfile() {
   const fetchProfile = async () => {
     try {
       setLoading(true);
-      const { data: user, error } = await supabase
-        .from('users')
-        .select('email')
+      console.log('Fetching profile for user ID:', session?.user?.id);
+
+      // D'abord, vérifions si l'utilisateur existe dans la table profiles
+      const { data: profile, error } = await supabase
+        .from('profiles')
+        .select('*')
         .eq('id', session?.user?.id)
-        .single();
+        .maybeSingle();
+
+      console.log('Profile data:', profile);
+      console.log('Profile error:', error);
 
       if (error) {
         console.error('Erreur détaillée:', error);
         throw error;
       }
 
-      if (user) {
-        setEmail(user.email || session?.user?.email || '');
+      if (!profile) {
+        // Si le profil n'existe pas, vérifions d'abord si l'email existe déjà
+        const { data: existingProfile } = await supabase
+          .from('profiles')
+          .select('*')
+          .eq('email', session?.user?.email)
+          .maybeSingle();
+
+        if (existingProfile) {
+          // Si un profil avec cet email existe déjà, mettons à jour son ID
+          const { error: updateError } = await supabase
+            .from('profiles')
+            .update({ id: session?.user?.id })
+            .eq('email', session?.user?.email);
+
+          if (updateError) {
+            console.error('Erreur lors de la mise à jour du profil:', updateError);
+            throw updateError;
+          }
+
+          setEmail(existingProfile.email || session?.user?.email || '');
+          setUsername(existingProfile.username || '');
+          setFullName(existingProfile.full_name || '');
+        } else {
+          // Si aucun profil n'existe avec cet email, créons-en un nouveau
+          const { data: newProfile, error: createError } = await supabase
+            .from('profiles')
+            .insert([
+              {
+                id: session?.user?.id,
+                email: session?.user?.email,
+                username: session?.user?.email?.split('@')[0] || '',
+                full_name: '',
+                role: 'admin',
+                updated_at: new Date().toISOString()
+              }
+            ])
+            .select()
+            .single();
+
+          if (createError) {
+            console.error('Erreur lors de la création du profil:', createError);
+            throw createError;
+          }
+
+          if (newProfile) {
+            setEmail(newProfile.email || session?.user?.email || '');
+            setUsername(newProfile.username || '');
+            setFullName(newProfile.full_name || '');
+          }
+        }
+      } else {
+        setEmail(profile.email || session?.user?.email || '');
+        setUsername(profile.username || '');
+        setFullName(profile.full_name || '');
       }
     } catch (error: any) {
       console.error('Erreur lors du chargement du profil:', error.message);
@@ -62,9 +121,11 @@ export default function AdminProfile() {
       }
 
       const { error } = await supabase
-        .from('users')
+        .from('profiles')
         .update({
           email: email,
+          username: username,
+          full_name: fullName,
           updated_at: new Date().toISOString(),
         })
         .eq('id', session.user.id);
