@@ -20,23 +20,46 @@ export default function RootLayout() {
           data: { session },
         } = await supabase.auth.getSession();
 
+        console.log('Session initiale:', session?.user?.id);
+
         // Don't navigate here, just set the ready state
         setIsReady(true);
 
         // Wait a short moment before allowing any navigation
-        setTimeout(() => {
+        setTimeout(async () => {
           if (!session) {
+            console.log('Pas de session, redirection vers auth');
             router.replace("/(auth)");
+          } else {
+            // Vérifier le rôle de l'utilisateur
+            const { data: profileData, error: profileError } = await supabase
+              .from('profiles')
+              .select('role')
+              .eq('id', session.user.id)
+              .single();
+
+            if (profileError) {
+              console.error('Erreur lors de la vérification du rôle:', profileError);
+              return;
+            }
+
+            console.log('Rôle trouvé:', profileData?.role);
+
+            if (profileData?.role === "admin") {
+              router.replace("/admin");
+            } else if (profileData?.role === "supplier") {
+              router.replace("/(supplier)/products");
+            } else if (profileData?.role === "farmer") {
+              router.replace("/(tabs)/home");
+            } else {
+              router.replace("/(tabs)/home");
+            }
           }
         }, 100);
       } catch (error) {
         console.error("Erreur lors de l'initialisation:", error);
         setIsReady(true);
-
-        // Wait a short moment before allowing any navigation
-        setTimeout(() => {
-          router.replace("/(auth)");
-        }, 100);
+        router.replace("/(auth)");
       }
     };
 
@@ -45,22 +68,33 @@ export default function RootLayout() {
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange(async (event, session) => {
+      console.log('Changement d\'état auth:', event, session?.user?.id);
+      
       if (!isReady) return;
 
       if (event === "SIGNED_IN") {
         try {
           if (session) {
             // Vérifier le rôle dans la table profiles
-            const { data: profileData } = await supabase
+            const { data: profileData, error: profileError } = await supabase
               .from('profiles')
               .select('role')
               .eq('id', session.user.id)
               .single();
 
+            if (profileError) {
+              console.error('Erreur lors de la vérification du rôle:', profileError);
+              return;
+            }
+
+            console.log('Rôle trouvé après connexion:', profileData?.role);
+
             if (profileData?.role === "admin") {
               router.replace("/admin");
-            } else if (profileData?.role === "fournisseur") {
+            } else if (profileData?.role === "supplier") {
               router.replace("/(supplier)/products");
+            } else if (profileData?.role === "farmer") {
+              router.replace("/(tabs)/home");
             } else {
               router.replace("/(tabs)/home");
             }
@@ -70,6 +104,7 @@ export default function RootLayout() {
           router.replace("/(auth)");
         }
       } else if (event === "SIGNED_OUT") {
+        console.log('Déconnexion détectée');
         router.replace("/(auth)");
       }
     });

@@ -26,18 +26,19 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
     const { data: authListener } = supabase.auth.onAuthStateChange(
       async (_event, sessionData) => {
         try {
+          console.log("Changement d'état d'authentification:", _event);
           if (sessionData) {
-            console.log("Session updated", sessionData);
+            console.log("Session mise à jour:", sessionData);
             await AsyncStorage.setItem('session', JSON.stringify(sessionData));
             setSession(sessionData);
           } else {
-            console.log("No session found, clearing AsyncStorage");
+            console.log("Pas de session, nettoyage d'AsyncStorage");
             await AsyncStorage.removeItem('session');
             setSession(null);
           }
           setLoading(false);
         } catch (error) {
-          console.error("Error handling auth state change:", error);
+          console.error("Erreur lors du changement d'état d'authentification:", error);
           setLoading(false);
         }
       }

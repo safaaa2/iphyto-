@@ -9,6 +9,7 @@ import {
   Modal,
   TextInput,
   ScrollView,
+  Platform,
 } from 'react-native';
 import { supabase } from '../../lib/supabase';
 import { useTranslation } from 'react-i18next';
@@ -41,6 +42,17 @@ export default function Products() {
     price: '',
     stock: '',
   });
+  const [newProduct, setNewProduct] = useState({
+    name: '',
+    detenteur: '',
+    numero_homologation: '',
+    valable_jusqu_au: '',
+    tableau_toxicologique: '',
+    formulation: '',
+    matiere_active: '',
+    teneur: '',
+    categorie: '',
+  });
   const router = useRouter();
 
   useEffect(() => {
@@ -51,9 +63,32 @@ export default function Products() {
     try {
       setLoading(true);
       console.log('Fetching products...');
+      
+      // Récupérer l'utilisateur connecté
+      const { data: { user } } = await supabase.auth.getUser();
+      
+      if (!user) {
+        throw new Error('Utilisateur non connecté');
+      }
+
+      // Récupérer les informations du fournisseur depuis la table profiles
+      const { data: profileData, error: profileError } = await supabase
+        .from('profiles')
+        .select('fournisseur')
+        .eq('id', user.id)
+        .single();
+
+      if (profileError) throw profileError;
+
+      if (!profileData.fournisseur) {
+        throw new Error('Utilisateur non autorisé');
+      }
+
+      // Récupérer les produits du fournisseur
       const { data, error } = await supabase
         .from('Produits')
-        .select('*');
+        .select('*')
+        .eq('Fournisseur', profileData.fournisseur);
 
       if (error) {
         console.error('Error fetching products:', error);
@@ -70,15 +105,90 @@ export default function Products() {
     }
   };
 
-  const handleAddProduct = () => {
-    setEditingProduct(null);
-    setFormData({
-      name: '',
-      description: '',
-      price: '',
-      stock: '',
-    });
-    setModalVisible(true);
+  const handleAddProduct = async () => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      
+      if (!user) {
+        Alert.alert('Erreur', 'Utilisateur non connecté');
+        return;
+      }
+
+      console.log('Utilisateur connecté:', user.id);
+
+      // Récupérer le nom du fournisseur depuis la table profiles
+      const { data: profileData, error: profileError } = await supabase
+        .from('profiles')
+        .select('fournisseur')
+        .eq('id', user.id)
+        .single();
+
+      if (profileError) {
+        console.error('Erreur lors de la récupération du profil:', profileError);
+        throw profileError;
+      }
+
+      if (!profileData || !profileData.fournisseur) {
+        console.error('Profil ou fournisseur non trouvé');
+        Alert.alert('Erreur', 'Profil fournisseur non trouvé');
+        return;
+      }
+
+      console.log('Données du profil:', profileData);
+
+      const productData = {
+        "Produits": newProduct.name,
+        "Détenteur": newProduct.detenteur,
+        "Numéro homologation": newProduct.numero_homologation,
+        "Valable jusqu'au": newProduct.valable_jusqu_au,
+        "Tableau toxicologique": newProduct.tableau_toxicologique,
+        "Formulation": newProduct.formulation,
+        "Matière active": newProduct.matiere_active,
+        "Teneur": newProduct.teneur,
+        "Categorie": newProduct.categorie,
+        "Fournisseur": profileData.fournisseur
+      };
+
+      console.log('Données du produit à insérer:', productData);
+
+      // Vérifier si tous les champs requis sont remplis
+      const requiredFields = ['Produits', 'Détenteur', 'Numéro homologation', 'Valable jusqu\'au'];
+      const missingFields = requiredFields.filter(field => !productData[field]);
+      
+      if (missingFields.length > 0) {
+        Alert.alert('Erreur', `Veuillez remplir tous les champs obligatoires: ${missingFields.join(', ')}`);
+        return;
+      }
+
+      const { data, error } = await supabase
+        .from('Produits')
+        .insert([productData])
+        .select();
+
+      if (error) {
+        console.error('Erreur détaillée lors de l\'insertion:', error);
+        throw error;
+      }
+
+      console.log('Produit ajouté avec succès:', data);
+
+      setNewProduct({
+        name: '',
+        detenteur: '',
+        numero_homologation: '',
+        valable_jusqu_au: '',
+        tableau_toxicologique: '',
+        formulation: '',
+        matiere_active: '',
+        teneur: '',
+        categorie: '',
+      });
+      setModalVisible(false);
+      fetchProducts();
+    } catch (error: any) {
+      console.error('Erreur lors de l\'ajout du produit:', error);
+      Alert.alert('Erreur', 'Impossible d\'ajouter le produit: ' + (error.message || 'Erreur inconnue'));
+    }
   };
 
   const handleEditProduct = (product: Product) => {
@@ -141,12 +251,43 @@ export default function Products() {
     <View style={styles.productCard}>
       <View style={styles.productInfo}>
         <Text style={styles.productName}>{item.Produits}</Text>
-        <Text style={styles.productDescription}>Catégorie: {item.Categorie}</Text>
-        <Text style={styles.productDescription}>Formulation: {item.Formulation}</Text>
-        <Text style={styles.productDescription}>Matière active: {item["Matière active"]}</Text>
+        <View style={styles.infoRow}>
+          <Ionicons name="pricetag-outline" size={16} color="#008000" style={styles.infoIcon} />
+          <Text style={styles.productDescription}>
+            Catégorie: <Text style={styles.boldText}>{item.Categorie}</Text>
+          </Text>
+        </View>
+        <View style={styles.infoRow}>
+          <Ionicons name="flask-outline" size={16} color="#008000" style={styles.infoIcon} />
+          <Text style={styles.productDescription}>
+            Formulation: <Text style={styles.boldText}>{item.Formulation}</Text>
+          </Text>
+        </View>
+        <View style={styles.infoRow}>
+          <Ionicons name="leaf-outline" size={16} color="#008000" style={styles.infoIcon} />
+          <Text style={styles.productDescription}>
+            Matière active: <Text style={styles.boldText}>{item["Matière active"]}</Text>
+          </Text>
+        </View>
+        <View style={styles.infoRow}>
+          <Ionicons name="business-outline" size={16} color="#008000" style={styles.infoIcon} />
+          <Text style={styles.productDescription}>
+            Fournisseur: <Text style={styles.boldText}>{item.Fournisseur}</Text>
+          </Text>
+        </View>
         <View style={styles.productDetails}>
-          <Text style={styles.productPrice}>Teneur: {item.Teneur}</Text>
-          <Text style={styles.productStock}>Valable jusqu'au: {item["Valable jusqu'au"]}</Text>
+          <View style={styles.infoRow}>
+            <Ionicons name="analytics-outline" size={16} color="#008000" style={styles.infoIcon} />
+            <Text style={styles.productPrice}>
+              Teneur: <Text style={styles.boldText}>{item.Teneur}</Text>
+            </Text>
+          </View>
+          <View style={styles.infoRow}>
+            <Ionicons name="calendar-outline" size={16} color="#008000" style={styles.infoIcon} />
+            <Text style={styles.productStock}>
+              Valable jusqu'au: <Text style={styles.boldText}>{item["Valable jusqu'au"]}</Text>
+            </Text>
+          </View>
         </View>
       </View>
       <View style={styles.productActions}>
@@ -167,22 +308,24 @@ export default function Products() {
   );
 
   return (
-    <View style={[styles.container, { paddingTop: 50 }]}>
+    <View style={[styles.container, { paddingBottom: Platform.OS === 'ios' ? 85 : 60 }]}>
       <View style={styles.header}>
         <Text style={styles.title}>{t('myProducts')}</Text>
         <View style={styles.headerButtons}>
           <TouchableOpacity
-            onPress={handleAddProduct}
+            key="add-product-button"
+            onPress={() => setModalVisible(true)}
             style={styles.addButton}
           >
             <Ionicons name="add-circle" size={24} color="#008000" />
             <Text style={styles.addButtonText}>{t('addProduct')}</Text>
           </TouchableOpacity>
           <TouchableOpacity
+            key="logout-button"
             onPress={async () => {
               try {
                 await supabase.auth.signOut();
-                router.replace('/(supplier)/auth');
+                router.replace('/');
               } catch (error) {
                 console.error('Error signing out:', error);
               }
@@ -203,7 +346,8 @@ export default function Products() {
         <View style={styles.centerContainer}>
           <Text style={styles.noProductsText}>Aucun produit trouvé</Text>
           <TouchableOpacity
-            onPress={handleAddProduct}
+            key="add-first-product"
+            onPress={() => setModalVisible(true)}
             style={styles.addFirstProductButton}
           >
             <Text style={styles.addFirstProductText}>Ajouter un produit</Text>
@@ -226,61 +370,96 @@ export default function Products() {
       >
         <View style={styles.modalContainer}>
           <View style={styles.modalContent}>
-            <Text style={styles.modalTitle}>
-              {editingProduct ? t('editProduct') : t('addProduct')}
-            </Text>
+            <Text style={styles.modalTitle}>Ajouter un produit</Text>
+            
+            <TextInput
+              key="name-input"
+              style={styles.input}
+              placeholder="Nom du produit"
+              value={newProduct.name}
+              onChangeText={(text) => setNewProduct({ ...newProduct, name: text })}
+            />
 
-            <ScrollView>
-              <TextInput
-                style={styles.input}
-                placeholder={t('productName')}
-                value={formData.name}
-                onChangeText={(text) => setFormData({ ...formData, name: text })}
-              />
+            <TextInput
+              key="detenteur-input"
+              style={styles.input}
+              placeholder="Détenteur"
+              value={newProduct.detenteur}
+              onChangeText={(text) => setNewProduct({ ...newProduct, detenteur: text })}
+            />
 
-              <TextInput
-                style={[styles.input, styles.textArea]}
-                placeholder={t('description')}
-                value={formData.description}
-                onChangeText={(text) => setFormData({ ...formData, description: text })}
-                multiline
-                numberOfLines={3}
-              />
+            <TextInput
+              key="numero-homologation-input"
+              style={styles.input}
+              placeholder="Numéro d'homologation"
+              value={newProduct.numero_homologation}
+              onChangeText={(text) => setNewProduct({ ...newProduct, numero_homologation: text })}
+            />
 
-              <TextInput
-                style={styles.input}
-                placeholder={t('price')}
-                value={formData.price}
-                onChangeText={(text) => setFormData({ ...formData, price: text })}
-                keyboardType="numeric"
-              />
+            <TextInput
+              key="valable-jusqu-au-input"
+              style={styles.input}
+              placeholder="Valable jusqu'au (YYYY-MM-DD)"
+              value={newProduct.valable_jusqu_au}
+              onChangeText={(text) => setNewProduct({ ...newProduct, valable_jusqu_au: text })}
+            />
 
-              <TextInput
-                style={styles.input}
-                placeholder={t('stock')}
-                value={formData.stock}
-                onChangeText={(text) => setFormData({ ...formData, stock: text })}
-                keyboardType="numeric"
-              />
+            <TextInput
+              key="tableau-toxicologique-input"
+              style={styles.input}
+              placeholder="Tableau toxicologique"
+              value={newProduct.tableau_toxicologique}
+              onChangeText={(text) => setNewProduct({ ...newProduct, tableau_toxicologique: text })}
+            />
 
-              <View style={styles.modalButtons}>
-                <TouchableOpacity
-                  onPress={() => setModalVisible(false)}
-                  style={[styles.modalButton, styles.cancelButton]}
-                >
-                  <Text style={styles.buttonText}>{t('cancel')}</Text>
-                </TouchableOpacity>
+            <TextInput
+              key="formulation-input"
+              style={styles.input}
+              placeholder="Formulation"
+              value={newProduct.formulation}
+              onChangeText={(text) => setNewProduct({ ...newProduct, formulation: text })}
+            />
 
-                <TouchableOpacity
-                  onPress={handleSaveProduct}
-                  style={[styles.modalButton, styles.saveButton]}
-                >
-                  <Text style={[styles.buttonText, styles.saveButtonText]}>
-                    {t('save')}
-                  </Text>
-                </TouchableOpacity>
-              </View>
-            </ScrollView>
+            <TextInput
+              key="matiere-active-input"
+              style={styles.input}
+              placeholder="Matière active"
+              value={newProduct.matiere_active}
+              onChangeText={(text) => setNewProduct({ ...newProduct, matiere_active: text })}
+            />
+
+            <TextInput
+              key="teneur-input"
+              style={styles.input}
+              placeholder="Teneur"
+              value={newProduct.teneur}
+              onChangeText={(text) => setNewProduct({ ...newProduct, teneur: text })}
+            />
+
+            <TextInput
+              key="categorie-input"
+              style={styles.input}
+              placeholder="Catégorie"
+              value={newProduct.categorie}
+              onChangeText={(text) => setNewProduct({ ...newProduct, categorie: text })}
+            />
+
+            <View style={styles.modalButtons}>
+              <TouchableOpacity
+                key="cancel-button"
+                style={[styles.modalButton, styles.cancelButton]}
+                onPress={() => setModalVisible(false)}
+              >
+                <Text style={styles.buttonText}>Annuler</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                key="save-button"
+                style={[styles.modalButton, styles.saveButton]}
+                onPress={handleAddProduct}
+              >
+                <Text style={styles.buttonText}>Enregistrer</Text>
+              </TouchableOpacity>
+            </View>
           </View>
         </View>
       </Modal>
@@ -335,7 +514,7 @@ const styles = StyleSheet.create({
     gap: 5,
   },
   logoutButtonText: {
-    color: '#FF0000',
+    color:'#8B0000' ,
     fontWeight: '600',
   },
   productList: {
@@ -357,6 +536,8 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.1,
     shadowRadius: 4,
     elevation: 3,
+    borderWidth: 1,
+    borderColor: '#e0e0e0',
   },
   productInfo: {
     flex: 1,
@@ -366,20 +547,34 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontWeight: 'bold',
     color: '#333',
+    marginBottom: 12,
+  },
+  infoRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
     marginBottom: 8,
+  },
+  infoIcon: {
+    marginRight: 8,
   },
   productDescription: {
     fontSize: 14,
-    color: '#666',
-    marginBottom: 4,
+    color: "black",
+    flex: 1,
+  },
+  boldText: {
+    fontWeight: 'bold',
+    color: '#333',
   },
   productDetails: {
-    marginTop: 8,
+    marginTop: 12,
+    borderTopWidth: 1,
+    borderTopColor: '#e0e0e0',
+    paddingTop: 12,
   },
   productPrice: {
     fontSize: 14,
     color: '#008000',
-    marginBottom: 4,
   },
   productStock: {
     fontSize: 14,
@@ -392,6 +587,8 @@ const styles = StyleSheet.create({
   actionButton: {
     padding: 8,
     marginLeft: 8,
+    backgroundColor: '#f5f5f5',
+    borderRadius: 8,
   },
   modalContainer: {
     flex: 1,
@@ -400,8 +597,8 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(0, 0, 0, 0.5)',
   },
   modalContent: {
-    backgroundColor: '#fff',
-    borderRadius: 12,
+    backgroundColor: 'white',
+    borderRadius: 10,
     padding: 20,
     width: '90%',
     maxHeight: '80%',
@@ -409,21 +606,15 @@ const styles = StyleSheet.create({
   modalTitle: {
     fontSize: 20,
     fontWeight: 'bold',
-    color: '#333',
     marginBottom: 20,
     textAlign: 'center',
   },
   input: {
     borderWidth: 1,
-    borderColor: '#e0e0e0',
-    borderRadius: 8,
-    padding: 12,
-    marginBottom: 16,
-    fontSize: 16,
-  },
-  textArea: {
-    height: 100,
-    textAlignVertical: 'top',
+    borderColor: '#ddd',
+    borderRadius: 5,
+    padding: 10,
+    marginBottom: 10,
   },
   modalButtons: {
     flexDirection: 'row',
@@ -432,24 +623,20 @@ const styles = StyleSheet.create({
   },
   modalButton: {
     flex: 1,
-    padding: 12,
-    borderRadius: 8,
-    marginHorizontal: 8,
+    padding: 10,
+    borderRadius: 5,
+    marginHorizontal: 5,
   },
   cancelButton: {
-    backgroundColor: '#f0f0f0',
+    backgroundColor:'#8B0000' ,
   },
   saveButton: {
     backgroundColor: '#008000',
   },
   buttonText: {
-    fontSize: 16,
-    fontWeight: '600',
+    color: 'white',
     textAlign: 'center',
-    color: '#333',
-  },
-  saveButtonText: {
-    color: '#fff',
+    fontWeight: 'bold',
   },
   centerContainer: {
     flex: 1,

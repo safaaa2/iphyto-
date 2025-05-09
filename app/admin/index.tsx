@@ -95,7 +95,7 @@ export default function AdminPage() {
       const { count, error } = await supabase
         .from('profiles')
         .select('*', { count: 'exact', head: true })
-        .eq('role', 'fournisseur');
+        .eq('role', 'supplier');
 
       if (error) {
         console.error('Error counting suppliers:', error.message);
@@ -263,7 +263,7 @@ export default function AdminPage() {
               <View style={styles.statCard}>
                 <Icon name="truck" size={30} color="#2E7D32" style={styles.statIcon} />
                 <Text style={styles.statNumber}>{supplierCount}</Text>
-                <Text style={styles.statLabel}>Fournisseurs</Text>
+                <Text style={styles.statLabel}>Fournisseur</Text>
               </View>
             </View>
           </View>

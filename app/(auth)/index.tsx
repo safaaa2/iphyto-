@@ -118,47 +118,75 @@ export default function Auth(): JSX.Element {
   };
 
   async function signInWithEmail(): Promise<void> {
-    setLoading(true);
-    const { data, error } = await supabase.auth.signInWithPassword({
-      email,
-      password,
-    });
-  
-    if (error) {
-      Alert.alert("Erreur", error.message);
+    try {
+      setLoading(true);
+      console.log('Tentative de connexion avec:', email);
+
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      });
+    
+      if (error) {
+        console.error('Erreur de connexion:', error);
+        Alert.alert('Erreur', error.message);
+        setLoading(false);
+        return;
+      }
+    
+      const session = data.session;
+      if (!session) {
+        console.error('Session non trouvée');
+        Alert.alert('Erreur', 'Session non trouvée');
+        setLoading(false);
+        return;
+      }
+    
+      console.log('Session créée avec succès');
+      await AsyncStorage.setItem("session", JSON.stringify(session));
+    
+      const userId = session.user.id;
+      console.log('ID utilisateur:', userId);
+    
+      if (!userId) {
+        console.error('ID utilisateur non trouvé');
+        Alert.alert('Erreur', 'ID de l\'utilisateur non trouvé dans la session');
+        setLoading(false);
+        return;
+      }
+    
+      // Récupérer le rôle depuis la table profiles
+      const { data: profileData, error: profileError } = await supabase
+        .from('profiles')
+        .select('role')
+        .eq('id', userId)
+        .single();
+
+      if (profileError) {
+        console.error('Erreur lors de la récupération du profil:', profileError);
+        Alert.alert('Erreur', 'Impossible de récupérer le profil');
+        setLoading(false);
+        return;
+      }
+
+      console.log('Rôle trouvé:', profileData?.role);
+    
+      if (profileData?.role === "admin") {
+        router.replace("/admin");
+      } else if (profileData?.role === "supplier") {
+        router.replace("/(supplier)/products");
+      } else if (profileData?.role === "farmer") {
+        router.replace("/(tabs)/home");
+      } else {
+        router.replace("/(tabs)/home");
+      }
+    
       setLoading(false);
-      return;
-    }
-  
-    const session = data.session;
-    if (!session) {
-      Alert.alert("Erreur", "Session non trouvée");
+    } catch (error: any) {
+      console.error('Erreur inattendue:', error);
+      Alert.alert('Erreur', 'Une erreur inattendue s\'est produite');
       setLoading(false);
-      return;
     }
-  
-    await AsyncStorage.setItem("session", JSON.stringify(session));
-  
-    const userId = session.user.id;
-  
-    if (!userId) {
-      Alert.alert("Erreur", "ID de l'utilisateur non trouvé dans la session");
-      setLoading(false);
-      return;
-    }
-  
-    const role = await getUserRole(userId);
-    console.log("Rôle de l'utilisateur:", role); // Pour le débogage
-  
-    if (role === "admin") {
-      router.replace("/admin");
-    } else if (role === "fournisseur") {
-      router.replace("/(supplier)/products");
-    } else {
-      router.replace("/(tabs)/home");
-    }
-  
-    setLoading(false);
   }
   
   return (

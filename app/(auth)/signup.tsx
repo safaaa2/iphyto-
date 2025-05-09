@@ -9,161 +9,167 @@ import {
   Text,
   KeyboardAvoidingView,
   Platform,
+  TextInput,
 } from 'react-native';
 import { Input, Button, Icon } from '@rneui/themed';
-import { router } from 'expo-router';
+import { router, useRouter } from 'expo-router';
 import { supabase } from '../../lib/supabase';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useTranslation } from 'react-i18next';
+import { Ionicons } from '@expo/vector-icons';
 
 export default function SignUp() {
   const { t } = useTranslation();
   const [username, setUsername] = useState('');
-  const [full_name, fullName] = useState('');
+  const [fullName, setFullName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [userType, setUserType] = useState<'supplier' | 'farmer'>('farmer');
+  const [companyName, setCompanyName] = useState('');
+  const router = useRouter();
 
   const handleSignUp = async () => {
-    if (!username || !email || !password || !confirmPassword) {
-      Alert.alert(t('error'), t('fillAllFields'));
-      return;
-    }
-
-    if (password !== confirmPassword) {
-      Alert.alert(t('error'), t('passwordsDontMatch'));
-      return;
-    }
-
-    const passwordRegex = /^(?=.*[a-zA-Z])(?=.*\d)(?=.*[!@#$%^&*(),.?":{}|<>]).{6,}$/;
-    if (!passwordRegex.test(password)) {
-      Alert.alert(
-        t('error'),
-        t('passwordRequirements')
-      );
-      return;
-    }
-
-    if (password.length < 6) {
-      Alert.alert(t('error'), t('passwordLength'));
-      return;
-    }
-
-    const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
-    if (!emailRegex.test(email)) {
-      Alert.alert(t('error'), t('invalidEmail'));
-      return;
-    }
-
-    setLoading(true);
-
     try {
-      console.log('Tentative d\'inscription avec:', { email, username, full_name });
-      
+      setLoading(true);
+      console.log('Début de l\'inscription avec le rôle:', userType);
+
+      // Vérifier si tous les champs requis sont remplis
+      if (!email || !password || !username || !fullName) {
+        Alert.alert('Erreur', 'Veuillez remplir tous les champs obligatoires');
+        setLoading(false);
+        return;
+      }
+
+      // Vérifier la longueur du nom d'utilisateur
+      if (username.length < 3 || username.length > 50) {
+        Alert.alert('Erreur', 'Le nom d\'utilisateur doit contenir entre 3 et 50 caractères');
+        setLoading(false);
+        return;
+      }
+
+      // Pour les fournisseurs, utiliser le nom de l'entreprise comme nom d'utilisateur
+      const finalUsername = userType === 'supplier' ? companyName : username;
+
+      // Vérifier si l'utilisateur existe déjà
+      const { data: existingUser } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      });
+
+      if (existingUser?.user) {
+        console.log('Utilisateur déjà existant');
+        Alert.alert('Erreur', 'Un compte existe déjà avec cet email');
+        setLoading(false);
+        return;
+      }
+
+      // Créer le compte
       const { data, error } = await supabase.auth.signUp({
         email,
         password,
-        options: {
-          data: {
-            username: username,
-            full_name: full_name,
-            role: 'user'
-          }
-        }
       });
 
       if (error) {
-        console.error('Erreur lors de l\'inscription:', error);
+        console.error('Erreur lors de la création du compte:', error);
+        Alert.alert('Erreur', error.message);
         setLoading(false);
-        Alert.alert(t('error'), error.message);
         return;
       }
 
-      if (!data?.user) {
+      if (!data.user) {
         console.error('Pas d\'utilisateur créé');
+        Alert.alert('Erreur', 'Erreur lors de la création du compte');
         setLoading(false);
-        Alert.alert(t('error'), t('signupFailed'));
         return;
       }
 
-      console.log('Utilisateur créé avec succès:', data.user.id);
-      console.log('Métadonnées de l\'utilisateur:', data.user.user_metadata);
+      console.log('Compte créé avec succès, ID:', data.user.id);
 
-      // Déterminer le rôle en fonction de l'email
-      const userRole = email === 'safaeny652@gmail.com' ? 'admin' : 'user';
-      console.log('Rôle attribué:', userRole);
-
-      // Créer le profil dans la table profiles
-      const { error: profileError } = await supabase
+      // Vérifier si un profil existe déjà
+      const { data: existingProfile, error: checkError } = await supabase
         .from('profiles')
-        .upsert([
-          {
-            id: data.user.id,
-            username: username,
-            full_name: full_name,
-            email: email,
-            role: userRole,
-            avatar_url: null,
-            updated_at: new Date().toISOString()
-          }
-        ], {
-          onConflict: 'id'
-        });
+        .select('*')
+        .eq('id', data.user.id)
+        .single();
+
+      if (checkError && checkError.code !== 'PGRST116') {
+        console.error('Erreur lors de la vérification du profil:', checkError);
+        Alert.alert('Erreur', 'Erreur lors de la vérification du profil');
+        setLoading(false);
+        return;
+      }
+
+      const profileData = {
+        id: data.user.id,
+        email: email,
+        username: finalUsername,
+        full_name: fullName,
+        role: userType,
+        fournisseur: userType === 'supplier' ? companyName : null,
+        updated_at: new Date().toISOString()
+      };
+
+      let profileError;
+      if (existingProfile) {
+        // Mettre à jour le profil existant
+        const { error: updateError } = await supabase
+          .from('profiles')
+          .update(profileData)
+          .eq('id', data.user.id);
+        profileError = updateError;
+      } else {
+        // Créer un nouveau profil
+        const { error: insertError } = await supabase
+          .from('profiles')
+          .insert([profileData]);
+        profileError = insertError;
+      }
 
       if (profileError) {
-        console.error('Erreur lors de la création du profil:', profileError);
+        console.error('Erreur lors de la création/mise à jour du profil:', profileError);
+        Alert.alert('Erreur', 'Erreur lors de la création du profil');
         setLoading(false);
-        Alert.alert(t('error'), 'Erreur lors de la création du profil');
         return;
       }
 
-      if (data?.session) {
-        console.log('Session créée avec succès');
-        try {
-          await AsyncStorage.setItem('session', JSON.stringify(data.session));
-          setLoading(false);
-          // Utiliser router.push au lieu de replace pour une transition plus fluide
-          router.push('/(tabs)/home');
-        } catch (storageError) {
-          console.error('Erreur lors de la sauvegarde de la session:', storageError);
-          setLoading(false);
-          Alert.alert(t('error'), 'Erreur lors de la sauvegarde de la session');
-        }
-      } else {
-        console.log('Pas de session, tentative de connexion...');
-        
-        try {
-          const { data: signInData, error: signInError } = await supabase.auth.signInWithPassword({
-            email,
-            password
-          });
-          
-          if (signInError) {
-            console.error('Erreur de connexion:', signInError);
-            setLoading(false);
-            Alert.alert(t('error'), t('accountCreatedButLoginError'));
-            return;
-          }
-          
-          if (signInData?.session) {
-            await AsyncStorage.setItem('session', JSON.stringify(signInData.session));
-            setLoading(false);
-            // Utiliser router.push au lieu de replace pour une transition plus fluide
-            router.push('/(tabs)/home');
-          }
-        } catch (error) {
-          console.error('Erreur lors de la tentative de connexion:', error);
-          setLoading(false);
-          Alert.alert(t('error'), t('accountCreatedButSessionError'));
-        }
+      console.log('Profil créé/mis à jour avec succès');
+
+      // Attendre un peu pour s'assurer que tout est synchronisé
+      await new Promise(resolve => setTimeout(resolve, 1000));
+
+      // Vérifier la session
+      const { data: { session } } = await supabase.auth.getSession();
+      
+      if (!session) {
+        console.error('Pas de session après l\'inscription');
+        Alert.alert('Erreur', 'Erreur lors de la connexion');
+        setLoading(false);
+        return;
       }
-    } catch (error) {
-      console.error('Erreur inattendue:', error);
+
+      console.log('Session créée avec succès');
+
+      // Rediriger selon le rôle
+      if (userType === 'supplier') {
+        console.log('Redirection vers l\'interface fournisseur');
+        router.replace('/(supplier)/products');
+      } else if (userType === 'farmer') {
+        console.log('Redirection vers l\'interface farmer');
+        router.replace('/(tabs)/home');
+      } else {
+        console.log('Redirection vers l\'interface utilisateur');
+        router.replace('/(tabs)/home');
+      }
+
       setLoading(false);
-      Alert.alert(t('error'), t('unexpectedError'));
+    } catch (error: any) {
+      console.error('Erreur inattendue:', error);
+      Alert.alert('Erreur', 'Une erreur inattendue s\'est produite');
+      setLoading(false);
     }
   };
 
@@ -200,8 +206,8 @@ export default function SignUp() {
           />
           <Input
             placeholder={t('fullName')}
-            value={full_name}
-            onChangeText={fullName}
+            value={fullName}
+            onChangeText={setFullName}
             autoCapitalize="none"
             leftIcon={{ type: 'material', name: 'person', color: '#008000' }}
             inputStyle={styles.input}
@@ -251,6 +257,64 @@ export default function SignUp() {
             containerStyle={styles.inputContainer}
             labelStyle={styles.label}
           />
+
+          <View style={styles.userTypeContainer}>
+            <Text style={styles.userTypeLabel}>{t('userType')}</Text>
+            <View style={styles.userTypeButtons}>
+              <TouchableOpacity
+                style={[
+                  styles.userTypeButton,
+                  userType === 'farmer' && styles.userTypeButtonActive
+                ]}
+                onPress={() => setUserType('farmer')}
+              >
+                <Ionicons 
+                  name="leaf-outline" 
+                  size={24} 
+                  color={userType === 'farmer' ? '#fff' : '#008000'} 
+                />
+                <Text style={[
+                  styles.userTypeButtonText,
+                  userType === 'farmer' && styles.userTypeButtonTextActive
+                ]}>
+                  {t('farmer')}
+                </Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={[
+                  styles.userTypeButton,
+                  userType === 'supplier' && styles.userTypeButtonActive
+                ]}
+                onPress={() => setUserType('supplier')}
+              >
+                <Ionicons 
+                  name="business-outline" 
+                  size={24} 
+                  color={userType === 'supplier' ? '#fff' : '#008000'} 
+                />
+                <Text style={[
+                  styles.userTypeButtonText,
+                  userType === 'supplier' && styles.userTypeButtonTextActive
+                ]}>
+                  {t('supplier')}
+                </Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+
+          {userType === 'supplier' && (
+            <Input
+              placeholder={t('companyName')}
+              value={companyName}
+              onChangeText={setCompanyName}
+              autoCapitalize="none"
+              leftIcon={{ type: 'material', name: 'business', color: '#008000' }}
+              inputStyle={styles.input}
+              containerStyle={styles.inputContainer}
+              labelStyle={styles.label}
+            />
+          )}
 
           <TouchableOpacity
             onPress={handleSignUp}
@@ -353,5 +417,48 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '600',
     textAlign: 'center',
+  },
+  userTypeContainer: {
+    marginBottom: 20,
+    width: '90%',
+  },
+  userTypeLabel: {
+    fontSize: 15,
+    color: '#333',
+    marginBottom: 10,
+    fontWeight: '500',
+  },
+  userTypeButtons: {
+    flexDirection: 'row',
+    gap: 12,
+    width: '100%',
+  },
+  userTypeButton: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: 12,
+    borderRadius: 10,
+    borderWidth: 1.5,
+    borderColor: '#008000',
+    gap: 8,
+    height: 50,
+    backgroundColor: '#fff',
+  },
+  userTypeButtonActive: {
+    backgroundColor: '#008000',
+    borderColor: '#008000',
+  },
+  userTypeButtonText: {
+    fontSize: 15,
+    color: '#008000',
+    fontWeight: '500',
+  },
+  userTypeButtonTextActive: {
+    color: '#fff',
+  },
+  inputIcon: {
+    padding: 12,
   },
 });
