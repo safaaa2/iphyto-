@@ -121,6 +121,8 @@ export default function FavoritesScreen() {
         </View>
       ) : (
         <FlatList
+          style={{ flex: 1 }}
+          contentContainerStyle={{ paddingBottom: 20 }}
           data={savedProducts}
           keyExtractor={(item, index) => `${item["Numéro homologation"]}-${index}`}
           renderItem={({ item }) => (

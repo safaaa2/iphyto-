@@ -7,7 +7,7 @@ import { useTranslation } from 'react-i18next';
 import { Ionicons } from '@expo/vector-icons';
 
 
-interface SavedProduct { 
+interface SavedProduct {
   user_id: string;
   "Numéro homologation": string;
   Produits: string;
@@ -95,6 +95,64 @@ export default function SearchScreen() {
   const [hasAppliedFilters, setHasAppliedFilters] = useState(false);
   const [savedProducts, setSavedProducts] = useState<Set<string>>(new Set());
   const { refreshFavorites, triggerRefresh } = useFavorites();
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalCount, setTotalCount] = useState(0);
+  const productsPerPage = 12;
+
+  // Charger les produits initialement
+  useEffect(() => {
+    loadProducts();
+  }, [currentPage]);
+
+  const loadProducts = async () => {
+    setLoading(true);
+    try {
+      // D'abord, obtenir le nombre total de produits
+      const { count, error: countError } = await supabase
+        .from('utilisation')
+        .select('*', { count: 'exact', head: true });
+
+      if (countError) {
+        console.error('Erreur lors du comptage des produits:', countError);
+        return;
+      }
+
+      setTotalCount(count || 0);
+
+      // Ensuite, récupérer les produits pour la page courante
+      const { data, error } = await supabase
+        .from('utilisation')
+        .select('*')
+        .order('Produits', { ascending: true })
+        .range((currentPage - 1) * productsPerPage, currentPage * productsPerPage - 1);
+
+      if (error) {
+        console.error('Erreur lors du chargement des produits:', error);
+        return;
+      }
+
+      if (data) {
+        const productDetails = await fetchProductDetails(data);
+        setFilteredProducts(productDetails);
+      }
+    } catch (error) {
+      console.error('Erreur:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleNextPage = () => {
+    if (currentPage * productsPerPage < totalCount) {
+      setCurrentPage(prev => prev + 1);
+    }
+  };
+
+  const handlePreviousPage = () => {
+    if (currentPage > 1) {
+      setCurrentPage(prev => prev - 1);
+    }
+  };
 
   useEffect(() => {
     const fetchSavedProducts = async () => {
@@ -369,6 +427,30 @@ export default function SearchScreen() {
         <Icon name="filter-variant" size={24} color="white" style={styles.icon} />
         <Text style={styles.buttonText}>{t('filterProducts')}</Text>
       </TouchableOpacity>
+
+      {/* Pagination buttons at the top - only show for initial loading */}
+      {!hasAppliedFilters && !showFilters && (
+        <View style={styles.paginationContainer}>
+          <TouchableOpacity
+            style={[styles.paginationButton, currentPage === 1 && styles.paginationButtonDisabled]}
+            onPress={handlePreviousPage}
+            disabled={currentPage === 1}
+          >
+            <Text style={styles.paginationButtonText}>{t('previous')}</Text>
+          </TouchableOpacity>
+          <Text style={styles.paginationText}>
+            {t('page')} {currentPage} {t('of')} {Math.ceil(totalCount / productsPerPage)}
+          </Text>
+          <TouchableOpacity
+            style={[styles.paginationButton, currentPage * productsPerPage >= totalCount && styles.paginationButtonDisabled]}
+            onPress={handleNextPage}
+            disabled={currentPage * productsPerPage >= totalCount}
+          >
+            <Text style={styles.paginationButtonText}>{t('next')}</Text>
+          </TouchableOpacity>
+        </View>
+      )}
+
       {showFilters && (
         <View style={styles.filtersContainer}>
           <View style={styles.searchContainer}>
@@ -412,76 +494,78 @@ export default function SearchScreen() {
         </View>
       )}
       {!loading && filteredProducts.length > 0 && (
-       <FlatList
-       data={filteredProducts}
-       renderItem={({ item }) => (
-         <View style={styles.cardContainer}>
-           <View style={styles.card}>
-             <View style={styles.cardHeader}>
-               <View style={styles.headerLeft}>
-                 <View style={styles.productTitleRow}>
-                   <Icon name="leaf" size={18} color="green" style={styles.titleIcon} />
-                   <Text style={styles.productName}>{item.Produits}</Text>
-                 </View>
-                 {item.Categorie && (
-                   <Text style={styles.productCategory}>{item.Categorie}</Text>
-                 )}
-               </View>
-     
-               <View style={styles.headerRight}>
-                 <View style={styles.priceRow}>
-                   <Ionicons name="pricetag" size={16} color="green" style={styles.icon} />
-                   <Text style={styles.detailText}>
-                     {t('price')}: <Text style={styles.boldText}>{item.prix ?? "150"} MAD</Text>
-                   </Text>
-                 </View>
-     
-                 <TouchableOpacity
-                   style={styles.saveIcon}
-                   onPress={() => handleSaveProduct(item)}
-                 >
-                   <Icon
-                     name={isProductSaved(item) ? "bookmark" : "bookmark-outline"}
-                     size={24}
-                     color={isProductSaved(item) ? "#008000" : "#666"}
-                   />
-                 </TouchableOpacity>
-               </View>
-             </View>
-     
-             {item.Formulation && (
-               <View style={styles.formulationRow}>
-                 <Icon name="flask" size={16} color="green" style={styles.icon} />
-                 <Text style={styles.formulationText}>{item.Formulation}</Text>
-               </View>
-             )}
-     
-             <View style={styles.cultureRow}>
-               <Icon name="tree" size={20} color="green" style={styles.icon} />
-               <View style={styles.cultureBadge}>
-                 <Text style={styles.cultureText}>{item.Cultures}</Text>
-               </View>
-             </View>
-     
-             <View style={styles.targetRow}>
-               <Icon name="bug" size={18} color="green" style={styles.icon} />
-               <View style={styles.targetBadge}>
-                 <Text style={styles.targetText}>
-                   {item.Cultures} / {item.Cible}
-                 </Text>
-               </View>
-             </View>
-     
-             {item["Valable jusqu'au"] && (
-               <View style={styles.dateRow}>
-                 <Icon name="calendar" size={16} color="green" style={styles.icon} />
-                 <Text style={{ fontSize: 14, color: 'black' }}>
-                   Valable jusqu'au : {new Date(item["Valable jusqu'au"]).toLocaleDateString('en-US', {
-                     year: 'numeric', month: 'short', day: 'numeric'
-                   })}
-                 </Text>
-               </View>
-             )}
+        <FlatList
+          style={styles.productList}
+          contentContainerStyle={styles.listContent}
+          data={filteredProducts}
+          renderItem={({ item }) => (
+            <View style={styles.cardContainer}>
+              <View style={styles.card}>
+                <View style={styles.cardHeader}>
+                  <View style={styles.headerLeft}>
+                    <View style={styles.productTitleRow}>
+                      <Icon name="leaf" size={18} color="green" style={styles.titleIcon} />
+                      <Text style={styles.productName}>{item.Produits}</Text>
+                    </View>
+                    {item.Categorie && (
+                      <Text style={styles.productCategory}>{item.Categorie}</Text>
+                    )}
+                  </View>
+
+                  <View style={styles.headerRight}>
+                    <View style={styles.priceRow}>
+                      <Ionicons name="pricetag" size={16} color="green" style={styles.icon} />
+                      <Text style={styles.detailText}>
+                        {t('price')}: <Text style={styles.boldText}>{item.prix ?? "150"} MAD</Text>
+                      </Text>
+                    </View>
+
+                    <TouchableOpacity
+                      style={styles.saveIcon}
+                      onPress={() => handleSaveProduct(item)}
+                    >
+                      <Icon
+                        name={isProductSaved(item) ? "heart" : "heart-outline"}
+                        size={24}
+                        color={isProductSaved(item) ? "#ff0000" : "#666"} // rouge si aimé
+                      />
+                    </TouchableOpacity>
+                  </View>
+                </View>
+
+                {item.Formulation && (
+                  <View style={styles.formulationRow}>
+                    <Icon name="flask" size={16} color="green" style={styles.icon} />
+                    <Text style={styles.formulationText}>{item.Formulation}</Text>
+                  </View>
+                )}
+
+                <View style={styles.cultureRow}>
+                  <Icon name="tree" size={20} color="green" style={styles.icon} />
+                  <View style={styles.cultureBadge}>
+                    <Text style={styles.cultureText}>{item.Cultures}</Text>
+                  </View>
+                </View>
+
+                <View style={styles.targetRow}>
+                  <Icon name="bug" size={18} color="green" style={styles.icon} />
+                  <View style={styles.targetBadge}>
+                    <Text style={styles.targetText}>
+                      {item.Cultures} / {item.Cible}
+                    </Text>
+                  </View>
+                </View>
+
+                {item["Valable jusqu'au"] && (
+                  <View style={styles.dateRow}>
+                    <Icon name="calendar" size={16} color="green" style={styles.icon} />
+                    <Text style={{ fontSize: 14, color: 'black' }}>
+                      Valable jusqu'au : {new Date(item["Valable jusqu'au"]).toLocaleDateString('en-US', {
+                        year: 'numeric', month: 'short', day: 'numeric'
+                      })}
+                    </Text>
+                  </View>
+                )}
 
                 <TouchableOpacity
                   style={styles.showDetailsButton}
@@ -607,6 +691,7 @@ const fetchProductDetails = async (items: any[]): Promise<utilisation[]> => {
 
 const styles = StyleSheet.create({
   container: {
+    flex: 1,
     padding: 20,
   },
   saveIcon: {
@@ -864,5 +949,58 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     color: 'green',
     marginLeft: 5,
+  },
+  paginationContainer: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingVertical: 15,
+    paddingHorizontal: 10,
+    backgroundColor: '#f5f5f5',
+    marginTop: 10,
+    marginBottom: 15,
+    borderRadius: 10,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 3,
+    elevation: 3,
+  },
+  paginationButton: {
+    backgroundColor: '#008000',
+    paddingVertical: 12,
+    paddingHorizontal: 20,
+    borderRadius: 8,
+    minWidth: 120,
+    alignItems: 'center',
+    marginHorizontal: 10,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 3,
+    elevation: 4,
+  },
+  paginationButtonDisabled: {
+    backgroundColor: '#cccccc',
+    shadowOpacity: 0,
+    elevation: 0,
+  },
+  paginationButtonText: {
+    color: 'white',
+    fontWeight: '600',
+    fontSize: 16,
+  },
+  paginationText: {
+    fontSize: 16,
+    color: '#333',
+    fontWeight: '500',
+    marginHorizontal: 15,
+  },
+  productList: {
+    flex: 1,
+    marginVertical: 10,
+  },
+  listContent: {
+    paddingBottom: 20,
   },
 });

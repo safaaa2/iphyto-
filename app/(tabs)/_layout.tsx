@@ -2,11 +2,13 @@ import { useEffect, useState } from 'react';
 import { Tabs } from 'expo-router';
 import { SessionProvider } from '../session/sessionContext';
 import { icons } from '@/assets/constants/icons';
-import { Image, Text } from 'react-native';
+import { Image, Text, TouchableOpacity } from 'react-native';
 import { supabase } from '../../lib/supabase';
+import { useRouter } from 'expo-router';
 
 const TabsLayout = () => {
   const [isAdmin, setIsAdmin] = useState<boolean>(false);
+  const router = useRouter();
 
   useEffect(() => {
     let mounted = true;
@@ -46,23 +48,42 @@ const TabsLayout = () => {
         Iphyto
       </Text>
     ),
+    headerRight: () => (
+      <TouchableOpacity
+        onPress={() => router.push('/(tabs)/cart')}
+        style={{ marginRight: 15 }}
+      >
+        <Image source={icons.panier} style={{ width: 24, height: 24 }} />
+      </TouchableOpacity>
+    ),
     tabBarStyle: { 
       position: 'absolute' as const, 
       bottom: 0, 
       left: 0, 
       right: 0, 
       height: 70,
-      backgroundColor: 'white',
-      borderTopWidth: 1,
-      borderTopColor: '#E5E5E5',
-      elevation: 5,
+      backgroundColor: '#FFFFFF',
+      borderTopWidth: 0,
+      borderTopLeftRadius: 30,
+      borderTopRightRadius: 30,
+      marginHorizontal: 10,
+      marginBottom: 10,
       shadowColor: '#000',
-      shadowOffset: { width: 0, height: -2 },
+      shadowOffset: {
+        width: 0,
+        height: -2,
+      },
       shadowOpacity: 0.1,
       shadowRadius: 3,
+      elevation: 5,
     },
-    tabBarActiveTintColor: '#1DB954',
-    tabBarInactiveTintColor: '#B0B0B0',
+    tabBarActiveTintColor: '#008000',
+    tabBarInactiveTintColor: '#666666',
+    tabBarLabelStyle: {
+      fontSize: 12,
+      fontWeight: '600' as const,
+      marginTop: 4,
+    },
   };
 
   const iconStyle = (focused: boolean) => ({
@@ -134,13 +155,25 @@ const TabsLayout = () => {
         <Tabs.Screen
           name="alert"
           options={{
-            title: 'Alert',
+            title: 'alert',
             headerShown: true,
             tabBarIcon: ({ focused }: { focused: boolean }) => (
               <Image source={icons.alert} style={iconStyle(focused)} />
             ),
           }}
+          /> 
+        <Tabs.Screen
+          name="cart"
+          options={{
+            title: 'paiement',
+            headerShown: true,
+            tabBarIcon: ({ focused }: { focused: boolean }) => (
+              <Image source={icons.cart} style={iconStyle(focused)} />
+            ),
+          }}
         />
+          
+      
         <Tabs.Screen
           name="profile"
           options={{

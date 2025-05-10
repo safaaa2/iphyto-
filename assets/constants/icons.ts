@@ -2,7 +2,10 @@ export const icons = {
   home: require('../icons/home.png'),
   search: require('../icons/search.png'),
   person: require('../icons/person.png'),
-  alert: require('../icons/bell-regular.png'),
   favoris: require('../icons/safa.png'),
-  espace:require('../icons/espace.png')
+  espace: require('../icons/espace.png'),
+  cart: require('../icons/cart.png'),
+  alert:require("../icons/alert.png"),
+  paiement: require("../icons/cart.png"),
+  panier:require("../icons/panier.png")
 };

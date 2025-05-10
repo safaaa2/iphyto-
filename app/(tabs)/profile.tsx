@@ -454,7 +454,7 @@ const Profile = () => {
             label={t('email')}
             value={session?.user?.email || ''} 
             disabled 
-            inputStyle={styles.inputText}
+            inputStyle={[styles.inputText, styles.emailInput]}
             leftIcon={<Ionicons name="mail-outline" size={20} color="green" />}
           />
 
@@ -569,7 +569,7 @@ const styles = StyleSheet.create({
   },
   scrollViewContent: {
     flexGrow: 1,
-    paddingBottom: 40,
+    paddingBottom: 100,
     paddingTop: 10,
   },
   container: {
@@ -577,7 +577,6 @@ const styles = StyleSheet.create({
     backgroundColor: '#f5f5f5',
     alignItems: 'center',
     padding: 15,
-    minHeight: '100%',
   },
   headerContainer: {
     width: '100%',
@@ -648,7 +647,11 @@ const styles = StyleSheet.create({
   },
   inputText: {
     fontSize: 14,
-    color: '#555',
+    color: 'black',
+  },
+  emailInput: {
+    color: 'black',
+    fontWeight: '700',
   },
   updateButton: {
     backgroundColor: '#008000',
@@ -664,7 +667,7 @@ const styles = StyleSheet.create({
     marginBottom: 20,
   },
   signOutButton: {
-    backgroundColor: '#dc3545',
+    backgroundColor: '#8b0000',
     borderRadius: 6,
     paddingVertical: 8,
     width: '100%',
