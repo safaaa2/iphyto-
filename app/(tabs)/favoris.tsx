@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, FlatList, TouchableOpacity, Alert } from 'react-native';
+import { View, Text, StyleSheet, FlatList, TouchableOpacity, Alert, ViewStyle, TextStyle } from 'react-native';
 import Icon from 'react-native-vector-icons/MaterialIcons';
 import { supabase } from '../../lib/supabase';
 import { useFavorites } from '../../lib/FavoritesContext';
@@ -120,136 +120,144 @@ export default function FavoritesScreen() {
           <Text style={styles.emptyText}>Aucun produit favori</Text>
         </View>
       ) : (
-        <FlatList
-          style={{ flex: 1 }}
-          contentContainerStyle={{ paddingBottom: 20 }}
-          data={savedProducts}
-          keyExtractor={(item, index) => `${item["Numéro homologation"]}-${index}`}
-          renderItem={({ item }) => (
-            <View style={styles.card}>
-              <View style={styles.cardHeader}>
-                <View style={styles.headerLeft}>
-                  <Text style={styles.productName}>
-                    <Icon name="local-offer" size={16} color="green" /> {item.Produits}
-                  </Text>
-                  <Text style={styles.productCategory}>
-                    <Icon name="category" size={16} color="green" /> {item.Categorie || 'Non spécifié'}
-                  </Text>
+        <>
+          <Text style={styles.favoritesTitle}>Mes favoris</Text>
+          <FlatList
+            style={{ flex: 1 }}
+            contentContainerStyle={{ paddingBottom: 20 }}
+            data={savedProducts}
+            keyExtractor={(item, index) => `${item["Numéro homologation"]}-${index}`}
+            renderItem={({ item }) => (
+              <View style={styles.card}>
+                <View style={styles.cardHeader}>
+                  <View style={styles.headerLeft}>
+                    <Text style={styles.productName}>
+                      <Icon name="local-offer" size={16} color="green" /> {item.Produits}
+                    </Text>
+                    <Text style={styles.productCategory}>
+                      <Icon name="category" size={16} color="green" /> {item.Categorie || 'Non spécifié'}
+                    </Text>
+                  </View>
+                  <View style={styles.headerRight}>
+                    <TouchableOpacity
+                      style={styles.removeButton}
+                      onPress={() => handleRemoveProduct(item)}
+                    >
+                      <Icon name="delete" size={24} color="black" />
+                    </TouchableOpacity>
+                  </View>
                 </View>
-                <View style={styles.headerRight}>
+
+                <View style={styles.detailsContainer}>
+                  <View style={styles.infoSection}>
+                    <Text style={styles.sectionTitle}>Informations principales</Text>
+                    <View style={styles.infoRow}>
+                      <Icon name="science" size={16} color="green" />
+                      <Text style={styles.infoText}>Matière active: {item['Matière active'] || 'Non spécifié'}</Text>
+                    </View>
+                    <View style={styles.infoRow}>
+                      <Icon name="agriculture" size={16} color="green" />
+                      <Text style={styles.infoText}>Cultures: {item.Cultures || 'Non spécifié'}</Text>
+                    </View>
+                    <View style={styles.infoRow}>
+                      <Icon name="bug-report" size={16} color="green" />
+                      <Text style={styles.infoText}>Cible: {item.Cible || 'Non spécifié'}</Text>
+                    </View>
+                  </View>
+
                   <TouchableOpacity
-                    style={styles.removeButton}
-                    onPress={() => handleRemoveProduct(item)}
+                    style={styles.moreDetailsButton}
+                    onPress={() => toggleProductDetails(item["Numéro homologation"])}
                   >
-                    <Icon name="delete" size={24} color="black" />
+                    <Text style={styles.moreDetailsText}>
+                      {expandedProducts.has(item["Numéro homologation"]) ? "Masquer les détails" : "Voir plus de détails"}
+                    </Text>
+                    <Icon 
+                      name={expandedProducts.has(item["Numéro homologation"]) ? "expand-less" : "expand-more"} 
+                      size={24} 
+                      color="#666" 
+                    />
                   </TouchableOpacity>
+
+                  {expandedProducts.has(item["Numéro homologation"]) && (
+                    <View>
+                      <View style={styles.infoSection}>
+                        <Text style={styles.sectionTitle}>Dosage et application</Text>
+                        <View style={styles.infoRow}>
+                          <Icon name="opacity" size={16} color="green" />
+                          <Text style={styles.infoText}>Dose: {item.Dose || 'Non spécifié'}</Text>
+                        </View>
+                        <View style={styles.infoRow}>
+                          <Icon name="hourglass-bottom" size={16} color="green" />
+                          <Text style={styles.infoText}>DAR: {item.DAR || 'Non spécifié'}</Text>
+                        </View>
+                        <View style={styles.infoRow}>
+                          <Icon name="repeat" size={16} color="green" />
+                          <Text style={styles.infoText}>Nombre d'applications: {item["Nbr_d'app"] || 'Non spécifié'}</Text>
+                        </View>
+                      </View>
+
+                      <View style={styles.infoSection}>
+                        <Text style={styles.sectionTitle}>Caractéristiques</Text>
+                        <View style={styles.infoRow}>
+                          <Icon name="science" size={16} color="green" />
+                          <Text style={styles.infoText}>Formulation: {item.Formulation || 'Non spécifié'}</Text>
+                        </View>
+                        <View style={styles.infoRow}>
+                          <Icon name="percent" size={16} color="green" />
+                          <Text style={styles.infoText}>Teneur: {item.Teneur || 'Non spécifié'}</Text>
+                        </View>
+                        <View style={styles.infoRow}>
+                          <Icon name="report-problem" size={16} color="red" />
+                          <Text style={styles.infoText}>Tableau toxicologique: {item["Tableau toxicologique"] || 'Non spécifié'}</Text>
+                        </View>
+                      </View>
+
+                      <View style={styles.infoSection}>
+                        <Text style={styles.sectionTitle}>Informations commerciales</Text>
+                        <View style={styles.infoRow}>
+                          <Icon name="local-shipping" size={16} color="green" />
+                          <Text style={styles.infoText}>Fournisseur: {item.Fournisseur || 'Non spécifié'}</Text>
+                        </View>
+                        <View style={styles.infoRow}>
+                          <Icon name="person" size={16} color="green" />
+                          <Text style={styles.infoText}>Détenteur: {item.Détenteur || 'Non spécifié'}</Text>
+                        </View>
+                        <View style={styles.infoRow}>
+                          <Icon name="confirmation-number" size={16} color="green" />
+                          <Text style={styles.infoText}>Numéro homologation: {item["Numéro homologation"]}</Text>
+                        </View>
+                        <View style={styles.infoRow}>
+                          <Icon name="event" size={16} color="black" />
+                          <Text style={styles.infoText}>
+                            Valable jusqu'au: {item["Valable jusqu'au"] 
+                              ? new Date(item["Valable jusqu'au"]).toLocaleDateString('fr-FR', {
+                                  year: 'numeric',
+                                  month: 'long',
+                                  day: 'numeric',
+                                })
+                              : 'Non spécifié'}
+                          </Text>
+                        </View>
+                      </View>
+                    </View>
+                  )}
                 </View>
               </View>
-
-              <View style={styles.detailsContainer}>
-                <View style={styles.infoSection}>
-                  <Text style={styles.sectionTitle}>Informations principales</Text>
-                  <View style={styles.infoRow}>
-                    <Icon name="science" size={16} color="green" />
-                    <Text style={styles.infoText}>Matière active: {item['Matière active'] || 'Non spécifié'}</Text>
-                  </View>
-                  <View style={styles.infoRow}>
-                    <Icon name="agriculture" size={16} color="green" />
-                    <Text style={styles.infoText}>Cultures: {item.Cultures || 'Non spécifié'}</Text>
-                  </View>
-                  <View style={styles.infoRow}>
-                    <Icon name="bug-report" size={16} color="green" />
-                    <Text style={styles.infoText}>Cible: {item.Cible || 'Non spécifié'}</Text>
-                  </View>
-                </View>
-
-                <TouchableOpacity
-                  style={styles.moreDetailsButton}
-                  onPress={() => toggleProductDetails(item["Numéro homologation"])}
-                >
-                  <Text style={styles.moreDetailsText}>
-                    {expandedProducts.has(item["Numéro homologation"]) ? "Masquer les détails" : "Voir plus de détails"}
-                  </Text>
-                  <Icon 
-                    name={expandedProducts.has(item["Numéro homologation"]) ? "expand-less" : "expand-more"} 
-                    size={24} 
-                    color="#666" 
-                  />
-                </TouchableOpacity>
-
-                {expandedProducts.has(item["Numéro homologation"]) && (
-                  <View>
-                    <View style={styles.infoSection}>
-                      <Text style={styles.sectionTitle}>Dosage et application</Text>
-                      <View style={styles.infoRow}>
-                        <Icon name="opacity" size={16} color="green" />
-                        <Text style={styles.infoText}>Dose: {item.Dose || 'Non spécifié'}</Text>
-                      </View>
-                      <View style={styles.infoRow}>
-                        <Icon name="hourglass-bottom" size={16} color="green" />
-                        <Text style={styles.infoText}>DAR: {item.DAR || 'Non spécifié'}</Text>
-                      </View>
-                      <View style={styles.infoRow}>
-                        <Icon name="repeat" size={16} color="green" />
-                        <Text style={styles.infoText}>Nombre d'applications: {item["Nbr_d'app"] || 'Non spécifié'}</Text>
-                      </View>
-                    </View>
-
-                    <View style={styles.infoSection}>
-                      <Text style={styles.sectionTitle}>Caractéristiques</Text>
-                      <View style={styles.infoRow}>
-                        <Icon name="science" size={16} color="green" />
-                        <Text style={styles.infoText}>Formulation: {item.Formulation || 'Non spécifié'}</Text>
-                      </View>
-                      <View style={styles.infoRow}>
-                        <Icon name="percent" size={16} color="green" />
-                        <Text style={styles.infoText}>Teneur: {item.Teneur || 'Non spécifié'}</Text>
-                      </View>
-                      <View style={styles.infoRow}>
-                        <Icon name="report-problem" size={16} color="red" />
-                        <Text style={styles.infoText}>Tableau toxicologique: {item["Tableau toxicologique"] || 'Non spécifié'}</Text>
-                      </View>
-                    </View>
-
-                    <View style={styles.infoSection}>
-                      <Text style={styles.sectionTitle}>Informations commerciales</Text>
-                      <View style={styles.infoRow}>
-                        <Icon name="local-shipping" size={16} color="green" />
-                        <Text style={styles.infoText}>Fournisseur: {item.Fournisseur || 'Non spécifié'}</Text>
-                      </View>
-                      <View style={styles.infoRow}>
-                        <Icon name="person" size={16} color="green" />
-                        <Text style={styles.infoText}>Détenteur: {item.Détenteur || 'Non spécifié'}</Text>
-                      </View>
-                      <View style={styles.infoRow}>
-                        <Icon name="confirmation-number" size={16} color="green" />
-                        <Text style={styles.infoText}>Numéro homologation: {item["Numéro homologation"]}</Text>
-                      </View>
-                      <View style={styles.infoRow}>
-                        <Icon name="event" size={16} color="black" />
-                        <Text style={styles.infoText}>
-                          Valable jusqu'au: {item["Valable jusqu'au"] 
-                            ? new Date(item["Valable jusqu'au"]).toLocaleDateString('fr-FR', {
-                                year: 'numeric',
-                                month: 'long',
-                                day: 'numeric',
-                              })
-                            : 'Non spécifié'}
-                        </Text>
-                      </View>
-                    </View>
-                  </View>
-                )}
-              </View>
-            </View>
-          )}
-        />
+            )}
+          />
+        </>
       )}
     </View>
   );
 }
 
-const styles = StyleSheet.create({
+const styles = StyleSheet.create<Styles>({
+  favoritesTitle: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    marginBottom: 10
+  },
   container: {
     flex: 1,
     padding: 10,

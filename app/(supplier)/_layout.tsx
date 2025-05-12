@@ -2,6 +2,8 @@ import { Tabs } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useTranslation } from 'react-i18next';
 import { Platform, View } from 'react-native';
+import React from 'react';
+
 
 export default function SupplierLayout() {
   const { t } = useTranslation();
@@ -31,6 +33,20 @@ export default function SupplierLayout() {
         }}
       >
         <Tabs.Screen
+            name="dashboard"
+            options={{
+              title: 'Tableau de bord',
+              headerShown: false,
+              tabBarIcon: ({ color, size }) => (
+                <Ionicons name='stats-chart' size={size} color={color} 
+                 />
+              ),
+            }}
+          />
+        
+       
+       
+        <Tabs.Screen
           name="products"
           options={{
             title: 'Produits',
@@ -48,6 +64,7 @@ export default function SupplierLayout() {
             ),
           }}
         />
+
       </Tabs>
     </View>
   );

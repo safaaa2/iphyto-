@@ -53,7 +53,7 @@ const TabsLayout = () => {
         onPress={() => router.push('/(tabs)/cart')}
         style={{ marginRight: 15 }}
       >
-        <Image source={icons.panier} style={{ width: 24, height: 24 }} />
+        <Image source={icons.panier} style={{ width: 24, height: 24 ,tintColor:'white'}} />
       </TouchableOpacity>
     ),
     tabBarStyle: { 

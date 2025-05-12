@@ -7,5 +7,6 @@ export const icons = {
   cart: require('../icons/cart.png'),
   alert:require("../icons/alert.png"),
   paiement: require("../icons/cart.png"),
-  panier:require("../icons/panier.png")
+  panier:require("../icons/panier.png"),
+  dashboard:require("../icons/dashboard.png")
 };
