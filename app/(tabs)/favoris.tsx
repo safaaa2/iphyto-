@@ -140,6 +140,12 @@ export default function FavoritesScreen() {
                   </View>
                   <View style={styles.headerRight}>
                     <TouchableOpacity
+                      style={styles.heartButton}
+                      onPress={() => {}}
+                    >
+                      <Icon name="favorite" size={24} color="#2E7D32" />
+                    </TouchableOpacity>
+                    <TouchableOpacity
                       style={styles.removeButton}
                       onPress={() => handleRemoveProduct(item)}
                     >
@@ -254,14 +260,17 @@ export default function FavoritesScreen() {
 
 const styles = StyleSheet.create<Styles>({
   favoritesTitle: {
-    fontSize: 20,
+    fontSize: 24,
     fontWeight: 'bold',
-    marginBottom: 10
+    marginBottom: 20,
+    color: '#2E7D32',
+    textAlign: 'center',
+    marginTop: 10
   },
   container: {
     flex: 1,
-    padding: 10,
-    backgroundColor: '#f5f5f5',
+    padding: 15,
+    backgroundColor: '#F5F5F5',
   },
   loadingContainer: {
     flex: 1,
@@ -272,29 +281,41 @@ const styles = StyleSheet.create<Styles>({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-  },
-  emptyText: {
-    marginTop: 10,
-    fontSize: 16,
-    color: '#666',
-  },
-  card: {
     backgroundColor: 'white',
-    borderRadius: 8,
-    marginBottom: 10,
+    borderRadius: 15,
+    margin: 20,
+    padding: 30,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
     shadowRadius: 4,
     elevation: 3,
   },
+  emptyText: {
+    marginTop: 15,
+    fontSize: 18,
+    color: '#666',
+    textAlign: 'center',
+  },
+  card: {
+    backgroundColor: 'white',
+    borderRadius: 15,
+    marginBottom: 15,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.15,
+    shadowRadius: 6,
+    elevation: 5,
+    overflow: 'hidden',
+  },
   cardHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    padding: 15,
+    padding: 20,
+    backgroundColor: '#F8F9FA',
     borderBottomWidth: 1,
-    borderBottomColor: '#eee',
+    borderBottomColor: '#E9ECEF',
   },
   headerLeft: {
     flex: 1,
@@ -302,61 +323,79 @@ const styles = StyleSheet.create<Styles>({
   headerRight: {
     flexDirection: 'row',
     alignItems: 'center',
+    gap: 10,
   },
   productName: {
-    fontSize: 18,
+    fontSize: 20,
     fontWeight: 'bold',
-    color: '#008000',
-    marginBottom: 5,
+    color: '#2E7D32',
+    marginBottom: 8,
   },
   productCategory: {
-    fontSize: 14,
+    fontSize: 15,
     color: '#666',
     fontStyle: 'italic',
   },
+  heartButton: {
+    padding: 8,
+    borderRadius: 20,
+    backgroundColor: '#E8F5E9',
+  },
   removeButton: {
-    marginRight: 10,
+    padding: 8,
+    borderRadius: 20,
+    backgroundColor: '#FFEBEE',
   },
   detailsContainer: {
-    padding: 15,
-    paddingTop: 0,
+    padding: 20,
   },
   infoSection: {
-    marginBottom: 15,
+    marginBottom: 20,
+    backgroundColor: 'white',
+    borderRadius: 10,
+    padding: 15,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.1,
+    shadowRadius: 2,
+    elevation: 2,
   },
   sectionTitle: {
-    fontSize: 16,
+    fontSize: 18,
     fontWeight: 'bold',
-    color: '#333',
-    marginBottom: 8,
-    paddingBottom: 5,
-    borderBottomWidth: 1,
-    borderBottomColor: '#eee',
+    color: '#2E7D32',
+    marginBottom: 12,
+    paddingBottom: 8,
+    borderBottomWidth: 2,
+    borderBottomColor: '#E8F5E9',
   },
   infoRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 5,
+    marginBottom: 10,
+    paddingVertical: 5,
   },
   infoText: {
-    fontSize: 14,
-    color: 'black',
-    marginLeft: 8,
+    fontSize: 15,
+    color: '#333',
+    marginLeft: 10,
     flex: 1,
   },
   moreDetailsButton: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    padding: 10,
-    backgroundColor: '#f5f5f5',
-    borderRadius: 5,
-    marginTop: 10,
-    marginBottom: 10,
+    padding: 12,
+    backgroundColor: '#E8F5E9',
+    borderRadius: 25,
+    marginTop: 15,
+    marginBottom: 15,
+    marginHorizontal: 20,
   },
   moreDetailsText: {
-    color: '#666',
-    marginRight: 5,
-    fontWeight: '500',
+    color: '#2E7D32',
+    marginRight: 8,
+    fontWeight: '600',
+    fontSize: 16,
   },
 });

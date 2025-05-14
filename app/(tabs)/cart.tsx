@@ -9,7 +9,8 @@ type CartItem = {
   product_id: string;
   user_id: string;
   quantity: number;
-  product: {
+  Produits: {
+    "Numéro homologation": string;
     Produits: string;
     Categorie: string;
     "Matière active"?: string;
@@ -40,7 +41,7 @@ export default function CartScreen() {
         .from('cart_items')
         .select(`
           *,
-          product:products(*)
+          Produits:Produits(*)
         `)
         .eq('user_id', session.user.id);
 
@@ -92,7 +93,7 @@ export default function CartScreen() {
 
   const calculateTotal = () => {
     return cartItems.reduce((total, item) => {
-      const price = item.product.prix || 0;
+      const price = item.Produits.prix || 0;
       return total + (price * item.quantity);
     }, 0);
   };
@@ -102,10 +103,10 @@ export default function CartScreen() {
       <View style={styles.cardHeader}>
         <View style={styles.headerLeft}>
           <Text style={styles.productName}>
-            <Icon name="local-offer" size={16} color="green" /> {item.product.Produits}
+            <Icon name="local-offer" size={16} color="green" /> {item.Produits.Produits}
           </Text>
           <Text style={styles.productCategory}>
-            <Icon name="category" size={16} color="green" /> {item.product.Categorie || 'Non spécifié'}
+            <Icon name="category" size={16} color="green" /> {item.Produits.Categorie || 'Non spécifié'}
           </Text>
         </View>
         <TouchableOpacity
@@ -120,15 +121,15 @@ export default function CartScreen() {
         <View style={styles.infoSection}>
           <View style={styles.infoRow}>
             <Icon name="science" size={16} color="green" />
-            <Text style={styles.infoText}>Matière active: {item.product['Matière active'] || 'Non spécifié'}</Text>
+            <Text style={styles.infoText}>Matière active: {item.Produits['Matière active'] || 'Non spécifié'}</Text>
           </View>
           <View style={styles.infoRow}>
             <Icon name="agriculture" size={16} color="green" />
-            <Text style={styles.infoText}>Cultures: {item.product.Cultures || 'Non spécifié'}</Text>
+            <Text style={styles.infoText}>Cultures: {item.Produits.Cultures || 'Non spécifié'}</Text>
           </View>
           <View style={styles.infoRow}>
             <Icon name="bug-report" size={16} color="green" />
-            <Text style={styles.infoText}>Cible: {item.product.Cible || 'Non spécifié'}</Text>
+            <Text style={styles.infoText}>Cible: {item.Produits.Cible || 'Non spécifié'}</Text>
           </View>
         </View>
 
@@ -150,7 +151,7 @@ export default function CartScreen() {
 
         <View style={styles.priceContainer}>
           <Text style={styles.priceText}>
-            Prix: {(item.product.prix || 0) * item.quantity} MAD
+            Prix: {(item.Produits.prix || 0) * item.quantity} MAD
           </Text>
         </View>
       </View>

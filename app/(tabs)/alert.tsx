@@ -27,6 +27,7 @@ const AlertScreen = () => {
   const [newProducts, setNewProducts] = useState<SupplierProduct[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  const [hasNewNotifications, setHasNewNotifications] = useState(false);
 
   useEffect(() => {
     fetchNewProducts();
@@ -63,6 +64,8 @@ const AlertScreen = () => {
       }
 
       setNewProducts(data || []);
+      // Mettre à jour l'état des notifications
+      setHasNewNotifications(data && data.length > 0);
     } catch (error) {
       console.error('Erreur:', error);
       Alert.alert('Erreur', 'Une erreur est survenue.');
@@ -143,9 +146,21 @@ const AlertScreen = () => {
   return (
     <View style={styles.container}>
       <View style={styles.headerContainer}>
-        <Text style={styles.title}>Nouveaux produits</Text>
+        <View style={styles.titleContainer}>
+          <View style={styles.iconContainer}>
+            <Icon name="notifications-active" size={28} color="#2E7D32" />
+            {hasNewNotifications && (
+              <View style={styles.notificationBadge}>
+                <Text style={styles.notificationBadgeText}>
+                  {newProducts.length}
+                </Text>
+              </View>
+            )}
+          </View>
+          <Text style={styles.title}>Nouveaux produits</Text>
+        </View>
         <TouchableOpacity onPress={onRefresh} style={styles.refreshButton}>
-          <Icon name="refresh" size={24} color="#008000" />
+          <Icon name="refresh" size={24} color="#2E7D32" />
         </TouchableOpacity>
       </View>
       {loading ? (
@@ -305,6 +320,32 @@ const styles = StyleSheet.create({
     fontSize: 12,
     marginLeft: 4,
     fontWeight: 'bold',
+  },
+  iconContainer: {
+    position: 'relative',
+    marginRight: 10,
+  },
+  notificationBadge: {
+    position: 'absolute',
+    top: -5,
+    right: -5,
+    backgroundColor: '#FF3B30',
+    borderRadius: 10,
+    minWidth: 20,
+    height: 20,
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 2,
+    borderColor: 'white',
+  },
+  notificationBadgeText: {
+    color: 'white',
+    fontSize: 12,
+    fontWeight: 'bold',
+  },
+  titleContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
   },
 });
 
