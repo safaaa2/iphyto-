@@ -8,5 +8,6 @@ export const icons = {
   alert:require("../icons/alert.png"),
   paiement: require("../icons/cart.png"),
   panier:require("../icons/panier.png"),
-  dashboard:require("../icons/dashboard.png")
+  dashboard:require("../icons/dashboard.png"),
+  scan:require("../icons/scan.png")
 };

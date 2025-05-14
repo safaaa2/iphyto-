@@ -32,6 +32,9 @@ type utilisation = {
   Dose?: string;
   DAR?: string;
   'Nbr_d\'app'?: string;
+  prix?: number;
+  unite?: string;
+  emballage?: string;
 };
 
 interface ProductData {
@@ -51,7 +54,8 @@ interface ProductData {
   "Tableau toxicologique"?: string | null;
   Teneur?: string | null;
   prix?: number;
-
+  unite?: string;
+  emballage?: string;
 }
 
 interface FilterState {
@@ -306,12 +310,21 @@ export default function SearchScreen() {
           const productDetails = await Promise.all(
             exactData.map(async (item) => {
               try {
+                // Fetch product details
                 const { data: productData, error: productError } = await supabase
                   .from('Produits')
                   .select('*')
                   .eq('Numéro homologation', item['Numéro homologation']);
 
+                // Fetch price information
+                const { data: prixData, error: prixError } = await supabase
+                  .from('produits_avec_prix')
+                  .select('*')
+                  .eq('Produits', item.Produits)
+                  .maybeSingle();
+
                 console.log('Détails du produit:', productData);
+                console.log('Prix du produit:', prixData);
 
                 if (productError) {
                   console.error('Erreur lors de la récupération des détails:', productError);
@@ -325,7 +338,10 @@ export default function SearchScreen() {
                   'Tableau toxicologique': productData?.[0]?.['Tableau toxicologique'] || 'Non spécifié',
                   Categorie: productData?.[0]?.Categorie || 'Non spécifié',
                   Formulation: productData?.[0]?.Formulation || 'Non spécifié',
-                  Teneur: productData?.[0]?.Teneur || 'Non spécifié'
+                  Teneur: productData?.[0]?.Teneur || 'Non spécifié',
+                  prix: prixData?.prix || Math.floor(Math.random() * (200 - 100 + 1)) + 100,
+                  unite: prixData?.unite || undefined,
+                  emballage: prixData?.emballage || undefined
                 };
               } catch (error) {
                 console.error('Erreur lors de la récupération des détails:', error);
@@ -362,12 +378,21 @@ export default function SearchScreen() {
       const productDetails = await Promise.all(
         data.map(async (item) => {
           try {
+            // Fetch product details
             const { data: productData, error: productError } = await supabase
               .from('Produits')
               .select('*')
               .eq('Numéro homologation', item['Numéro homologation']);
 
+            // Fetch price information
+            const { data: prixData, error: prixError } = await supabase
+              .from('produits_avec_prix')
+              .select('*')
+              .eq('Produits', item.Produits)
+              .maybeSingle();
+
             console.log('Détails du produit:', productData);
+            console.log('Prix du produit:', prixData);
 
             if (productError) {
               console.error('Erreur lors de la récupération des détails:', productError);
@@ -381,7 +406,10 @@ export default function SearchScreen() {
               'Tableau toxicologique': productData?.[0]?.['Tableau toxicologique'] || 'Non spécifié',
               Categorie: productData?.[0]?.Categorie || 'Non spécifié',
               Formulation: productData?.[0]?.Formulation || 'Non spécifié',
-              Teneur: productData?.[0]?.Teneur || 'Non spécifié'
+              Teneur: productData?.[0]?.Teneur || 'Non spécifié',
+              prix: prixData?.prix || Math.floor(Math.random() * (200 - 100 + 1)) + 100,
+              unite: prixData?.unite || undefined,
+              emballage: prixData?.emballage || undefined
             };
           } catch (error) {
             console.error('Erreur lors de la récupération des détails:', error);
@@ -594,6 +622,8 @@ export default function SearchScreen() {
                     {item["Nbr_d'app"] && <Text style={styles.detailText}>{t('applicationsNumber')}: <Text style={styles.boldText}>{item["Nbr_d'app"]}</Text></Text>}
                     {item["Numéro homologation"] && <Text style={styles.detailText}>{t('homologationNumber')}: <Text style={styles.boldText}>{item["Numéro homologation"]}</Text></Text>}
                     {item["Tableau toxicologique"] && <Text style={styles.detailText}>{t('toxicologicalTable')}: <Text style={styles.boldText}>{item["Tableau toxicologique"]}</Text></Text>}
+                    {item.unite && <Text style={styles.detailText}>{t('unit')}: <Text style={styles.boldText}>{item.unite}</Text></Text>}
+                    {item.emballage && <Text style={styles.detailText}>{t('packaging')}: <Text style={styles.boldText}>{item.emballage}</Text></Text>}
                   </View>
                 )}
               </View>
@@ -614,33 +644,25 @@ const fetchProductDetails = async (items: any[]): Promise<utilisation[]> => {
     const productsWithDetails = await Promise.all(
       items.map(async (item): Promise<utilisation> => {
         try {
+          // Recherche dans produits_avec_prix
+          const { data: prixData, error: prixError } = await supabase
+            .from('produits_avec_prix')
+            .select('*')
+            .eq('"Produits"', item.Produits)
+            .maybeSingle();
+
+          console.log('Recherche prix pour:', item.Produits);
+          console.log('Données prix trouvées:', prixData);
+
+          // Récupérer les autres détails du produit
           const { data: productData, error } = await supabase
             .from('Produits')
             .select('*')
             .eq('Numéro homologation', item['Numéro homologation'])
             .single();
 
-          if (error) {
-            console.error('Error fetching product details:', error);
-            return {
-              'Numéro homologation': item['Numéro homologation'],
-              Produits: item.Produits,
-              Cible: item.Cible,
-              Cultures: item.Cultures,
-              'Matière active': item['Matière active'],
-              'Valable jusqu\'au': item['Valable jusqu\'au'],
-              Dose: item.Dose,
-              DAR: item.DAR,
-              'Nbr_d\'app': item['Nbr_d\'app'],
-              Fournisseur: null,
-              Détenteur: null,
-              'Tableau toxicologique': null,
-              Categorie: null,
-              Formulation: null,
-              Teneur: null,
-              Prix: Math.floor(Math.random() * (200 - 100 + 1)) + 100
-            };
-          }
+          // Utiliser le prix de la base de données s'il existe
+          const finalPrice = prixData?.prix || Math.floor(Math.random() * (200 - 100 + 1)) + 100;
 
           return {
             'Numéro homologation': item['Numéro homologation'],
@@ -658,7 +680,9 @@ const fetchProductDetails = async (items: any[]): Promise<utilisation[]> => {
             Categorie: productData?.Categorie || null,
             Formulation: productData?.Formulation || null,
             Teneur: productData?.Teneur || null,
-            Prix: Math.floor(Math.random() * (200 - 100 + 1)) + 100,
+            prix: finalPrice,
+            unite: prixData?.unite || undefined,
+            emballage: prixData?.emballage || undefined
           };
         } catch (error) {
           console.error('Error in product details processing:', error);
@@ -677,7 +701,10 @@ const fetchProductDetails = async (items: any[]): Promise<utilisation[]> => {
             'Tableau toxicologique': null,
             Categorie: null,
             Formulation: null,
-            Teneur: null
+            Teneur: null,
+            prix: Math.floor(Math.random() * (200 - 100 + 1)) + 100,
+            unite: undefined,
+            emballage: undefined
           };
         }
       })

@@ -2,12 +2,13 @@ import { useEffect, useState } from 'react';
 import { Tabs } from 'expo-router';
 import { SessionProvider } from '../session/sessionContext';
 import { icons } from '@/assets/constants/icons';
-import { Image, Text, TouchableOpacity } from 'react-native';
+import { Image, Text, TouchableOpacity, View, StyleSheet } from 'react-native';
 import { supabase } from '../../lib/supabase';
 import { useRouter } from 'expo-router';
 
 const TabsLayout = () => {
   const [isAdmin, setIsAdmin] = useState<boolean>(false);
+  const [hasNewNotifications, setHasNewNotifications] = useState(false);
   const router = useRouter();
 
   useEffect(() => {
@@ -32,10 +33,38 @@ const TabsLayout = () => {
       }
     };
 
+    const checkNewNotifications = async () => {
+      try {
+        const { data: { session } } = await supabase.auth.getSession();
+        if (session) {
+          const sevenDaysAgo = new Date();
+          sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+
+          const { data, error } = await supabase
+            .from('Produits')
+            .select('*')
+            .gte('created_at', sevenDaysAgo.toISOString())
+            .order('created_at', { ascending: false })
+            .limit(3);
+
+          if (!error && mounted) {
+            setHasNewNotifications(data && data.length > 0);
+          }
+        }
+      } catch (error) {
+        console.error('Erreur lors de la vérification des notifications:', error);
+      }
+    };
+
     checkAdminStatus();
+    checkNewNotifications();
+
+    // Vérifier les nouvelles notifications toutes les 5 minutes
+    const interval = setInterval(checkNewNotifications, 300000);
 
     return () => {
       mounted = false;
+      clearInterval(interval);
     };
   }, []);
 
@@ -158,10 +187,27 @@ const TabsLayout = () => {
             title: 'alert',
             headerShown: true,
             tabBarIcon: ({ focused }: { focused: boolean }) => (
-              <Image source={icons.alert} style={iconStyle(focused)} />
+              <View style={{ position: 'relative' }}>
+                <Image source={icons.alert} style={iconStyle(focused)} />
+                {hasNewNotifications && (
+                  <View style={styles.notificationBadge}>
+                    <Text style={styles.notificationBadgeText}>!</Text>
+                  </View>
+                )}
+              </View>
             ),
           }}
-          /> 
+        />
+        <Tabs.Screen
+          name="scan"
+          options={{
+            title: 'scann',
+            headerShown: true,
+            tabBarIcon: ({ focused }: { focused: boolean }) => (
+              <Image source={icons.scan} style={iconStyle(focused)} />
+            ),
+          }}
+        />
         <Tabs.Screen
           name="cart"
           options={{
@@ -172,8 +218,6 @@ const TabsLayout = () => {
             ),
           }}
         />
-          
-      
         <Tabs.Screen
           name="profile"
           options={{
@@ -188,5 +232,26 @@ const TabsLayout = () => {
     </SessionProvider>
   );
 };
+
+const styles = StyleSheet.create({
+  notificationBadge: {
+    position: 'absolute',
+    top: -5,
+    right: -5,
+    backgroundColor: '#FF3B30',
+    borderRadius: 10,
+    width: 20,
+    height: 20,
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 2,
+    borderColor: 'white',
+  },
+  notificationBadgeText: {
+    color: 'white',
+    fontSize: 12,
+    fontWeight: 'bold',
+  },
+});
 
 export default TabsLayout;
