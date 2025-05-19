@@ -6,14 +6,21 @@ import {
   FlatList,
   TouchableOpacity,
   Alert,
+  ActivityIndicator,
 } from 'react-native';
 import { useCart } from '../../lib/CartContext';
 import { useTranslation } from 'react-i18next';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
+import { useRouter } from 'expo-router';
+import Constants from 'expo-constants';
+import { StripeProvider, useStripe } from '@stripe/stripe-react-native';
 
-export default function CartScreen() {
+function CartContent() {
   const { t } = useTranslation();
   const { cartItems, removeFromCart, updateQuantity, clearCart } = useCart();
+  const router = useRouter();
+  const [isLoading, setIsLoading] = React.useState(false);
+  const { initPaymentSheet, presentPaymentSheet } = useStripe();
 
   const total = cartItems.reduce((sum, item) => sum + item.price * item.quantity, 0);
 
@@ -51,6 +58,80 @@ export default function CartScreen() {
         },
       ]
     );
+  };
+
+  const handleCheckout = async () => {
+    try {
+      setIsLoading(true);
+
+      if (cartItems.length === 0) {
+        Alert.alert(t('error'), t('cartEmpty'));
+        return;
+      }
+
+      // Get the payment intent from your backend
+      const response = await fetch(`${Constants.expoConfig?.extra?.supabaseUrl}/functions/v1/stripe`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${Constants.expoConfig?.extra?.supabaseAnonKey}`,
+        },
+        body: JSON.stringify({ 
+          amount: total,
+          currency: 'mad'
+        }),
+      });
+
+      const { clientSecret, publishableKey } = await response.json();
+
+      if (!clientSecret) {
+        throw new Error('No client secret received');
+      }
+
+      // Initialize the Payment sheet
+      const { error: initError } = await initPaymentSheet({
+        merchantDisplayName: "iPhyto",
+        paymentIntentClientSecret: clientSecret,
+        defaultBillingDetails: {
+          name: 'Client',
+        }
+      });
+
+      if (initError) {
+        throw new Error(initError.message);
+      }
+
+      // Present the Payment Sheet
+      const { error: presentError } = await presentPaymentSheet();
+
+      if (presentError) {
+        throw new Error(presentError.message);
+      }
+
+      // Payment successful
+      Alert.alert(
+        t('success'),
+        t('paymentSuccess'),
+        [
+          {
+            text: t('ok'),
+            onPress: () => {
+              clearCart();
+              router.push('/');
+            }
+          }
+        ]
+      );
+
+    } catch (error: any) {
+      console.error('Payment error:', error);
+      Alert.alert(
+        t('error'),
+        error.message || t('paymentError')
+      );
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const renderItem = ({ item }: { item: any }) => (
@@ -118,15 +199,25 @@ export default function CartScreen() {
             </View>
             <View style={styles.buttonContainer}>
               <TouchableOpacity
+                style={[styles.checkoutButton, isLoading && styles.disabledButton]}
+                onPress={handleCheckout}
+                disabled={isLoading}
+              >
+                {isLoading ? (
+                  <ActivityIndicator color="white" />
+                ) : (
+                  <>
+                    <Icon name="cart-check" size={20} color="white" />
+                    <Text style={styles.buttonText}>{t('checkout')}</Text>
+                  </>
+                )}
+              </TouchableOpacity>
+              <TouchableOpacity
                 style={styles.clearButton}
                 onPress={handleClearCart}
               >
                 <Icon name="delete-sweep" size={20} color="white" />
                 <Text style={styles.buttonText}>{t('clearCart')}</Text>
-              </TouchableOpacity>
-              <TouchableOpacity style={styles.checkoutButton}>
-                <Icon name="cart-check" size={20} color="white" />
-                <Text style={styles.buttonText}>{t('checkout')}</Text>
               </TouchableOpacity>
             </View>
           </View>
@@ -138,6 +229,16 @@ export default function CartScreen() {
         </View>
       )}
     </View>
+  );
+}
+
+export default function CartScreen() {
+  const publishableKey = Constants.expoConfig?.extra?.stripePublishableKey;
+
+  return (
+    <StripeProvider publishableKey={publishableKey}>
+      <CartContent />
+    </StripeProvider>
   );
 }
 
@@ -232,12 +333,10 @@ const styles = StyleSheet.create({
     color: '#008000',
   },
   buttonContainer: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
+    flexDirection: 'column',
     gap: 12,
   },
   clearButton: {
-    flex: 1,
     backgroundColor: '#dc3545',
     padding: 12,
     borderRadius: 8,
@@ -246,7 +345,6 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   checkoutButton: {
-    flex: 1,
     backgroundColor: '#008000',
     padding: 12,
     borderRadius: 8,
@@ -270,5 +368,8 @@ const styles = StyleSheet.create({
     color: '#666',
     marginTop: 16,
     textAlign: 'center',
+  },
+  disabledButton: {
+    opacity: 0.7,
   },
 }); 
