@@ -60,9 +60,17 @@ export default function CartScreen() {
         <Text style={styles.itemDetails}>
           {item.culture} / {item.target}
         </Text>
-        {item.formulation && (
-          <Text style={styles.itemDetails}>{item.formulation}</Text>
+      
+        {item["Valable jusqu'au"] && (
+          <Text style={styles.itemDate}>
+            <Icon name="calendar" size={14} color="#666" /> Valable jusqu'au: {new Date(item["Valable jusqu'au"]).toLocaleDateString('en-US', {
+              year: 'numeric',
+              month: 'long',
+              day: 'numeric'
+            })}
+          </Text>
         )}
+       
         <Text style={styles.itemPrice}>
           {item.price} MAD {item.unite && `/ ${item.unite}`}
         </Text>
@@ -160,13 +168,20 @@ const styles = StyleSheet.create({
   itemName: {
     fontSize: 16,
     fontWeight: 'bold',
-    color: '#333',
+    color: 'green',
     marginBottom: 4,
   },
   itemDetails: {
     fontSize: 14,
-    color: '#666',
+    color: 'black',
+    fontWeight:'bold',
     marginBottom: 2,
+  },
+  itemDate: {
+    fontSize: 12,
+    color: '#666',
+    marginTop: 4,
+    fontStyle: 'italic',
   },
   itemPrice: {
     fontSize: 15,

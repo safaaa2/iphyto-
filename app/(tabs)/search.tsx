@@ -514,7 +514,8 @@ export default function SearchScreen() {
           target: product.Cible,
           formulation: product.Formulation || "",
           unite: product.unite || "",
-          emballage: product.emballage || ""
+          emballage: product.emballage || "",
+          "Valable jusqu'au": product["Valable jusqu'au"] || ""
         });
         Alert.alert(t("success"), t("productAddedToCart"));
       }

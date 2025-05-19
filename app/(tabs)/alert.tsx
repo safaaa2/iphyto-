@@ -53,7 +53,7 @@ const AlertScreen = () => {
         .select('*')
         .gte('created_at', sevenDaysAgo.toISOString())
         .order('created_at', { ascending: false })
-        .limit(3);
+        .limit(1);
 
       console.log('Produits récupérés:', data);
 
