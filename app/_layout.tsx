@@ -5,6 +5,9 @@ import { FavoritesProvider } from "../lib/FavoritesContext";
 import { supabase } from "../lib/supabase";
 import { NavigationGuard } from "./components/NavigationGuard";
 import { SessionProvider } from "./session/sessionContext";
+import { CartProvider } from '../lib/CartContext';
+import { I18nextProvider } from 'react-i18next';
+import i18n from '../lib/i18n';
 
 const queryClient = new QueryClient();
 
@@ -119,47 +122,49 @@ export default function RootLayout() {
     <QueryClientProvider client={queryClient}>
       <SessionProvider>
         <FavoritesProvider>
-          {isReady && <NavigationGuard />}
-          <Stack
-            screenOptions={{
-              headerShown: false,
-              animation: "none",
-              gestureEnabled: false,
-            }}
-          >
-            <Stack.Screen
-              name="(auth)"
-              options={{
+          <CartProvider>
+            {isReady && <NavigationGuard />}
+            <Stack
+              screenOptions={{
                 headerShown: false,
                 animation: "none",
                 gestureEnabled: false,
               }}
-            />
-            <Stack.Screen
-              name="(tabs)"
-              options={{
-                headerShown: false,
-                animation: "none",
-                gestureEnabled: false,
-              }}
-            />
-            <Stack.Screen
-              name="(supplier)"
-              options={{
-                headerShown: false,
-                animation: "none",
-                gestureEnabled: false,
-              }}
-            />
-            <Stack.Screen
-              name="admin"
-              options={{
-                headerShown: false,
-                animation: "none",
-                gestureEnabled: false,
-              }}
-            />
-          </Stack>
+            >
+              <Stack.Screen
+                name="(auth)"
+                options={{
+                  headerShown: false,
+                  animation: "none",
+                  gestureEnabled: false,
+                }}
+              />
+              <Stack.Screen
+                name="(tabs)"
+                options={{
+                  headerShown: false,
+                  animation: "none",
+                  gestureEnabled: false,
+                }}
+              />
+              <Stack.Screen
+                name="(supplier)"
+                options={{
+                  headerShown: false,
+                  animation: "none",
+                  gestureEnabled: false,
+                }}
+              />
+              <Stack.Screen
+                name="admin"
+                options={{
+                  headerShown: false,
+                  animation: "none",
+                  gestureEnabled: false,
+                }}
+              />
+            </Stack>
+          </CartProvider>
         </FavoritesProvider>
       </SessionProvider>
     </QueryClientProvider>

@@ -1,198 +1,133 @@
-import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, FlatList, TouchableOpacity, Alert } from 'react-native';
-import Icon from 'react-native-vector-icons/MaterialIcons';
-import { supabase } from '../../lib/supabase';
-import { useRouter } from 'expo-router';
-
-type CartItem = {
-  id: string;
-  product_id: string;
-  user_id: string;
-  quantity: number;
-  Produits: {
-    "Numéro homologation": string;
-    Produits: string;
-    Categorie: string;
-    "Matière active"?: string;
-    Cultures: string;
-    Cible: string;
-    prix?: number;
-  };
-};
+import React from 'react';
+import {
+  View,
+  Text,
+  StyleSheet,
+  FlatList,
+  TouchableOpacity,
+  Alert,
+} from 'react-native';
+import { useCart } from '../../lib/CartContext';
+import { useTranslation } from 'react-i18next';
+import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 
 export default function CartScreen() {
-  const [cartItems, setCartItems] = useState<CartItem[]>([]);
-  const [loading, setLoading] = useState(true);
-  const router = useRouter();
+  const { t } = useTranslation();
+  const { cartItems, removeFromCart, updateQuantity, clearCart } = useCart();
 
-  useEffect(() => {
-    fetchCartItems();
-  }, []);
+  const total = cartItems.reduce((sum, item) => sum + item.price * item.quantity, 0);
 
-  const fetchCartItems = async () => {
-    try {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session) {
-        Alert.alert('Erreur', 'Vous devez être connecté pour voir votre panier.');
-        return;
-      }
-
-      const { data, error } = await supabase
-        .from('cart_items')
-        .select(`
-          *,
-          Produits:Produits(*)
-        `)
-        .eq('user_id', session.user.id);
-
-      if (error) throw error;
-      setCartItems(data || []);
-    } catch (error) {
-      console.error('Erreur:', error);
-      Alert.alert('Erreur', 'Impossible de charger votre panier.');
-    } finally {
-      setLoading(false);
-    }
+  const handleRemoveItem = (id: string) => {
+    Alert.alert(
+      t('confirm'),
+      t('removeFromCartConfirm'),
+      [
+        {
+          text: t('cancel'),
+          style: 'cancel',
+        },
+        {
+          text: t('remove'),
+          onPress: () => removeFromCart(id),
+          style: 'destructive',
+        },
+      ]
+    );
   };
 
-  const handleRemoveItem = async (itemId: string) => {
-    try {
-      const { error } = await supabase
-        .from('cart_items')
-        .delete()
-        .eq('id', itemId);
-
-      if (error) throw error;
-      setCartItems(prevItems => prevItems.filter(item => item.id !== itemId));
-    } catch (error) {
-      console.error('Erreur:', error);
-      Alert.alert('Erreur', 'Impossible de supprimer l\'article.');
-    }
+  const handleClearCart = () => {
+    Alert.alert(
+      t('confirm'),
+      t('clearCartConfirm'),
+      [
+        {
+          text: t('cancel'),
+          style: 'cancel',
+        },
+        {
+          text: t('clear'),
+          onPress: () => clearCart(),
+          style: 'destructive',
+        },
+      ]
+    );
   };
 
-  const handleUpdateQuantity = async (itemId: string, newQuantity: number) => {
-    if (newQuantity < 1) return;
+  const renderItem = ({ item }: { item: any }) => (
+    <View style={styles.cartItem}>
+      <View style={styles.itemInfo}>
+        <Text style={styles.itemName}>{item.name}</Text>
+        <Text style={styles.itemDetails}>
+          {item.culture} / {item.target}
+        </Text>
+        {item.formulation && (
+          <Text style={styles.itemDetails}>{item.formulation}</Text>
+        )}
+        <Text style={styles.itemPrice}>
+          {item.price} MAD {item.unite && `/ ${item.unite}`}
+        </Text>
+      </View>
 
-    try {
-      const { error } = await supabase
-        .from('cart_items')
-        .update({ quantity: newQuantity })
-        .eq('id', itemId);
-
-      if (error) throw error;
-      setCartItems(prevItems =>
-        prevItems.map(item =>
-          item.id === itemId ? { ...item, quantity: newQuantity } : item
-        )
-      );
-    } catch (error) {
-      console.error('Erreur:', error);
-      Alert.alert('Erreur', 'Impossible de mettre à jour la quantité.');
-    }
-  };
-
-  const calculateTotal = () => {
-    return cartItems.reduce((total, item) => {
-      const price = item.Produits.prix || 0;
-      return total + (price * item.quantity);
-    }, 0);
-  };
-
-  const renderItem = ({ item }: { item: CartItem }) => (
-    <View style={styles.card}>
-      <View style={styles.cardHeader}>
-        <View style={styles.headerLeft}>
-          <Text style={styles.productName}>
-            <Icon name="local-offer" size={16} color="green" /> {item.Produits.Produits}
-          </Text>
-          <Text style={styles.productCategory}>
-            <Icon name="category" size={16} color="green" /> {item.Produits.Categorie || 'Non spécifié'}
-          </Text>
-        </View>
+      <View style={styles.quantityContainer}>
         <TouchableOpacity
-          style={styles.removeButton}
-          onPress={() => handleRemoveItem(item.id)}
+          onPress={() => updateQuantity(item.id, Math.max(1, item.quantity - 1))}
+          style={styles.quantityButton}
         >
-          <Icon name="delete" size={24} color="black" />
+          <Icon name="minus" size={20} color="#008000" />
+        </TouchableOpacity>
+        <Text style={styles.quantity}>{item.quantity}</Text>
+        <TouchableOpacity
+          onPress={() => updateQuantity(item.id, item.quantity + 1)}
+          style={styles.quantityButton}
+        >
+          <Icon name="plus" size={20} color="#008000" />
         </TouchableOpacity>
       </View>
 
-      <View style={styles.detailsContainer}>
-        <View style={styles.infoSection}>
-          <View style={styles.infoRow}>
-            <Icon name="science" size={16} color="green" />
-            <Text style={styles.infoText}>Matière active: {item.Produits['Matière active'] || 'Non spécifié'}</Text>
-          </View>
-          <View style={styles.infoRow}>
-            <Icon name="agriculture" size={16} color="green" />
-            <Text style={styles.infoText}>Cultures: {item.Produits.Cultures || 'Non spécifié'}</Text>
-          </View>
-          <View style={styles.infoRow}>
-            <Icon name="bug-report" size={16} color="green" />
-            <Text style={styles.infoText}>Cible: {item.Produits.Cible || 'Non spécifié'}</Text>
-          </View>
-        </View>
-
-        <View style={styles.quantityContainer}>
-          <TouchableOpacity
-            style={styles.quantityButton}
-            onPress={() => handleUpdateQuantity(item.id, item.quantity - 1)}
-          >
-            <Icon name="remove" size={20} color="white" />
-          </TouchableOpacity>
-          <Text style={styles.quantityText}>{item.quantity}</Text>
-          <TouchableOpacity
-            style={styles.quantityButton}
-            onPress={() => handleUpdateQuantity(item.id, item.quantity + 1)}
-          >
-            <Icon name="add" size={20} color="white" />
-          </TouchableOpacity>
-        </View>
-
-        <View style={styles.priceContainer}>
-          <Text style={styles.priceText}>
-            Prix: {(item.Produits.prix || 0) * item.quantity} MAD
-          </Text>
-        </View>
-      </View>
+      <TouchableOpacity
+        onPress={() => handleRemoveItem(item.id)}
+        style={styles.removeButton}
+      >
+        <Icon name="delete" size={24} color="#ff0000" />
+      </TouchableOpacity>
     </View>
   );
 
   return (
     <View style={styles.container}>
-      {loading ? (
-        <View style={styles.loadingContainer}>
-          <Text>Chargement du panier...</Text>
-        </View>
-      ) : cartItems.length === 0 ? (
-        <View style={styles.emptyContainer}>
-          <Icon name="shopping-cart" size={50} color="#666" />
-          <Text style={styles.emptyText}>Votre panier est vide</Text>
-        </View>
-      ) : (
+      {cartItems.length > 0 ? (
         <>
           <FlatList
             data={cartItems}
             renderItem={renderItem}
-            keyExtractor={item => item.id}
+            keyExtractor={(item) => item.id}
             contentContainerStyle={styles.listContent}
           />
           <View style={styles.footer}>
             <View style={styles.totalContainer}>
-              <Text style={styles.totalText}>Total:</Text>
-              <Text style={styles.totalAmount}>{calculateTotal()} MAD</Text>
+              <Text style={styles.totalText}>{t('total')}:</Text>
+              <Text style={styles.totalAmount}>{total} MAD</Text>
             </View>
-            <TouchableOpacity
-              style={styles.checkoutButton}
-              onPress={() => {
-                // Navigation vers la page de paiement
-                router.push('/payment');
-              }}
-            >
-              <Text style={styles.checkoutButtonText}>Passer la commande</Text>
-            </TouchableOpacity>
+            <View style={styles.buttonContainer}>
+              <TouchableOpacity
+                style={styles.clearButton}
+                onPress={handleClearCart}
+              >
+                <Icon name="delete-sweep" size={20} color="white" />
+                <Text style={styles.buttonText}>{t('clearCart')}</Text>
+              </TouchableOpacity>
+              <TouchableOpacity style={styles.checkoutButton}>
+                <Icon name="cart-check" size={20} color="white" />
+                <Text style={styles.buttonText}>{t('checkout')}</Text>
+              </TouchableOpacity>
+            </View>
           </View>
         </>
+      ) : (
+        <View style={styles.emptyCart}>
+          <Icon name="cart-off" size={80} color="#ccc" />
+          <Text style={styles.emptyCartText}>{t('emptyCart')}</Text>
+        </View>
       )}
     </View>
   );
@@ -203,111 +138,65 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#f5f5f5',
   },
-  loadingContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  emptyContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  emptyText: {
-    marginTop: 10,
-    fontSize: 16,
-    color: '#666',
-  },
   listContent: {
-    padding: 10,
+    padding: 16,
   },
-  card: {
+  cartItem: {
     backgroundColor: 'white',
-    borderRadius: 8,
-    marginBottom: 10,
+    borderRadius: 10,
+    padding: 16,
+    marginBottom: 12,
+    flexDirection: 'row',
+    alignItems: 'center',
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
     shadowRadius: 4,
     elevation: 3,
   },
-  cardHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    padding: 15,
-    borderBottomWidth: 1,
-    borderBottomColor: '#eee',
-  },
-  headerLeft: {
+  itemInfo: {
     flex: 1,
   },
-  headerRight: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  productName: {
-    fontSize: 18,
+  itemName: {
+    fontSize: 16,
     fontWeight: 'bold',
-    color: '#008000',
-    marginBottom: 5,
+    color: '#333',
+    marginBottom: 4,
   },
-  productCategory: {
+  itemDetails: {
     fontSize: 14,
     color: '#666',
-    fontStyle: 'italic',
+    marginBottom: 2,
   },
-  removeButton: {
-    marginRight: 10,
-  },
-  detailsContainer: {
-    padding: 15,
-  },
-  infoSection: {
-    marginBottom: 15,
-  },
-  infoRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 5,
-  },
-  infoText: {
-    fontSize: 14,
-    color: 'black',
-    marginLeft: 8,
-    flex: 1,
+  itemPrice: {
+    fontSize: 15,
+    fontWeight: '600',
+    color: '#008000',
+    marginTop: 4,
   },
   quantityContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'center',
-    marginVertical: 10,
+    marginHorizontal: 12,
   },
   quantityButton: {
-    backgroundColor: '#008000',
-    width: 30,
-    height: 30,
-    borderRadius: 15,
-    justifyContent: 'center',
-    alignItems: 'center',
+    padding: 8,
+    backgroundColor: '#f0f0f0',
+    borderRadius: 20,
   },
-  quantityText: {
+  quantity: {
     fontSize: 16,
-    fontWeight: 'bold',
-    marginHorizontal: 15,
+    fontWeight: '600',
+    marginHorizontal: 12,
+    minWidth: 30,
+    textAlign: 'center',
   },
-  priceContainer: {
-    alignItems: 'flex-end',
-    marginTop: 10,
-  },
-  priceText: {
-    fontSize: 16,
-    fontWeight: 'bold',
-    color: '#008000',
+  removeButton: {
+    padding: 8,
   },
   footer: {
     backgroundColor: 'white',
-    padding: 15,
+    padding: 16,
     borderTopWidth: 1,
     borderTopColor: '#eee',
   },
@@ -315,11 +204,11 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 15,
+    marginBottom: 16,
   },
   totalText: {
     fontSize: 18,
-    fontWeight: 'bold',
+    fontWeight: '600',
     color: '#333',
   },
   totalAmount: {
@@ -327,15 +216,44 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     color: '#008000',
   },
-  checkoutButton: {
-    backgroundColor: '#008000',
-    padding: 15,
-    borderRadius: 8,
-    alignItems: 'center',
+  buttonContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    gap: 12,
   },
-  checkoutButtonText: {
+  clearButton: {
+    flex: 1,
+    backgroundColor: '#dc3545',
+    padding: 12,
+    borderRadius: 8,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  checkoutButton: {
+    flex: 1,
+    backgroundColor: '#008000',
+    padding: 12,
+    borderRadius: 8,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  buttonText: {
     color: 'white',
-    fontSize: 16,
-    fontWeight: 'bold',
+    fontWeight: '600',
+    marginLeft: 8,
+  },
+  emptyCart: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 20,
+  },
+  emptyCartText: {
+    fontSize: 18,
+    color: '#666',
+    marginTop: 16,
+    textAlign: 'center',
   },
 }); 

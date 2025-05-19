@@ -14,6 +14,7 @@ import { supabase } from "../../lib/supabase";
 import { useFavorites } from "../../lib/FavoritesContext";
 import { useTranslation } from "react-i18next";
 import { Ionicons } from "@expo/vector-icons";
+import { useCart } from "../../lib/CartContext";
 
 interface SavedProduct {
   user_id: string;
@@ -107,6 +108,7 @@ export default function SearchScreen() {
   const [hasAppliedFilters, setHasAppliedFilters] = useState(false);
   const [savedProducts, setSavedProducts] = useState<Set<string>>(new Set());
   const { refreshFavorites, triggerRefresh } = useFavorites();
+  const { addToCart, removeFromCart, isInCart } = useCart();
   const [currentPage, setCurrentPage] = useState(1);
   const [totalCount, setTotalCount] = useState(0);
   const productsPerPage = 12;
@@ -497,6 +499,31 @@ export default function SearchScreen() {
     setExpandedProduct(expandedProduct === productId ? null : productId);
   };
 
+  const handleCartToggle = async (product: ProductData) => {
+    try {
+      if (isInCart(product["Numéro homologation"])) {
+        removeFromCart(product["Numéro homologation"]);
+        Alert.alert(t("success"), t("productRemovedFromCart"));
+      } else {
+        addToCart({
+          id: product["Numéro homologation"],
+          name: product.Produits,
+          price: product.prix || 0,
+          quantity: 1,
+          culture: product.Cultures,
+          target: product.Cible,
+          formulation: product.Formulation || "",
+          unite: product.unite || "",
+          emballage: product.emballage || ""
+        });
+        Alert.alert(t("success"), t("productAddedToCart"));
+      }
+    } catch (error) {
+      console.error("Erreur lors de la gestion du panier:", error);
+      Alert.alert(t("error"), t("cartError"));
+    }
+  };
+
   return (
     <View style={styles.container}>
       <TouchableOpacity
@@ -652,16 +679,29 @@ export default function SearchScreen() {
                       </Text>
                     </View>
 
-                    <TouchableOpacity
-                      style={styles.saveIcon}
-                      onPress={() => handleSaveProduct(item)}
-                    >
-                      <Icon
-                        name={isProductSaved(item) ? "heart" : "heart-outline"}
-                        size={24}
-                        color={isProductSaved(item) ? "#ff0000" : "#666"} // rouge si aimé
-                      />
-                    </TouchableOpacity>
+                    <View style={styles.actionIcons}>
+                      <TouchableOpacity
+                        style={styles.actionIcon}
+                        onPress={() => handleCartToggle(item)}
+                      >
+                        <Icon
+                          name={isInCart(item["Numéro homologation"]) ? "cart-check" : "cart-outline"}
+                          size={24}
+                          color={isInCart(item["Numéro homologation"]) ? "#008000" : "#666"}
+                        />
+                      </TouchableOpacity>
+
+                      <TouchableOpacity
+                        style={styles.actionIcon}
+                        onPress={() => handleSaveProduct(item)}
+                      >
+                        <Icon
+                          name={isProductSaved(item) ? "heart" : "heart-outline"}
+                          size={24}
+                          color={isProductSaved(item) ? "#ff0000" : "#666"}
+                        />
+                      </TouchableOpacity>
+                    </View>
                   </View>
                 </View>
 
@@ -1232,5 +1272,14 @@ const styles = StyleSheet.create({
   },
   listContent: {
     paddingBottom: 20,
+  },
+  actionIcons: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    marginTop: 5,
+  },
+  actionIcon: {
+    padding: 5,
   },
 });

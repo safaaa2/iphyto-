@@ -179,7 +179,7 @@ const AlertScreen = () => {
         <FlatList
           data={newProducts}
           renderItem={renderProduct}
-          keyExtractor={(item) => item.id}
+          keyExtractor={(item) => `${item["Numéro homologation"]}-${item.created_at}`}
           contentContainerStyle={styles.listContainer}
           refreshControl={
             <RefreshControl

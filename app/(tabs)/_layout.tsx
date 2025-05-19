@@ -79,7 +79,7 @@ const TabsLayout = () => {
     ),
     headerRight: () => (
       <TouchableOpacity
-        onPress={() => router.push('/(tabs)/cart')}
+        onPress={() => router.push('/(tabs)/panier')}
         style={{ marginRight: 15 }}
       >
         <Image source={icons.panier} style={{ width: 24, height: 24 ,tintColor:'white'}} />
@@ -198,16 +198,7 @@ const TabsLayout = () => {
             ),
           }}
         />
-        <Tabs.Screen
-          name="scan"
-          options={{
-            title: 'scann',
-            headerShown: true,
-            tabBarIcon: ({ focused }: { focused: boolean }) => (
-              <Image source={icons.scan} style={iconStyle(focused)} />
-            ),
-          }}
-        />
+       
         <Tabs.Screen
           name="cart"
           options={{
