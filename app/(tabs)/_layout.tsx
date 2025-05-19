@@ -77,14 +77,9 @@ const TabsLayout = () => {
         Iphyto
       </Text>
     ),
-    headerRight: () => (
-      <TouchableOpacity
-        onPress={() => router.push('/(tabs)/panier')}
-        style={{ marginRight: 15 }}
-      >
-        <Image source={icons.panier} style={{ width: 24, height: 24 ,tintColor:'white'}} />
-      </TouchableOpacity>
-    ),
+    
+     
+      
     tabBarStyle: { 
       position: 'absolute' as const, 
       bottom: 0, 
@@ -202,10 +197,10 @@ const TabsLayout = () => {
         <Tabs.Screen
           name="cart"
           options={{
-            title: 'paiement',
+            title: 'panier',
             headerShown: true,
             tabBarIcon: ({ focused }: { focused: boolean }) => (
-              <Image source={icons.cart} style={iconStyle(focused)} />
+              <Image source={icons.panier} style={iconStyle(focused)} />
             ),
           }}
         />
