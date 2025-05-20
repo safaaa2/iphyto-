@@ -246,7 +246,8 @@ export default function Products() {
         "Nbr_d'app": newProduct.nbr_d_app,
         "DAR": newProduct.dar,
         "Dose": newProduct.dose,
-        "utilisation": newProduct.utilisation
+        "utilisation": newProduct.utilisation,
+        "Valable jusqu'au": newProduct.valable_jusqu_au,
       };
 
       console.log('Données du produit à insérer:', productData);
@@ -444,7 +445,8 @@ export default function Products() {
         "Nbr_d'app": newProduct.nbr_d_app || null,
         "DAR": newProduct.dar || null,
         "Dose": newProduct.dose || null,
-        "utilisation": newProduct.utilisation || null
+        "utilisation": newProduct.utilisation || null,
+        "Valable jusqu'au": newProduct.valable_jusqu_au,
       };
 
       console.log('Données d\'utilisation à sauvegarder:', utilisationData);
@@ -727,7 +729,7 @@ export default function Products() {
         <FlatList
           data={products}
           renderItem={renderProduct}
-          keyExtractor={(item) => item.id}
+          keyExtractor={(item, idx) => item.id ? String(item.id) : String(idx)}
           contentContainerStyle={styles.productList}
         />
       )}

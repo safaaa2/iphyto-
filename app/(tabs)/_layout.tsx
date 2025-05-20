@@ -76,6 +76,7 @@ const TabsLayout = () => {
       <Text style={{ fontWeight: 'bold', color: 'white', fontSize: 20 }}>
         Iphyto
       </Text>
+      
     ),
     
      

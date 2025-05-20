@@ -7,18 +7,22 @@ import {
   TouchableOpacity,
   Alert,
   ActivityIndicator,
+  TextInput,
+  Modal,
 } from 'react-native';
 import { useCart } from '../../lib/CartContext';
 import { useTranslation } from 'react-i18next';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
-import { useRouter } from 'expo-router';
+import { useRouter, useLocalSearchParams } from 'expo-router';
 import Constants from 'expo-constants';
 import { StripeProvider, useStripe } from '@stripe/stripe-react-native';
+import { supabase } from '../../lib/supabase';
 
 function CartContent() {
   const { t } = useTranslation();
   const { cartItems, removeFromCart, updateQuantity, clearCart } = useCart();
   const router = useRouter();
+  const params = useLocalSearchParams();
   const [isLoading, setIsLoading] = React.useState(false);
   const { initPaymentSheet, presentPaymentSheet } = useStripe();
 
@@ -60,7 +64,29 @@ function CartContent() {
     );
   };
 
-  const handleCheckout = async () => {
+  const fetchUserInfo = async () => {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (user) {
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('full_name')
+        .eq('id', user.id)
+        .single();
+    }
+  };
+
+  React.useEffect(() => {
+    if (params.checkoutName && params.checkoutEmail && params.checkoutAddress && params.checkoutPhone) {
+      handleCheckout({
+        name: params.checkoutName as string,
+        email: params.checkoutEmail as string,
+        address: params.checkoutAddress as string,
+        phone: params.checkoutPhone as string,
+      });
+    }
+  }, [params]);
+
+  const handleCheckout = async (userDetails?: { address: string, phone: string, name: string, email: string }) => {
     try {
       setIsLoading(true);
 
@@ -69,7 +95,6 @@ function CartContent() {
         return;
       }
 
-      // Get the payment intent from your backend
       const response = await fetch(`${Constants.expoConfig?.extra?.supabaseUrl}/functions/v1/stripe`, {
         method: 'POST',
         headers: {
@@ -78,7 +103,11 @@ function CartContent() {
         },
         body: JSON.stringify({ 
           amount: total,
-          currency: 'mad'
+          currency: 'mad',
+          address: userDetails?.address,
+          phone: userDetails?.phone,
+          name: userDetails?.name,
+          email: userDetails?.email
         }),
       });
 
@@ -88,12 +117,12 @@ function CartContent() {
         throw new Error('No client secret received');
       }
 
-      // Initialize the Payment sheet
       const { error: initError } = await initPaymentSheet({
         merchantDisplayName: "iPhyto",
         paymentIntentClientSecret: clientSecret,
         defaultBillingDetails: {
-          name: 'Client',
+          name: userDetails?.name || 'Client',
+          email: userDetails?.email,
         }
       });
 
@@ -101,14 +130,12 @@ function CartContent() {
         throw new Error(initError.message);
       }
 
-      // Present the Payment Sheet
       const { error: presentError } = await presentPaymentSheet();
 
       if (presentError) {
         throw new Error(presentError.message);
       }
 
-      // Payment successful
       Alert.alert(
         t('success'),
         t('paymentSuccess'),
@@ -117,18 +144,24 @@ function CartContent() {
             text: t('ok'),
             onPress: () => {
               clearCart();
-              router.push('/');
+              router.replace('/(tabs)/home');
             }
           }
         ]
       );
 
     } catch (error: any) {
-      console.error('Payment error:', error);
-      Alert.alert(
-        t('error'),
-        error.message || t('paymentError')
-      );
+      if (error.message === 'The payment flow has been canceled') {
+        Alert.alert(
+          t('paymentCancelled'),
+          t('paymentCancelledMessage')
+        );
+      } else {
+        Alert.alert(
+          t('error'),
+          error.message || t('paymentError')
+        );
+      }
     } finally {
       setIsLoading(false);
     }
@@ -200,7 +233,7 @@ function CartContent() {
             <View style={styles.buttonContainer}>
               <TouchableOpacity
                 style={[styles.checkoutButton, isLoading && styles.disabledButton]}
-                onPress={handleCheckout}
+                onPress={() => router.push('/CheckoutScreen')}
                 disabled={isLoading}
               >
                 {isLoading ? (

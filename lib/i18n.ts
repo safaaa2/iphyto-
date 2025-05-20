@@ -98,6 +98,9 @@ const resources = {
       noSessionAfterLoginAttempt: 'Pas de session après tentative de connexion',
       accountCreatedButSessionError: 'Compte créé mais problème de session. Veuillez vous connecter manuellement.',
       unexpectedError: 'Erreur inattendue lors de l\'inscription:',
+      paymentError: 'Une erreur est survenue lors du paiement',
+      paymentCancelled: 'Paiement annulé',
+      paymentCancelledMessage: 'Le paiement a été annulé. Vous pouvez réessayer quand vous le souhaitez.',
     }
   },
   ar: {
@@ -193,6 +196,9 @@ const resources = {
       noSessionAfterLoginAttempt: 'لا توجد جلسة بعد محاولة تسجيل الدخول',
       accountCreatedButSessionError: 'تم إنشاء الحساب ولكن هناك مشكلة في الجلسة. يرجى تسجيل الدخول يدويًا.',
       unexpectedError: 'خطأ غير متوقع أثناء التسجيل:',
+      paymentError: 'Une erreur est survenue lors du paiement',
+      paymentCancelled: 'Paiement annulé',
+      paymentCancelledMessage: 'Le paiement a été annulé. Vous pouvez réessayer quand vous le souhaitez.',
     }
   },
   en: {
@@ -288,6 +294,9 @@ const resources = {
       noSessionAfterLoginAttempt: 'Pas de session après tentative de connexion',
       accountCreatedButSessionError: 'Compte créé mais problème de session. Veuillez vous connecter manuellement',
       unexpectedError: 'Erreur inattendue lors de l\'inscription',
+      paymentError: 'An error occurred during payment',
+      paymentCancelled: 'Payment Cancelled',
+      paymentCancelledMessage: 'The payment was cancelled. You can try again whenever you want.',
     }
   },
   ber: {

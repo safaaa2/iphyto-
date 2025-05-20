@@ -3,6 +3,8 @@ import React, { useState, useEffect } from 'react';
 import Icon from 'react-native-vector-icons/MaterialIcons';
 import { supabase } from '../../lib/supabase';
 
+
+
 type SupplierProduct = {
   id: string;
   "Numéro homologation": string;
@@ -27,7 +29,11 @@ const AlertScreen = () => {
   const [newProducts, setNewProducts] = useState<SupplierProduct[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
-  const [hasNewNotifications, setHasNewNotifications] = useState(false);
+  const [dismissedIds, setDismissedIds] = useState<string[]>([]);
+
+  // Calculate visible notifications
+  const visibleProducts = newProducts.filter(item => !dismissedIds.includes(item.id));
+  const hasNewNotifications = visibleProducts.length > 0;
 
   useEffect(() => {
     fetchNewProducts();
@@ -49,11 +55,11 @@ const AlertScreen = () => {
 
       // Récupérer les produits des 7 derniers jours
       const { data, error } = await supabase
-        .from('Produits')
+        .from('utilisation')
         .select('*')
         .gte('created_at', sevenDaysAgo.toISOString())
         .order('created_at', { ascending: false })
-        .limit(1);
+        .limit(2);
 
       console.log('Produits récupérés:', data);
 
@@ -63,9 +69,23 @@ const AlertScreen = () => {
         return;
       }
 
-      setNewProducts(data || []);
-      // Mettre à jour l'état des notifications
-      setHasNewNotifications(data && data.length > 0);
+      const newProductsData = data || [];
+      const updatedProducts = await Promise.all(newProductsData.map(async (item: SupplierProduct) => {
+        const { data: produitData } = await supabase
+          .from('Produits')
+          .select('Valable jusqu\'au')
+          .eq('Numéro homologation', item["Numéro homologation"])
+          .single();
+
+      
+
+        return {
+          ...item,
+         
+        };
+      }));
+
+      setNewProducts(updatedProducts);
     } catch (error) {
       console.error('Erreur:', error);
       Alert.alert('Erreur', 'Une erreur est survenue.');
@@ -80,66 +100,62 @@ const AlertScreen = () => {
     fetchNewProducts();
   }, []);
 
+  const handleRemoveNotification = (item: SupplierProduct) => {
+    setDismissedIds((prev) => [...prev, item.id]);
+  };
+
   const renderProduct = ({ item }: { item: SupplierProduct }) => {
-    // Calculer si le produit est nouveau (moins de 7 jours)
-    const productDate = new Date(item.created_at);
-    const sevenDaysAgo = new Date();
-    sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
-    const isNew = productDate >= sevenDaysAgo;
-
+    const productDate = new Date(item.created_at).toLocaleDateString('fr-FR', {
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric',
+    });
     return (
-      <View style={[styles.productCard, isNew && styles.newProductCard]}>
-        <View style={styles.cardHeader}>
-          <View style={styles.headerLeft}>
-            <Text style={styles.productName}>
-              <Icon name="local-offer" size={16} color="green" /> {item.Produits}
-            </Text>
-            <Text style={styles.productCategory}>
-              <Icon name="category" size={16} color="green" /> {item.Categorie || 'Non spécifié'}
-            </Text>
-          </View>
-          {isNew && (
-            <View style={styles.newBadge}>
-              <Icon name="fiber-new" size={16} color="white" />
-              <Text style={styles.newBadgeText}>Nouveau</Text>
-            </View>
-          )}
-        </View>
-
-        <View style={styles.detailsContainer}>
-          <View style={styles.infoSection}>
-            <Text style={styles.sectionTitle}>Informations principales</Text>
-            <View style={styles.infoRow}>
-              <Icon name="science" size={16} color="green" />
-              <Text style={styles.infoText}>Matière active: {item['Matière active'] || 'Non spécifié'}</Text>
-            </View>
-            <View style={styles.infoRow}>
-              <Icon name="agriculture" size={16} color="green" />
-              <Text style={styles.infoText}>Cultures: {item.Cultures || 'Non spécifié'}</Text>
-            </View>
-            <View style={styles.infoRow}>
-              <Icon name="bug-report" size={16} color="green" />
-              <Text style={styles.infoText}>Cible: {item.Cible || 'Non spécifié'}</Text>
+      <TouchableOpacity
+        style={styles.cardContainer}
+        onPress={() => handleRemoveNotification(item)}
+        activeOpacity={0.8}
+      >
+        <View style={styles.card}>
+          <View style={styles.cardHeader}>
+            <View style={styles.headerLeft}>
+              <View style={styles.productTitleRow}>
+                <Icon name="local-offer" size={18} color="green" style={styles.titleIcon} />
+                <Text style={styles.productName}>{item.Produits}</Text>
+              </View>
+              {item.Categorie && (
+                <Text style={styles.productCategory}>{item.Categorie}</Text>
+              )}
             </View>
           </View>
-
-          <View style={styles.infoSection}>
-            <Text style={styles.sectionTitle}>Informations commerciales</Text>
-            <View style={styles.infoRow}>
-              <Icon name="local-shipping" size={16} color="green" />
-              <Text style={styles.infoText}>Fournisseur: {item.Fournisseur || 'Non spécifié'}</Text>
+          <Text style={styles.createdDateText}>Ajouté le: {productDate}</Text>
+          <View style={styles.cultureRow}>
+            <Icon name="eco" size={20} color="green" style={styles.icon} />
+            <View style={styles.cultureBadge}>
+              <Text style={styles.cultureText}>{item.Cultures || "Non spécifié"}</Text>
             </View>
-            <View style={styles.infoRow}>
-              <Icon name="person" size={16} color="green" />
-              <Text style={styles.infoText}>Détenteur: {item.Détenteur || 'Non spécifié'}</Text>
+          </View>
+          <View style={styles.targetRow}>
+            <Icon name="bug-report" size={18} color="green" style={styles.icon} />
+            <View style={styles.targetBadge}>
+              <Text style={styles.targetText}>{item.Cible || "Non spécifié"}</Text>
             </View>
-            <View style={styles.infoRow}>
-              <Icon name="confirmation-number" size={16} color="green" />
-              <Text style={styles.infoText}>Numéro homologation: {item["Numéro homologation"]}</Text>
-            </View>
+          </View>
+          <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+            <Icon name="calendar-month" size={16} color="green" style={{ marginRight: 5 }} />
+            <Text style={{ fontSize: 14, color: "black" }}>
+              Valable jusqu'au :{" "}
+              {item["Valable jusqu'au"]
+                ? new Date(item["Valable jusqu'au"]).toLocaleDateString("fr-FR", {
+                  year: "numeric",
+                  month: "short",
+                  day: "numeric",
+                })
+                : "Non spécifié"}
+            </Text>
           </View>
         </View>
-      </View>
+      </TouchableOpacity>
     );
   };
 
@@ -152,7 +168,7 @@ const AlertScreen = () => {
             {hasNewNotifications && (
               <View style={styles.notificationBadge}>
                 <Text style={styles.notificationBadgeText}>
-                  {newProducts.length}
+                  {visibleProducts.length}
                 </Text>
               </View>
             )}
@@ -167,7 +183,7 @@ const AlertScreen = () => {
         <View style={styles.loadingContainer}>
           <Text>Chargement des nouveaux produits...</Text>
         </View>
-      ) : newProducts.length === 0 ? (
+      ) : visibleProducts.length === 0 ? (
         <View style={styles.emptyContainer}>
           <Icon name="notifications-off" size={50} color="#666" />
           <Text style={styles.emptyText}>Aucun nouveau produit</Text>
@@ -177,9 +193,9 @@ const AlertScreen = () => {
         </View>
       ) : (
         <FlatList
-          data={newProducts}
+          data={visibleProducts}
           renderItem={renderProduct}
-          keyExtractor={(item) => `${item["Numéro homologation"]}-${item.created_at}`}
+          keyExtractor={(item) => `${item.id}-${item.created_at}`}
           contentContainerStyle={styles.listContainer}
           refreshControl={
             <RefreshControl
@@ -224,7 +240,7 @@ const styles = StyleSheet.create({
   listContainer: {
     paddingBottom: 20,
   },
-  productCard: {
+  cardContainer: {
     backgroundColor: 'white',
     borderRadius: 8,
     marginBottom: 10,
@@ -234,53 +250,70 @@ const styles = StyleSheet.create({
     shadowRadius: 4,
     elevation: 3,
   },
+  card: {
+    padding: 15,
+  },
   cardHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'flex-start',
-    padding: 15,
-    borderBottomWidth: 1,
-    borderBottomColor: '#eee',
+    marginBottom: 10,
   },
   headerLeft: {
     flex: 1,
+  },
+  productTitleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  titleIcon: {
+    marginRight: 8,
   },
   productName: {
     fontSize: 18,
     fontWeight: 'bold',
     color: '#008000',
-    marginBottom: 5,
   },
   productCategory: {
     fontSize: 14,
     color: '#666',
     fontStyle: 'italic',
   },
-  detailsContainer: {
-    padding: 15,
-  },
-  infoSection: {
-    marginBottom: 15,
-  },
-  sectionTitle: {
-    fontSize: 16,
-    fontWeight: 'bold',
-    color: '#333',
-    marginBottom: 8,
-    paddingBottom: 5,
-    borderBottomWidth: 1,
-    borderBottomColor: '#eee',
-  },
-  infoRow: {
+  cultureRow: {
     flexDirection: 'row',
     alignItems: 'center',
     marginBottom: 5,
   },
-  infoText: {
+  icon: {
+    marginRight: 8,
+  },
+  cultureBadge: {
+    borderWidth: 1,
+    borderColor: 'black',
+    backgroundColor: 'white',
+    borderRadius: 20,
+    paddingVertical: 4,
+    paddingHorizontal: 12,
+  },
+  cultureText: {
     fontSize: 14,
     color: 'black',
-    marginLeft: 8,
-    flex: 1,
+  },
+  targetRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 5,
+  },
+  targetBadge: {
+    backgroundColor: '#2e7d32',
+    borderRadius: 20,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+  },
+  targetText: {
+    color: 'white',
+    fontSize: 13,
+    fontWeight: '600',
   },
   headerContainer: {
     flexDirection: 'row',
@@ -302,24 +335,6 @@ const styles = StyleSheet.create({
     color: 'white',
     fontSize: 16,
     fontWeight: '500',
-  },
-  newProductCard: {
-    borderColor: '#008000',
-    borderWidth: 2,
-  },
-  newBadge: {
-    backgroundColor: '#008000',
-    flexDirection: 'row',
-    alignItems: 'center',
-    padding: 4,
-    paddingHorizontal: 8,
-    borderRadius: 4,
-  },
-  newBadgeText: {
-    color: 'white',
-    fontSize: 12,
-    marginLeft: 4,
-    fontWeight: 'bold',
   },
   iconContainer: {
     position: 'relative',
@@ -346,6 +361,16 @@ const styles = StyleSheet.create({
   titleContainer: {
     flexDirection: 'row',
     alignItems: 'center',
+  },
+  createdDateText: {
+    fontSize: 12,
+    color: '#666',
+    marginBottom: 5,
+  },
+  valableJusquAuText: {
+    fontSize: 12,
+    color: '#666',
+    marginTop: 5,
   },
 });
 

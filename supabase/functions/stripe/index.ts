@@ -14,7 +14,7 @@ const stripe = new Stripe(stripeSecretKey, {
 
 serve(async (req) => {
   try {
-    const { amount, currency = 'mad' } = await req.json();
+    const { amount, currency = 'mad', name, email, address, phone } = await req.json();
 
     if (!amount) {
       throw new Error('Amount is required');
@@ -26,6 +26,12 @@ serve(async (req) => {
       automatic_payment_methods: {
         enabled: true,
       },
+      receipt_email: email,
+      shipping: name || address || phone ? {
+        name: name,
+        address: address ? { line1: address } : undefined,
+        phone: phone,
+      } : undefined,
     });
 
     return new Response(
