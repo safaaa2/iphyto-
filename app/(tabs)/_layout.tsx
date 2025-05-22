@@ -5,6 +5,7 @@ import { icons } from '@/assets/constants/icons';
 import { Image, Text, TouchableOpacity, View, StyleSheet } from 'react-native';
 import { supabase } from '../../lib/supabase';
 import { useRouter } from 'expo-router';
+import Icon from 'react-native-vector-icons/MaterialIcons';
 
 const TabsLayout = () => {
   const [isAdmin, setIsAdmin] = useState<boolean>(false);
@@ -73,10 +74,22 @@ const TabsLayout = () => {
     headerTintColor: 'white',
     headerTitleAlign: 'left' as const,
     headerTitle: () => (
-      <Text style={{ fontWeight: 'bold', color: 'white', fontSize: 20 }}>
-        Iphyto
-      </Text>
-      
+      <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', width: '100%' }}>
+        <Text style={{ fontWeight: 'bold', color: 'white', fontSize: 20 }}>
+          Iphyto
+        </Text>
+        <TouchableOpacity 
+          style={{ flexDirection: 'row', alignItems: 'center' }}
+          onPress={() => router.push('/alert')}
+        >
+          <Image source={icons.alert} style={{ width: 24, height: 24, tintColor: 'white' }} />
+          {hasNewNotifications && (
+            <View style={[styles.notificationBadge, { position: 'relative', top: 0, right: 0, marginLeft: -10 }]}>
+              <View style={styles.notificationDot} />
+            </View>
+          )}
+        </TouchableOpacity>
+      </View>
     ),
     
      
@@ -178,23 +191,15 @@ const TabsLayout = () => {
           }}
         />
         <Tabs.Screen
-          name="alert"
+          name="history"
           options={{
-            title: 'alert',
+            title: 'Historique',
             headerShown: true,
             tabBarIcon: ({ focused }: { focused: boolean }) => (
-              <View style={{ position: 'relative' }}>
-                <Image source={icons.alert} style={iconStyle(focused)} />
-                {hasNewNotifications && (
-                  <View style={styles.notificationBadge}>
-                    <Text style={styles.notificationBadgeText}>!</Text>
-                  </View>
-                )}
-              </View>
+              <Icon name="history" size={24} color={focused ? '#1DB954' : '#B0B0B0'} />
             ),
           }}
         />
-       
         <Tabs.Screen
           name="cart"
           options={{
@@ -225,13 +230,19 @@ const styles = StyleSheet.create({
     position: 'absolute',
     top: -5,
     right: -5,
-    backgroundColor: '#FF3B30',
+    backgroundColor: 'transparent',
     borderRadius: 10,
     width: 20,
     height: 20,
     justifyContent: 'center',
     alignItems: 'center',
-    borderWidth: 2,
+  },
+  notificationDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: '#FF3B30',
+    borderWidth: 1,
     borderColor: 'white',
   },
   notificationBadgeText: {

@@ -1,9 +1,9 @@
 import { View, Text, StyleSheet, FlatList, TouchableOpacity, Alert, RefreshControl } from 'react-native';
 import React, { useState, useEffect } from 'react';
 import Icon from 'react-native-vector-icons/MaterialIcons';
-import { supabase } from '../../lib/supabase';
-
-
+import { supabase } from '../lib/supabase';
+import { useRouter } from 'expo-router';
+import { Ionicons } from '@expo/vector-icons';
 
 type SupplierProduct = {
   id: string;
@@ -30,6 +30,7 @@ const AlertScreen = () => {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [dismissedIds, setDismissedIds] = useState<string[]>([]);
+  const router = useRouter();
 
   // Calculate visible notifications
   const visibleProducts = newProducts.filter(item => !dismissedIds.includes(item.id));
@@ -161,23 +162,15 @@ const AlertScreen = () => {
 
   return (
     <View style={styles.container}>
-      <View style={styles.headerContainer}>
-        <View style={styles.titleContainer}>
-          <View style={styles.iconContainer}>
-            <Icon name="notifications-active" size={28} color="#2E7D32" />
-            {hasNewNotifications && (
-              <View style={styles.notificationBadge}>
-                <Text style={styles.notificationBadgeText}>
-                  {visibleProducts.length}
-                </Text>
-              </View>
-            )}
-          </View>
-          <Text style={styles.title}>Nouveaux produits</Text>
-        </View>
-        <TouchableOpacity onPress={onRefresh} style={styles.refreshButton}>
-          <Icon name="refresh" size={24} color="#2E7D32" />
+      <View style={styles.header}>
+        <TouchableOpacity
+          onPress={() => router.push('/search')}
+          style={styles.backButton}
+          activeOpacity={0.7}
+        >
+          <Ionicons name="arrow-back" size={28} color="#008000" />
         </TouchableOpacity>
+        <Text style={styles.title}>Nouveaux produits</Text>
       </View>
       {loading ? (
         <View style={styles.loadingContainer}>
@@ -216,11 +209,24 @@ const styles = StyleSheet.create({
     backgroundColor: '#f5f5f5',
     padding: 10,
   },
+  header: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 12,
+    paddingTop: 40, // for status bar spacing
+    paddingBottom: 16,
+    backgroundColor: '#f5f5f5',
+    borderBottomWidth: 1,
+    borderBottomColor: '#e0e0e0',
+    elevation: 2,
+  },
+  backButton: { marginRight: 10 },
   title: {
-    fontSize: 24,
+    fontSize: 22,
     fontWeight: 'bold',
-    marginBottom: 15,
-    color: '#333',
+    color: '#008000',
+    flex: 1,
+    textAlign: 'left',
   },
   loadingContainer: {
     flex: 1,
@@ -315,15 +321,6 @@ const styles = StyleSheet.create({
     fontSize: 13,
     fontWeight: '600',
   },
-  headerContainer: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 15,
-  },
-  refreshButton: {
-    padding: 8,
-  },
   retryButton: {
     marginTop: 15,
     backgroundColor: '#008000',
@@ -336,41 +333,10 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '500',
   },
-  iconContainer: {
-    position: 'relative',
-    marginRight: 10,
-  },
-  notificationBadge: {
-    position: 'absolute',
-    top: -5,
-    right: -5,
-    backgroundColor: '#FF3B30',
-    borderRadius: 10,
-    minWidth: 20,
-    height: 20,
-    justifyContent: 'center',
-    alignItems: 'center',
-    borderWidth: 2,
-    borderColor: 'white',
-  },
-  notificationBadgeText: {
-    color: 'white',
-    fontSize: 12,
-    fontWeight: 'bold',
-  },
-  titleContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
   createdDateText: {
     fontSize: 12,
     color: '#666',
     marginBottom: 5,
-  },
-  valableJusquAuText: {
-    fontSize: 12,
-    color: '#666',
-    marginTop: 5,
   },
 });
 

@@ -86,6 +86,28 @@ export default function CheckoutScreen() {
       }
 
       // 4. Succès
+      // Enregistrer la commande dans la base de données
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error('User not found');
+
+      const { error: orderError } = await supabase
+        .from('commandes')
+        .insert({
+          user_id: user.id,
+          statut: 'en attente',
+          montant_total: total,
+          produits: cartItems,
+          adresse_livraison: address,
+          telephone: phone,
+          nom_client: name,
+          email: email
+        });
+
+      if (orderError) {
+        console.error('Error saving order:', orderError);
+        throw new Error('Failed to save order');
+      }
+
       clearCart();
       Alert.alert(t('success'), t('paymentSuccess'), [
         { text: t('ok'), onPress: () => router.replace('/(tabs)/home') }
