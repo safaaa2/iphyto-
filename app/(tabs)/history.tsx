@@ -5,6 +5,7 @@ import { useTranslation } from 'react-i18next';
 import Icon from 'react-native-vector-icons/MaterialIcons';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { Ionicons } from '@expo/vector-icons';
+import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 
 type Order = {
     id: string;
@@ -138,7 +139,8 @@ export default function HistoryScreen() {
     return (
         <View style={styles.container}>
             <View style={styles.header}>
-                <Text style={styles.title}>{t('orderHistory')}</Text>
+            <MaterialIcons name="history" size={28} color="#2c3e50"  />
+                <Text style={styles.title}>{t('Mes commandes')}</Text>
             </View>
 
             {orders.length === 0 ? (
@@ -173,12 +175,16 @@ const styles = StyleSheet.create({
         backgroundColor: '#fff',
         borderBottomWidth: 1,
         borderBottomColor: '#e0e0e0',
+        flexDirection: 'row'
     },
     title: {
-        fontSize: 24,
+        fontSize: 17,
         fontWeight: 'bold',
-        color: '#333',
-    },
+        fontStyle: 'italic',      // Pour rendre le texte italic
+        color: '#2c3e50',         // Un gris foncé plus moderne
+        letterSpacing: 1,         // Espacement entre les lettres pour un look plus soigné
+        textTransform: 'capitalize', // Met chaque mot en majuscule (optionnel)
+      },
     listContainer: {
         padding: 16,
     },

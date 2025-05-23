@@ -379,16 +379,17 @@ const styles = StyleSheet.create({
   },
   checkoutButton: {
     backgroundColor: '#008000',
-    padding: 12,
-    borderRadius: 8,
+    padding: 15,
+    borderRadius: 10,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
+    marginBottom: 20
   },
   buttonText: {
     color: 'white',
     fontWeight: '600',
-    marginLeft: 8,
+    marginLeft: 10,
   },
   emptyCart: {
     flex: 1,

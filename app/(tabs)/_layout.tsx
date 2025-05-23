@@ -6,14 +6,27 @@ import { Image, Text, TouchableOpacity, View, StyleSheet } from 'react-native';
 import { supabase } from '../../lib/supabase';
 import { useRouter } from 'expo-router';
 import Icon from 'react-native-vector-icons/MaterialIcons';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const TabsLayout = () => {
   const [isAdmin, setIsAdmin] = useState<boolean>(false);
   const [hasNewNotifications, setHasNewNotifications] = useState(false);
+  const [lastViewedTimestamp, setLastViewedTimestamp] = useState<string>('');
   const router = useRouter();
 
   useEffect(() => {
     let mounted = true;
+
+    const loadLastViewedTimestamp = async () => {
+      try {
+        const timestamp = await AsyncStorage.getItem('lastViewedTimestamp');
+        if (timestamp) {
+          setLastViewedTimestamp(timestamp);
+        }
+      } catch (error) {
+        console.error('Erreur lors du chargement du timestamp:', error);
+      }
+    };
 
     const checkAdminStatus = async () => {
       try {
@@ -41,10 +54,13 @@ const TabsLayout = () => {
           const sevenDaysAgo = new Date();
           sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
 
+          // Si nous avons un timestamp de dernière vue, l'utiliser comme point de départ
+          const startDate = lastViewedTimestamp ? new Date(lastViewedTimestamp) : sevenDaysAgo;
+
           const { data, error } = await supabase
             .from('Produits')
             .select('*')
-            .gte('created_at', sevenDaysAgo.toISOString())
+            .gte('created_at', startDate.toISOString())
             .order('created_at', { ascending: false })
             .limit(3);
 
@@ -57,6 +73,7 @@ const TabsLayout = () => {
       }
     };
 
+    loadLastViewedTimestamp();
     checkAdminStatus();
     checkNewNotifications();
 
@@ -67,7 +84,19 @@ const TabsLayout = () => {
       mounted = false;
       clearInterval(interval);
     };
-  }, []);
+  }, [lastViewedTimestamp]);
+
+  const handleAlertPress = async () => {
+    try {
+      const currentTimestamp = new Date().toISOString();
+      await AsyncStorage.setItem('lastViewedTimestamp', currentTimestamp);
+      setLastViewedTimestamp(currentTimestamp);
+      setHasNewNotifications(false);
+      router.push('/alert');
+    } catch (error) {
+      console.error('Erreur lors de la sauvegarde du timestamp:', error);
+    }
+  };
 
   const screenOptions = {
     headerStyle: { backgroundColor: 'green' },
@@ -80,7 +109,7 @@ const TabsLayout = () => {
         </Text>
         <TouchableOpacity 
           style={{ flexDirection: 'row', alignItems: 'center' }}
-          onPress={() => router.push('/alert')}
+          onPress={handleAlertPress}
         >
           <Image source={icons.alert} style={{ width: 24, height: 24, tintColor: 'white' }} />
           {hasNewNotifications && (
@@ -193,10 +222,10 @@ const TabsLayout = () => {
         <Tabs.Screen
           name="history"
           options={{
-            title: 'Historique',
+            title: 'History',
             headerShown: true,
             tabBarIcon: ({ focused }: { focused: boolean }) => (
-              <Icon name="history" size={24} color={focused ? '#1DB954' : '#B0B0B0'} />
+              <Icon name="history" size={29} color={focused ? '#1DB954' : '#B0B0B0'} />
             ),
           }}
         />
