@@ -12,6 +12,7 @@ interface CartItem {
   unite: string;
   emballage: string;
   "Valable jusqu'au": string;
+  fournisseur: string;
 }
 
 interface CartContextType {

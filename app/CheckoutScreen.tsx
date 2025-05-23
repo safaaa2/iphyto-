@@ -90,22 +90,53 @@ export default function CheckoutScreen() {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error('User not found');
 
-      const { error: orderError } = await supabase
-        .from('commandes')
-        .insert({
-          user_id: user.id,
-          statut: 'en attente',
-          montant_total: total,
-          produits: cartItems,
-          adresse_livraison: address,
-          telephone: phone,
-          nom_client: name,
-          email: email
-        });
-
-      if (orderError) {
-        console.error('Error saving order:', orderError);
-        throw new Error('Failed to save order');
+      // Extraire le(s) fournisseur(s) du panier
+      const fournisseurs = Array.from(new Set(cartItems.map(item => item.fournisseur)));
+      if (fournisseurs.length === 1 && fournisseurs[0]) {
+        // Un seul fournisseur
+        const { error: orderError } = await supabase
+          .from('commandes')
+          .insert({
+            user_id: user.id,
+            statut: 'en attente',
+            montant_total: total,
+            produits: cartItems,
+            adresse_livraison: address,
+            telephone: phone,
+            nom_client: name,
+            email: email,
+            fournisseur: fournisseurs[0],
+          });
+        if (orderError) {
+          console.error('Error saving order:', orderError);
+          throw new Error('Failed to save order');
+        }
+      } else if (fournisseurs.length > 1) {
+        // Plusieurs fournisseurs : une commande par fournisseur
+        for (const f of fournisseurs) {
+          if (f) {
+            const produitsFournisseur = cartItems.filter(item => item.fournisseur === f);
+            const { error: orderError } = await supabase
+              .from('commandes')
+              .insert({
+                user_id: user.id,
+                statut: 'en attente',
+                montant_total: produitsFournisseur.reduce((sum, item) => sum + item.price * item.quantity, 0),
+                produits: produitsFournisseur,
+                adresse_livraison: address,
+                telephone: phone,
+                nom_client: name,
+                email: email,
+                fournisseur: f,
+              });
+            if (orderError) {
+              console.error('Error saving order for supplier', f, orderError);
+              throw new Error('Failed to save order for supplier ' + f);
+            }
+          }
+        }
+      } else {
+        throw new Error('Aucun fournisseur trouvé dans le panier.');
       }
 
       clearCart();

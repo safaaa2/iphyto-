@@ -356,7 +356,7 @@ export default function Products() {
   const handleDeleteProduct = async (productId: string) => {
     Alert.alert(
       'Confirmation',
-      'Êtes-vous sûr de vouloir supprimer ce produit ?',
+      'Êtes-vous sûr de vouloir supprimer ce produit ? Toutes les utilisations associées seront supprimées.',
       [
         {
           text: 'Annuler',
@@ -367,23 +367,28 @@ export default function Products() {
           style: 'destructive',
           onPress: async () => {
             try {
-              // Supprimer d'abord de la table utilisation
+              // Supprimer toutes les utilisations associées
               const { error: utilisationError } = await supabase
                 .from('utilisation')
                 .delete()
                 .eq('Numéro homologation', productId);
 
-              if (utilisationError) throw utilisationError;
+              if (utilisationError) {
+                console.error('Erreur lors de la suppression des utilisations:', utilisationError);
+                throw utilisationError;
+              }
 
-              // Ensuite supprimer de la table Produits
+              // Ensuite supprimer le produit
               const { error: productError } = await supabase
                 .from('Produits')
                 .delete()
                 .eq('Numéro homologation', productId);
 
-              if (productError) throw productError;
-              
-              Alert.alert('Succès', 'Produit supprimé avec succès');
+              if (productError) {
+                console.error('Erreur lors de la suppression du produit:', productError);
+                throw productError;
+              }
+              Alert.alert('Succès', 'Produit et utilisations associées supprimés avec succès');
               fetchProducts();
             } catch (error: any) {
               Alert.alert('Erreur', 'Impossible de supprimer le produit: ' + (error.message || 'Erreur inconnue'));

@@ -10,5 +10,6 @@ export const icons = {
   panier: require("../icons/panier.png"),
   dashboard: require("../icons/dashboard.png"),
   scan: require("../icons/scan.png"),
-  circleprofile: require("../icons/circleprofile.png")
+  circleprofile: require("../icons/circleprofile.png"),
+  commande: require("../icons/commande.png")
 };

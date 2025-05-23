@@ -136,13 +136,49 @@ function CartContent() {
         throw new Error(presentError.message);
       }
 
+      console.log('cartItems envoyés dans la commande:', cartItems);
+
       Alert.alert(
         t('success'),
         t('paymentSuccess'),
         [
           {
             text: t('ok'),
-            onPress: () => {
+            onPress: async () => {
+              try {
+                console.log('cartItems avant extraction fournisseur:', cartItems);
+                const fournisseurs = Array.from(new Set(cartItems.map(item => item.fournisseur)));
+                console.log('Fournisseurs extraits:', fournisseurs);
+                if (fournisseurs.length === 1 && fournisseurs[0]) {
+                  // Un seul fournisseur
+                  await supabase.from('commandes').insert([{
+                    user_id: userDetails?.email,
+                    produits: cartItems,
+                    date: new Date().toISOString(),
+                    fournisseur: fournisseurs[0],
+                  }]);
+                  console.log('Commande insérée pour un fournisseur:', fournisseurs[0]);
+                } else if (fournisseurs.length > 1) {
+                  // Plusieurs fournisseurs : une commande par fournisseur
+                  console.log('Plusieurs fournisseurs détectés, insertion multiple');
+                  for (const f of fournisseurs) {
+                    if (f) {
+                      const produitsFournisseur = cartItems.filter(item => item.fournisseur === f);
+                      await supabase.from('commandes').insert([{
+                        user_id: userDetails?.email,
+                        produits: produitsFournisseur,
+                        date: new Date().toISOString(),
+                        fournisseur: f,
+                      }]);
+                      console.log('Commande insérée pour le fournisseur:', f);
+                    }
+                  }
+                } else {
+                   console.warn(`Aucun fournisseur valide trouvé dans cartItems pour l'insertion de la commande.`);
+                }
+              } catch (err) {
+                console.error('Erreur lors de l\'enregistrement de la commande:', err);
+              }
               clearCart();
               router.replace('/(tabs)/home');
             }
@@ -171,6 +207,7 @@ function CartContent() {
     <View style={styles.cartItem}>
       <View style={styles.itemInfo}>
         <Text style={styles.itemName}>{item.name}</Text>
+        <Text style={styles.fournisseurText}>{item.fournisseur}</Text>
         <Text style={styles.itemDetails}>
           {item.culture} / {item.target}
         </Text>
@@ -405,5 +442,11 @@ const styles = StyleSheet.create({
   },
   disabledButton: {
     opacity: 0.7,
+  },
+  fournisseurText: {
+    fontSize: 12,
+    color: '#888',
+    fontStyle: 'italic',
+    marginBottom: 2,
   },
 }); 

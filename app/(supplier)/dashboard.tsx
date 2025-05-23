@@ -185,9 +185,9 @@ export default function Dashboard() {
             color="#4CAF50"
           />
           <QuickActionButton
-            title="Gérer les produits"
-            icon="list"
-            onPress={() => router.push('/products')}
+            title="les commandes "
+            icon="commande"
+            onPress={() => router.push('/commande')}
             color="#2196F3"
           />
           <QuickActionButton
