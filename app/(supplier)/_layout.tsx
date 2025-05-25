@@ -1,8 +1,9 @@
 import { Tabs } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useTranslation } from 'react-i18next';
-import { Platform, View } from 'react-native';
+import { Platform, View, Image } from 'react-native';
 import React from 'react';
+import { icons } from '@/assets/constants/icons';
 
 
 export default function SupplierLayout() {
@@ -55,6 +56,24 @@ export default function SupplierLayout() {
             ),
           }}
         />
+         <Tabs.Screen
+          name="commande"
+          options={{
+            title: 'commande',
+            tabBarIcon: ({ color, size }) => (
+              <Image 
+                source={icons.commande} 
+                style={{ 
+                  width: size, 
+                  height: size, 
+                  tintColor: color,
+                  resizeMode: 'contain'
+                }}
+              />
+            ),
+          }}
+        />
+      
         <Tabs.Screen
           name="profile"
           options={{

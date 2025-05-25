@@ -7,11 +7,13 @@ import {
   TouchableOpacity,
   Platform,
   ActivityIndicator,
+  Image,
 } from 'react-native';
 import { supabase } from '../../lib/supabase';
 import { useTranslation } from 'react-i18next';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
+import { icons } from '@/assets/constants/icons';
 
 interface DashboardStats {
   totalProducts: number;
@@ -41,7 +43,7 @@ export default function Dashboard() {
     try {
       setLoading(true);
       const { data: { user } } = await supabase.auth.getUser();
-      
+
       if (!user) {
         throw new Error('Utilisateur non connecté');
       }
@@ -108,9 +110,33 @@ export default function Dashboard() {
     </View>
   );
 
-  const QuickActionButton = ({ title, icon, onPress, color }: { title: string; icon: string; onPress: () => void; color: string }) => (
+  const QuickActionButton = ({ 
+    title, 
+    icon, 
+    image, 
+    onPress, 
+    color 
+  }: { 
+    title: string; 
+    icon?: string; 
+    image?: any; 
+    onPress: () => void; 
+    color: string 
+  }) => (
     <TouchableOpacity style={[styles.actionButton, { backgroundColor: color }]} onPress={onPress}>
-      <Ionicons name={icon as any} size={24} color="#ffffff" />
+      {icon ? (
+        <Ionicons name={icon as any} size={24} color="#ffffff" />
+      ) : image ? (
+        <Image 
+          source={image} 
+          style={{ 
+            width: 24, 
+            height: 24, 
+            tintColor: '#ffffff',
+            resizeMode: 'contain'
+          }} 
+        />
+      ) : null}
       <Text style={styles.actionButtonText}>{title}</Text>
     </TouchableOpacity>
   );
@@ -124,55 +150,63 @@ export default function Dashboard() {
   }
 
   return (
-    <ScrollView 
+    <ScrollView
       style={styles.container}
       contentContainerStyle={styles.scrollContent}
-      showsVerticalScrollIndicator={true}
+      showsVerticalScrollIndicator={false}
     >
       <View style={styles.header}>
         <View style={styles.titleContainer}>
-          <Ionicons name="stats-chart" size={24} color="#4CAF50" style={styles.titleIcon} />
+          <View style={styles.titleIconContainer}>
+            <Ionicons name="stats-chart" size={24} color="#ffffff" />
+          </View>
           <Text style={styles.title}>{t('dashboard')}</Text>
         </View>
         <TouchableOpacity
           style={styles.refreshButton}
           onPress={fetchDashboardData}
         >
-          <Ionicons name="refresh" size={24} color="#4CAF50" />
+          <Ionicons name="refresh" size={24} color="#ffffff" />
         </TouchableOpacity>
       </View>
 
       <View style={styles.statsContainer}>
-        <StatCard
-          title="Total des produits"
-          value={stats.totalProducts}
-          icon="cube-outline"
-          color="#4CAF50"
-        />
-        <StatCard
-          title="Produits actifs"
-          value={stats.activeProducts}
-          icon="checkmark-circle-outline"
-          color="#2196F3"
-        />
-        <StatCard
-          title="Produits expirant"
-          value={stats.expiringProducts}
-          icon="warning-outline"
-          color="#FFC107"
-        />
-        <StatCard
-          title="Produits expirés"
-          value={stats.expiredProducts}
-          icon="close-circle-outline"
-          color="#F44336"
-        />
-        <StatCard
-          title="Nouveaux produits"
-          value={stats.recentProducts}
-          icon="add-circle-outline"
-          color="#9C27B0"
-        />
+        <View style={styles.statsRow}>
+          <StatCard
+            title="Total des produits"
+            value={stats.totalProducts}
+            icon="cube-outline"
+            color="#4CAF50"
+          />
+          <StatCard
+            title="Produits actifs"
+            value={stats.activeProducts}
+            icon="checkmark-circle-outline"
+            color="#2196F3"
+          />
+        </View>
+        <View style={styles.statsRow}>
+          <StatCard
+            title="Produits expirant"
+            value={stats.expiringProducts}
+            icon="warning-outline"
+            color="#FFC107"
+          />
+          <StatCard
+            title="Produits expirés"
+            value={stats.expiredProducts}
+            icon="close-circle-outline"
+            color="#F44336"
+          />
+        </View>
+        <View style={styles.statsRow}>
+          <StatCard
+            title="Nouveaux produits"
+            value={stats.recentProducts}
+            icon="add-circle-outline"
+            color="#9C27B0"
+          />
+        </View>
       </View>
 
       <View style={styles.actionsContainer}>
@@ -185,8 +219,8 @@ export default function Dashboard() {
             color="#4CAF50"
           />
           <QuickActionButton
-            title="les commandes "
-            icon="commande"
+            title="Les commandes"
+            image={icons.commande}
             onPress={() => router.push('/commande')}
             color="#2196F3"
           />
@@ -202,13 +236,17 @@ export default function Dashboard() {
       <View style={styles.infoContainer}>
         <Text style={styles.sectionTitle}>Informations importantes</Text>
         <View style={styles.infoCard}>
-          <Ionicons name="information-circle-outline" size={24} color="#4CAF50" />
+          <View style={[styles.infoIconContainer, { backgroundColor: '#E8F5E9' }]}>
+            <Ionicons name="information-circle-outline" size={24} color="#4CAF50" />
+          </View>
           <Text style={styles.infoText}>
             Vous avez {stats.expiringProducts} produits qui expirent dans les 30 prochains jours.
           </Text>
         </View>
         <View style={styles.infoCard}>
-          <Ionicons name="alert-circle-outline" size={24} color="#F44336" />
+          <View style={[styles.infoIconContainer, { backgroundColor: '#FFEBEE' }]}>
+            <Ionicons name="alert-circle-outline" size={24} color="#F44336" />
+          </View>
           <Text style={styles.infoText}>
             {stats.expiredProducts} produits ont expiré et doivent être mis à jour.
           </Text>
@@ -221,7 +259,7 @@ export default function Dashboard() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f5f5f5',
+    backgroundColor: '#f8f9fa',
   },
   scrollContent: {
     flexGrow: 1,
@@ -236,37 +274,58 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    padding: 16,
-    backgroundColor: '#ffffff',
-    borderBottomWidth: 1,
-    borderBottomColor: '#e0e0e0',
+    padding: 20,
+    backgroundColor: '#4CAF50',
+    borderBottomLeftRadius: 20,
+    borderBottomRightRadius: 20,
+    elevation: 4,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 4,
   },
   titleContainer: {
     flexDirection: 'row',
     alignItems: 'center',
   },
-  titleIcon: {
-    marginRight: 8,
+  titleIconContainer: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: 'rgba(255, 255, 255, 0.2)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 12,
   },
   title: {
     fontSize: 24,
     fontWeight: '600',
-    color: '#000000',
+    color: '#ffffff',
   },
   refreshButton: {
-    padding: 8,
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: 'rgba(255, 255, 255, 0.2)',
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   statsContainer: {
     padding: 16,
+    marginTop: -20,
+  },
+  statsRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginBottom: 16,
   },
   statCard: {
-    flexDirection: 'row',
+    flex: 1,
     backgroundColor: '#ffffff',
-    borderRadius: 8,
+    borderRadius: 16,
     padding: 16,
-    marginBottom: 12,
-    borderLeftWidth: 4,
-    elevation: 2,
+    marginHorizontal: 8,
+    elevation: 3,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
@@ -276,32 +335,34 @@ const styles = StyleSheet.create({
     width: 48,
     height: 48,
     borderRadius: 24,
-    backgroundColor: '#f5f5f5',
+    backgroundColor: '#f8f9fa',
     justifyContent: 'center',
     alignItems: 'center',
-    marginRight: 16,
+    marginBottom: 12,
   },
   statContent: {
     flex: 1,
   },
   statValue: {
-    fontSize: 24,
-    fontWeight: '600',
-    color: '#000000',
+    fontSize: 28,
+    fontWeight: '700',
+    color: '#1a1a1a',
     marginBottom: 4,
   },
   statTitle: {
     fontSize: 14,
-    color: '#757575',
+    color: '#666666',
+    fontWeight: '500',
   },
   actionsContainer: {
     padding: 16,
   },
   sectionTitle: {
-    fontSize: 18,
+    fontSize: 20,
     fontWeight: '600',
-    color: '#000000',
+    color: '#1a1a1a',
     marginBottom: 16,
+    marginLeft: 8,
   },
   actionButtons: {
     flexDirection: 'row',
@@ -311,15 +372,21 @@ const styles = StyleSheet.create({
   actionButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    padding: 12,
-    borderRadius: 8,
+    padding: 16,
+    borderRadius: 16,
     flex: 1,
     minWidth: '45%',
+    elevation: 2,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
   },
   actionButtonText: {
     color: '#ffffff',
-    marginLeft: 8,
-    fontWeight: '500',
+    marginLeft: 12,
+    fontWeight: '600',
+    fontSize: 15,
   },
   infoContainer: {
     padding: 16,
@@ -328,7 +395,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: '#ffffff',
-    borderRadius: 8,
+    borderRadius: 16,
     padding: 16,
     marginBottom: 12,
     elevation: 2,
@@ -337,10 +404,18 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.1,
     shadowRadius: 4,
   },
+  infoIconContainer: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 16,
+  },
   infoText: {
     flex: 1,
-    marginLeft: 12,
-    fontSize: 14,
+    fontSize: 15,
     color: '#424242',
+    lineHeight: 22,
   },
 });
