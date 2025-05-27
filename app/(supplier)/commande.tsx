@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, FlatList, StyleSheet, ActivityIndicator, TouchableOpacity, Image } from 'react-native';
+import { View, Text, FlatList, StyleSheet, ActivityIndicator, TouchableOpacity, Image, ScrollView, Platform } from 'react-native';
 import { supabase } from '../../lib/supabase';
 import { useTranslation } from 'react-i18next';
 import { Ionicons } from '@expo/vector-icons';
@@ -206,18 +206,32 @@ export default function SupplierOrdersScreen() {
         </View>
       </View>
 
-      <FlatList
-        data={orders}
-        renderItem={renderOrder}
-        keyExtractor={item => item.id}
-        ListEmptyComponent={
+      <ScrollView
+        style={styles.scrollView}
+        contentContainerStyle={styles.scrollContent}
+        showsVerticalScrollIndicator={false}
+        bounces={true}
+        overScrollMode="always"
+        scrollEventThrottle={16}
+      >
+        {loading ? (
+          <View style={styles.centered}>
+            <ActivityIndicator size="large" color="#4CAF50" />
+            <Text style={styles.loadingText}>Chargement des commandes...</Text>
+          </View>
+        ) : orders.length === 0 ? (
           <View style={styles.emptyContainer}>
             <Ionicons name="leaf-outline" size={64} color="#4CAF50" />
             <Text style={styles.emptyText}>Aucune commande trouvée</Text>
           </View>
-        }
-        contentContainerStyle={styles.listContainer}
-      />
+        ) : (
+          orders.map((item) => (
+            <View key={item.id} style={styles.orderCard}>
+              {renderOrder({ item })}
+            </View>
+          ))
+        )}
+      </ScrollView>
     </View>
   );
 }
@@ -248,20 +262,24 @@ const styles = StyleSheet.create({
     paddingVertical: 8,
     borderRadius: 20,
     marginRight: 8,
-    backgroundColor: '#f0f0f0',
+    backgroundColor: 'green',
   },
   filterButtonActive: {
     backgroundColor: '#4CAF50',
   },
   filterText: {
-    color: '#666',
+    color: 'white',
     fontWeight: '500',
   },
   filterTextActive: {
     color: '#fff',
   },
-  listContainer: {
+  scrollView: {
+    flex: 1,
+  },
+  scrollContent: {
     padding: 16,
+    paddingBottom: Platform.OS === 'ios' ? 85 : 60,
   },
   orderCard: {
     backgroundColor: '#fff',
@@ -352,7 +370,7 @@ const styles = StyleSheet.create({
   productPrice: {
     fontSize: 18,
     fontWeight: 'bold',
-    color: '#4CAF50',
+    color: 'green',
   },
   orderFooter: {
     flexDirection: 'row',
@@ -365,10 +383,10 @@ const styles = StyleSheet.create({
   totalAmount: {
     fontSize: 18,
     fontWeight: 'bold',
-    color: '#1a1a1a',
+    color: 'green',
   },
   actionButton: {
-    backgroundColor: '#4CAF50',
+    backgroundColor: 'green',
     paddingHorizontal: 16,
     paddingVertical: 8,
     borderRadius: 8,

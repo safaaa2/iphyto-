@@ -141,7 +141,7 @@ export default function CheckoutScreen() {
 
       clearCart();
       Alert.alert(t('success'), t('paymentSuccess'), [
-        { text: t('ok'), onPress: () => router.replace('/(tabs)/home') }
+        { text: t('ok'), onPress: () => router.replace('/(tabs)/search') }
       ]);
     } catch (err) {
       const errorMsg = err instanceof Error ? err.message : 'Payment failed';

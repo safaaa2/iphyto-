@@ -691,27 +691,36 @@ export default function Products() {
         <View style={styles.headerButtons}>
           <TouchableOpacity
             key="add-product-button"
-            onPress={() => setModalVisible(true)}
+            onPress={() => {
+              setNewProduct({
+                name: '',
+                detenteur: '',
+                numero_homologation: '',
+                valable_jusqu_au: '',
+                tableau_toxicologique: '',
+                formulation: '',
+                matiere_active: '',
+                teneur: '',
+                categorie: '',
+                cultures: '',
+                cible: '',
+                prix: '',
+                nbr_d_app: '',
+                dar: '',
+                dose: '',
+                utilisation: '',
+              });
+              setEditingProduct(null);
+              setModalVisible(true);
+            }}
             style={styles.addButton}
           >
             <Ionicons name="add-circle" size={24} color="#ffffff" />
             <Text style={styles.addButtonText}>{t('addProduct')}</Text>
           </TouchableOpacity>
-          <TouchableOpacity
-            key="logout-button"
-            onPress={async () => {
-              try {
-                await supabase.auth.signOut();
-                router.replace('/');
-              } catch (error) {
-                console.error('Error signing out:', error);
-              }
-            }}
-            style={styles.logoutButton}
-          >
-            <Ionicons name="log-out-outline" size={24} color="#ff0000" />
-            <Text style={styles.logoutButtonText}>{t('logout')}</Text>
-          </TouchableOpacity>
+         
+          
+          
         </View>
       </View>
 
@@ -748,148 +757,185 @@ export default function Products() {
         <View style={styles.modalContainer}>
           <ScrollView style={styles.modalScrollView}>
             <View style={styles.modalContent}>
-              <Text style={styles.modalTitle}>Ajouter un produit</Text>
-              
-              <TextInput
-                key="name-input"
-                style={styles.input}
-                placeholder="Nom du produit"
-                value={newProduct.name}
-                onChangeText={(text) => setNewProduct({ ...newProduct, name: text })}
-              />
+              <Text style={styles.modalTitle}>
+                {editingProduct ? 'Modifier le produit' : 'Ajouter un nouveau produit'}
+              </Text>
 
-              <TextInput
-                key="detenteur-input"
-                style={styles.input}
-                placeholder="Détenteur"
-                value={newProduct.detenteur}
-                onChangeText={(text) => setNewProduct({ ...newProduct, detenteur: text })}
-              />
+              <Text style={styles.sectionTitle}>Informations principales</Text>
+              <View style={styles.inputContainer}>
+                <Text style={styles.inputLabel}>Nom du produit *</Text>
+                <TextInput
+                  style={styles.input}
+                  placeholder="Entrez le nom du produit"
+                  value={newProduct.name}
+                  onChangeText={(text) => setNewProduct({ ...newProduct, name: text })}
+                />
+              </View>
 
-              <TextInput
-                key="numero-homologation-input"
-                style={styles.input}
-                placeholder="Numéro d'homologation"
-                value={newProduct.numero_homologation}
-                onChangeText={(text) => setNewProduct({ ...newProduct, numero_homologation: text })}
-              />
+              <View style={styles.inputContainer}>
+                <Text style={styles.inputLabel}>Détenteur *</Text>
+                <TextInput
+                  style={styles.input}
+                  placeholder="Entrez le nom du détenteur"
+                  value={newProduct.detenteur}
+                  onChangeText={(text) => setNewProduct({ ...newProduct, detenteur: text })}
+                />
+              </View>
 
-              <TextInput
-                key="valable-jusqu-au-input"
-                style={styles.input}
-                placeholder="Valable jusqu'au (YYYY-MM-DD)"
-                value={newProduct.valable_jusqu_au}
-                onChangeText={(text) => setNewProduct({ ...newProduct, valable_jusqu_au: text })}
-              />
+              <View style={styles.inputContainer}>
+                <Text style={styles.inputLabel}>Numéro d'homologation *</Text>
+                <TextInput
+                  style={styles.input}
+                  placeholder="Entrez le numéro d'homologation"
+                  value={newProduct.numero_homologation}
+                  onChangeText={(text) => setNewProduct({ ...newProduct, numero_homologation: text })}
+                />
+              </View>
 
-              <TextInput
-                key="tableau-toxicologique-input"
-                style={styles.input}
-                placeholder="Tableau toxicologique"
-                value={newProduct.tableau_toxicologique}
-                onChangeText={(text) => setNewProduct({ ...newProduct, tableau_toxicologique: text })}
-              />
+              <Text style={styles.sectionTitle}>Caractéristiques</Text>
+              <View style={styles.inputContainer}>
+                <Text style={styles.inputLabel}>Formulation</Text>
+                <TextInput
+                  style={styles.input}
+                  placeholder="Entrez la formulation"
+                  value={newProduct.formulation}
+                  onChangeText={(text) => setNewProduct({ ...newProduct, formulation: text })}
+                />
+              </View>
 
-              <TextInput
-                key="formulation-input"
-                style={styles.input}
-                placeholder="Formulation"
-                value={newProduct.formulation}
-                onChangeText={(text) => setNewProduct({ ...newProduct, formulation: text })}
-              />
+              <View style={styles.inputContainer}>
+                <Text style={styles.inputLabel}>Matière active</Text>
+                <TextInput
+                  style={styles.input}
+                  placeholder="Entrez la matière active"
+                  value={newProduct.matiere_active}
+                  onChangeText={(text) => setNewProduct({ ...newProduct, matiere_active: text })}
+                />
+              </View>
 
-              <TextInput
-                key="matiere-active-input"
-                style={styles.input}
-                placeholder="Matière active"
-                value={newProduct.matiere_active}
-                onChangeText={(text) => setNewProduct({ ...newProduct, matiere_active: text })}
-              />
+              <Text style={styles.sectionTitle}>Utilisation</Text>
+              <View style={styles.inputContainer}>
+                <Text style={styles.inputLabel}>Cultures</Text>
+                <TextInput
+                  style={styles.input}
+                  placeholder="Entrez les cultures cibles"
+                  value={newProduct.cultures}
+                  onChangeText={(text) => setNewProduct({ ...newProduct, cultures: text })}
+                />
+              </View>
 
-              <TextInput
-                key="teneur-input"
-                style={styles.input}
-                placeholder="Teneur"
-                value={newProduct.teneur}
-                onChangeText={(text) => setNewProduct({ ...newProduct, teneur: text })}
-              />
+              <View style={styles.inputContainer}>
+                <Text style={styles.inputLabel}>Cible</Text>
+                <TextInput
+                  style={styles.input}
+                  placeholder="Entrez la cible"
+                  value={newProduct.cible}
+                  onChangeText={(text) => setNewProduct({ ...newProduct, cible: text })}
+                />
+              </View>
 
-              <TextInput
-                key="categorie-input"
-                style={styles.input}
-                placeholder="Catégorie"
-                value={newProduct.categorie}
-                onChangeText={(text) => setNewProduct({ ...newProduct, categorie: text })}
-              />
+              <Text style={styles.sectionTitle}>Détails techniques</Text>
+              <View style={styles.inputContainer}>
+                <Text style={styles.inputLabel}>DAR</Text>
+                <TextInput
+                  style={styles.input}
+                  placeholder="Entrez le DAR"
+                  value={newProduct.dar}
+                  onChangeText={(text) => setNewProduct({ ...newProduct, dar: text })}
+                />
+              </View>
 
-              <TextInput
-                key="cultures-input"
-                style={styles.input}
-                placeholder="Cultures"
-                value={newProduct.cultures}
-                onChangeText={(text) => setNewProduct({ ...newProduct, cultures: text })}
-              />
+              <View style={styles.inputContainer}>
+                <Text style={styles.inputLabel}>Dose</Text>
+                <TextInput
+                  style={styles.input}
+                  placeholder="Entrez la dose"
+                  value={newProduct.dose}
+                  onChangeText={(text) => setNewProduct({ ...newProduct, dose: text })}
+                />
+              </View>
 
-              <TextInput
-                key="cible-input"
-                style={styles.input}
-                placeholder="Cible"
-                value={newProduct.cible}
-                onChangeText={(text) => setNewProduct({ ...newProduct, cible: text })}
-              />
+              <Text style={styles.sectionTitle}>Informations commerciales</Text>
+              <View style={styles.inputContainer}>
+                <Text style={styles.inputLabel}>Prix (MAD)</Text>
+                <TextInput
+                  style={styles.input}
+                  placeholder="Entrez le prix"
+                  value={newProduct.prix}
+                  onChangeText={(text) => setNewProduct({ ...newProduct, prix: text })}
+                  keyboardType="numeric"
+                />
+              </View>
 
-              <TextInput
-                key="prix-input"
-                style={styles.input}
-                placeholder="Prix"
-                value={newProduct.prix}
-                onChangeText={(text) => setNewProduct({ ...newProduct, prix: text })}
-                keyboardType="numeric"
-              />
+              <View style={styles.inputContainer}>
+                <Text style={styles.inputLabel}>Nombre d'applications</Text>
+                <TextInput
+                  style={styles.input}
+                  placeholder="Entrez le nombre d'applications"
+                  value={newProduct.nbr_d_app}
+                  onChangeText={(text) => setNewProduct({ ...newProduct, nbr_d_app: text })}
+                  keyboardType="numeric"
+                />
+              </View>
 
-              <TextInput
-                key="nbr-d-app-input"
-                style={styles.input}
-                placeholder="Nombre d'applications"
-                value={newProduct.nbr_d_app}
-                onChangeText={(text) => setNewProduct({ ...newProduct, nbr_d_app: text })}
-                keyboardType="numeric"
-              />
+              <View style={styles.inputContainer}>
+                <Text style={styles.inputLabel}>Date d'expiration</Text>
+                <TextInput
+                  style={styles.input}
+                  placeholder="YYYY-MM-DD"
+                  value={newProduct.valable_jusqu_au}
+                  onChangeText={(text) => setNewProduct({ ...newProduct, valable_jusqu_au: text })}
+                />
+              </View>
 
-              <TextInput
-                key="dar-input"
-                style={styles.input}
-                placeholder="DAR"
-                value={newProduct.dar}
-                onChangeText={(text) => setNewProduct({ ...newProduct, dar: text })}
-              />
+              <View style={styles.inputContainer}>
+                <Text style={styles.inputLabel}>Tableau toxicologique</Text>
+                <TextInput
+                  style={styles.input}
+                  placeholder="Entrez le tableau toxicologique"
+                  value={newProduct.tableau_toxicologique}
+                  onChangeText={(text) => setNewProduct({ ...newProduct, tableau_toxicologique: text })}
+                />
+              </View>
 
-              <TextInput
-                key="dose-input"
-                style={styles.input}
-                placeholder="DOSE"
-                value={newProduct.dose}
-                onChangeText={(text) => setNewProduct({ ...newProduct, dose: text })}
-              />
+              <View style={styles.inputContainer}>
+                <Text style={styles.inputLabel}>Catégorie</Text>
+                <TextInput
+                  style={styles.input}
+                  placeholder="Entrez la catégorie"
+                  value={newProduct.categorie}
+                  onChangeText={(text) => setNewProduct({ ...newProduct, categorie: text })}
+                />
+              </View>
 
-              <TextInput
-                key="utilisation-input"
-                style={styles.input}
-                placeholder="Utilisation"
-                value={newProduct.utilisation}
-                onChangeText={(text) => setNewProduct({ ...newProduct, utilisation: text })}
-              />
+              <View style={styles.inputContainer}>
+                <Text style={styles.inputLabel}>Teneur</Text>
+                <TextInput
+                  style={styles.input}
+                  placeholder="Entrez la teneur"
+                  value={newProduct.teneur}
+                  onChangeText={(text) => setNewProduct({ ...newProduct, teneur: text })}
+                />
+              </View>
+
+              <View style={styles.inputContainer}>
+                <Text style={styles.inputLabel}>Utilisation</Text>
+                <TextInput
+                  style={styles.input}
+                  placeholder="Entrez les instructions d'utilisation"
+                  value={newProduct.utilisation}
+                  onChangeText={(text) => setNewProduct({ ...newProduct, utilisation: text })}
+                />
+              </View>
 
               <View style={styles.modalButtons}>
                 <TouchableOpacity
-                  key="cancel-button"
                   style={[styles.modalButton, styles.cancelButton]}
                   onPress={() => setModalVisible(false)}
                 >
-                  <Text style={styles.buttonText}>Annuler</Text>
+                  <Text style={[styles.buttonText, styles.cancelButtonText]}>Annuler</Text>
                 </TouchableOpacity>
                 <TouchableOpacity
-                  key="save-button"
                   style={[styles.modalButton, styles.saveButton]}
                   onPress={handleSaveProduct}
                 >
@@ -913,15 +959,21 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    padding: 16,
-    backgroundColor: '#ffffff',
-    borderBottomWidth: 1,
-    borderBottomColor: '#e0e0e0',
+    padding: 20,
+    backgroundColor: '#1B5E20',  // Vert foncé professionnel
+    borderBottomLeftRadius: 20,
+    borderBottomRightRadius: 20,
+    elevation: 4,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 4,
   },
   title: {
-    fontSize: 22,
-    fontWeight: '600',
-    color: '#000000',
+    fontSize: 24,
+    fontWeight: '700',
+    color: '#FFFFFF',
+    letterSpacing: 0.5,
   },
   headerButtons: {
     flexDirection: 'row',
@@ -931,14 +983,21 @@ const styles = StyleSheet.create({
   addButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#4CAF50',
-    padding: 8,
-    borderRadius: 6,
+    backgroundColor: '#2E7D32',  // Vert plus clair pour le bouton
+    padding: 12,
+    borderRadius: 12,
+    elevation: 3,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 3,
   },
   addButtonText: {
-    marginLeft: 4,
-    color: '#ffffff',
-    fontWeight: '500',
+    marginLeft: 8,
+    color: '#FFFFFF',
+    fontWeight: '600',
+    fontSize: 15,
+    letterSpacing: 0.3,
   },
   logoutButton: {
     flexDirection: 'row',
@@ -1006,57 +1065,104 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    backgroundColor: 'rgba(0, 0, 0, 0.6)',
   },
   modalScrollView: {
     width: '100%',
-    maxHeight: '80%',
+    maxHeight: '90%',
   },
   modalContent: {
-    backgroundColor: 'white',
-    borderRadius: 8,
+    backgroundColor: '#ffffff',
+    borderRadius: 16,
     padding: 20,
-    width: '90%',
+    width: '95%',
     alignSelf: 'center',
-    marginVertical: 20,
+    marginVertical: 16,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 8,
+    elevation: 5,
   },
   modalTitle: {
     fontSize: 20,
-    fontWeight: '600',
+    fontWeight: '700',
     marginBottom: 20,
     textAlign: 'center',
-    color: '#000000',
+    color: '#1B5E20',
+    letterSpacing: 0.5,
   },
   input: {
     borderWidth: 1,
-    borderColor: '#e0e0e0',
-    borderRadius: 6,
+    borderColor: '#E0E0E0',
+    borderRadius: 8,
     padding: 10,
     marginBottom: 12,
     fontSize: 14,
+    backgroundColor: '#F8F9FA',
+    color: '#333',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.1,
+    shadowRadius: 2,
+    elevation: 1,
+    height: 40,
+  },
+  inputLabel: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: '#1B5E20',
+    marginBottom: 4,
+    marginLeft: 4,
+  },
+  inputContainer: {
+    marginBottom: 12,
   },
   modalButtons: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     marginTop: 20,
+    gap: 10,
   },
   modalButton: {
     flex: 1,
     padding: 12,
-    borderRadius: 6,
-    marginHorizontal: 6,
+    borderRadius: 8,
+    alignItems: 'center',
+    justifyContent: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 3,
+    elevation: 2,
   },
   cancelButton: {
-    backgroundColor: '#f44336',
+    backgroundColor: '#FFEBEE',
+    borderWidth: 1,
+    borderColor: '#FFCDD2',
   },
   saveButton: {
-    backgroundColor: '#4CAF50',
+    backgroundColor: '#1B5E20',
   },
   buttonText: {
     color: '#ffffff',
     textAlign: 'center',
-    fontWeight: '500',
+    fontWeight: '600',
     fontSize: 14,
+    letterSpacing: 0.5,
+  },
+  cancelButtonText: {
+    color: '#D32F2F',
+  },
+  sectionTitle: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#1B5E20',
+    marginTop: 20,
+    marginBottom: 12,
+    paddingBottom: 6,
+    borderBottomWidth: 1,
+    borderBottomColor: '#E0E0E0',
   },
   centerContainer: {
     flex: 1,

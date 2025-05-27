@@ -211,7 +211,8 @@ const styles = StyleSheet.create({
     },
     orderId: {
         fontSize: 11,
-        color: '#aaa',
+        color: 'black',
+        fontWeight:'bold',
         marginTop: 2,
         marginLeft: 2,
         letterSpacing: 1,
@@ -286,8 +287,9 @@ const styles = StyleSheet.create({
         marginTop: 10,
     },
     customerInfo: {
-        fontSize: 12,
-        color: '#888',
+        fontSize: 14,
+        color: 'black',
+        fontWeight:'bold',
         fontStyle: 'italic',
         flexShrink: 1,
     },

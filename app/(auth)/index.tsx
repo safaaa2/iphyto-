@@ -174,11 +174,11 @@ export default function Auth(): JSX.Element {
       if (profileData?.role === "admin") {
         router.replace("/admin");
       } else if (profileData?.role === "supplier") {
-        router.replace("/(supplier)/products");
+        router.replace("/(supplier)/dashboard");
       } else if (profileData?.role === "farmer") {
-        router.replace("/(tabs)/home");
+        router.replace("/(tabs)/search");
       } else {
-        router.replace("/(tabs)/home");
+        router.replace("/(tabs)/search");
       }
     
       setLoading(false);

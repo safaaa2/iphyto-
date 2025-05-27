@@ -180,7 +180,7 @@ function CartContent() {
                 console.error('Erreur lors de l\'enregistrement de la commande:', err);
               }
               clearCart();
-              router.replace('/(tabs)/home');
+              router.replace('/(tabs)/search');
             }
           }
         ]
@@ -214,7 +214,7 @@ function CartContent() {
       
         {item["Valable jusqu'au"] && (
           <Text style={styles.itemDate}>
-            <Icon name="calendar" size={14} color="#666" /> Valable jusqu'au: {new Date(item["Valable jusqu'au"]).toLocaleDateString('en-US', {
+            <Icon name="calendar" size={14} color="black" /> Valable jusqu'au: {new Date(item["Valable jusqu'au"]).toLocaleDateString('en-US', {
               year: 'numeric',
               month: 'long',
               day: 'numeric'
@@ -350,7 +350,7 @@ const styles = StyleSheet.create({
   },
   itemDate: {
     fontSize: 12,
-    color: '#666',
+    color: 'black',
     marginTop: 4,
     fontStyle: 'italic',
   },
@@ -445,7 +445,8 @@ const styles = StyleSheet.create({
   },
   fournisseurText: {
     fontSize: 12,
-    color: '#888',
+    color: 'black',
+    fontWeight:'bold',
     fontStyle: 'italic',
     marginBottom: 2,
   },

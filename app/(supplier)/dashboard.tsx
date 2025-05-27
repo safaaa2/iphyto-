@@ -8,6 +8,7 @@ import {
   Platform,
   ActivityIndicator,
   Image,
+  Alert,
 } from 'react-native';
 import { supabase } from '../../lib/supabase';
 import { useTranslation } from 'react-i18next';
@@ -21,6 +22,10 @@ interface DashboardStats {
   expiringProducts: number;
   expiredProducts: number;
   recentProducts: number;
+  totalOrders: number;
+  pendingOrders: number;
+  completedOrders: number;
+  orderRate: number;
 }
 
 export default function Dashboard() {
@@ -32,6 +37,10 @@ export default function Dashboard() {
     expiringProducts: 0,
     expiredProducts: 0,
     recentProducts: 0,
+    totalOrders: 0,
+    pendingOrders: 0,
+    completedOrders: 0,
+    orderRate: 0,
   });
   const router = useRouter();
 
@@ -69,12 +78,20 @@ export default function Dashboard() {
 
       if (productsError) throw productsError;
 
+      // Récupérer les commandes du fournisseur
+      const { data: orders, error: ordersError } = await supabase
+        .from('commandes')
+        .select('*')
+        .eq('fournisseur', profileData.fournisseur);
+
+      if (ordersError) throw ordersError;
+
       const today = new Date();
       const thirtyDaysFromNow = new Date();
       thirtyDaysFromNow.setDate(today.getDate() + 30);
 
-      // Calculer les statistiques
-      const stats = {
+      // Calculer les statistiques des produits
+      const productStats = {
         totalProducts: products?.length || 0,
         activeProducts: products?.filter(p => new Date(p["Valable jusqu'au"]) > today).length || 0,
         expiringProducts: products?.filter(p => {
@@ -90,7 +107,19 @@ export default function Dashboard() {
         }).length || 0,
       };
 
-      setStats(stats);
+      // Calculer les statistiques des commandes
+      const orderStats = {
+        totalOrders: orders?.length || 0,
+        pendingOrders: orders?.filter(o => o.status === 'en attente').length || 0,
+        completedOrders: orders?.filter(o => o.status === 'complétée').length || 0,
+        orderRate: orders?.length ? 
+          ((orders.filter(o => o.status === 'complétée').length / orders.length) * 100) : 0
+      };
+
+      setStats({
+        ...productStats,
+        ...orderStats
+      });
     } catch (error: any) {
       console.error('Error fetching dashboard data:', error);
     } finally {
@@ -123,7 +152,11 @@ export default function Dashboard() {
     onPress: () => void; 
     color: string 
   }) => (
-    <TouchableOpacity style={[styles.actionButton, { backgroundColor: color }]} onPress={onPress}>
+    <TouchableOpacity 
+      style={[styles.actionButton, { backgroundColor: color }]} 
+      onPress={onPress}
+      disabled={title === "Produits expirant" && stats.expiringProducts === 0}
+    >
       {icon ? (
         <Ionicons name={icon as any} size={24} color="#ffffff" />
       ) : image ? (
@@ -137,9 +170,56 @@ export default function Dashboard() {
           }} 
         />
       ) : null}
-      <Text style={styles.actionButtonText}>{title}</Text>
+      <Text style={[
+        styles.actionButtonText,
+        title === "Produits expirant" && stats.expiringProducts === 0 && styles.disabledButtonText
+      ]}>
+        {title}
+      </Text>
     </TouchableOpacity>
   );
+
+  const handleExpiringProducts = async () => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+
+      const { data: profileData } = await supabase
+        .from('profiles')
+        .select('fournisseur')
+        .eq('id', user.id)
+        .single();
+
+      if (!profileData?.fournisseur) return;
+
+      const today = new Date();
+      const thirtyDaysFromNow = new Date();
+      thirtyDaysFromNow.setDate(today.getDate() + 30);
+
+      const { data: expiringProducts } = await supabase
+        .from('Produits')
+        .select('*')
+        .eq('Fournisseur', profileData.fournisseur)
+        .gte("Valable jusqu'au", today.toISOString())
+        .lte("Valable jusqu'au", thirtyDaysFromNow.toISOString())
+        .order("Valable jusqu'au", { ascending: true });
+
+      if (expiringProducts && expiringProducts.length > 0) {
+        router.push({
+          pathname: '/products',
+          params: { filter: 'expiring', products: JSON.stringify(expiringProducts) }
+        });
+      } else {
+        Alert.alert(
+          'Information',
+          'Aucun produit n\'expire dans les 30 prochains jours.'
+        );
+      }
+    } catch (error) {
+      console.error('Error fetching expiring products:', error);
+      Alert.alert('Erreur', 'Impossible de récupérer les produits expirant.');
+    }
+  };
 
   if (loading) {
     return (
@@ -176,13 +256,13 @@ export default function Dashboard() {
             title="Total des produits"
             value={stats.totalProducts}
             icon="cube-outline"
-            color="#4CAF50"
+            color="#2E7D32"
           />
           <StatCard
             title="Produits actifs"
             value={stats.activeProducts}
             icon="checkmark-circle-outline"
-            color="#2196F3"
+            color="#388E3C"
           />
         </View>
         <View style={styles.statsRow}>
@@ -190,13 +270,13 @@ export default function Dashboard() {
             title="Produits expirant"
             value={stats.expiringProducts}
             icon="warning-outline"
-            color="#FFC107"
+            color="#F57C00"
           />
           <StatCard
             title="Produits expirés"
             value={stats.expiredProducts}
             icon="close-circle-outline"
-            color="#F44336"
+            color="#D32F2F"
           />
         </View>
         <View style={styles.statsRow}>
@@ -204,8 +284,18 @@ export default function Dashboard() {
             title="Nouveaux produits"
             value={stats.recentProducts}
             icon="add-circle-outline"
-            color="#9C27B0"
+            color="#1976D2"
           />
+          <StatCard
+            title="Commandes"
+            value={stats.totalOrders}
+            icon="cart-outline"
+            color="#7CB342"
+          />
+        </View>
+        <View style={styles.statsRow}>
+          
+         
         </View>
       </View>
 
@@ -216,19 +306,19 @@ export default function Dashboard() {
             title="Ajouter un produit"
             icon="add-circle"
             onPress={() => router.push('/products')}
-            color="#4CAF50"
+            color="#2E7D32"
           />
           <QuickActionButton
             title="Les commandes"
             image={icons.commande}
             onPress={() => router.push('/commande')}
-            color="#2196F3"
+            color="#1976D2"
           />
           <QuickActionButton
             title="Produits expirant"
             icon="warning"
-            onPress={() => router.push('/products')}
-            color="#FFC107"
+            onPress={handleExpiringProducts}
+            color="#F57C00"
           />
         </View>
       </View>
@@ -259,7 +349,7 @@ export default function Dashboard() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f8f9fa',
+    backgroundColor: '#F5F7FA',
   },
   scrollContent: {
     flexGrow: 1,
@@ -275,7 +365,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
     padding: 20,
-    backgroundColor: '#4CAF50',
+    backgroundColor: '#1B5E20',
     borderBottomLeftRadius: 20,
     borderBottomRightRadius: 20,
     elevation: 4,
@@ -300,7 +390,7 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 24,
     fontWeight: '600',
-    color: '#ffffff',
+    color: '#FFFFFF',
   },
   refreshButton: {
     width: 40,
@@ -321,7 +411,7 @@ const styles = StyleSheet.create({
   },
   statCard: {
     flex: 1,
-    backgroundColor: '#ffffff',
+    backgroundColor: '#FFFFFF',
     borderRadius: 16,
     padding: 16,
     marginHorizontal: 8,
@@ -330,6 +420,7 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
     shadowRadius: 4,
+    borderLeftWidth: 4,
   },
   statIconContainer: {
     width: 48,
@@ -346,12 +437,12 @@ const styles = StyleSheet.create({
   statValue: {
     fontSize: 28,
     fontWeight: '700',
-    color: '#1a1a1a',
+    color: '#1B5E20',
     marginBottom: 4,
   },
   statTitle: {
     fontSize: 14,
-    color: '#666666',
+    color: '#424242',
     fontWeight: '500',
   },
   actionsContainer: {
@@ -360,7 +451,7 @@ const styles = StyleSheet.create({
   sectionTitle: {
     fontSize: 20,
     fontWeight: '600',
-    color: '#1a1a1a',
+    color: '#1B5E20',
     marginBottom: 16,
     marginLeft: 8,
   },
@@ -376,14 +467,14 @@ const styles = StyleSheet.create({
     borderRadius: 16,
     flex: 1,
     minWidth: '45%',
-    elevation: 2,
+    elevation: 3,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
     shadowRadius: 4,
   },
   actionButtonText: {
-    color: '#ffffff',
+    color: '#FFFFFF',
     marginLeft: 12,
     fontWeight: '600',
     fontSize: 15,
@@ -394,7 +485,7 @@ const styles = StyleSheet.create({
   infoCard: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#ffffff',
+    backgroundColor: '#FFFFFF',
     borderRadius: 16,
     padding: 16,
     marginBottom: 12,
@@ -417,5 +508,8 @@ const styles = StyleSheet.create({
     fontSize: 15,
     color: '#424242',
     lineHeight: 22,
+  },
+  disabledButtonText: {
+    opacity: 0.6,
   },
 });

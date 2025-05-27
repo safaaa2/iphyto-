@@ -159,10 +159,10 @@ export default function SignUp() {
         router.replace('/(supplier)/products');
       } else if (userType === 'farmer') {
         console.log('Redirection vers l\'interface farmer');
-        router.replace('/(tabs)/home');
+        router.replace('/(tabs)/search');
       } else {
         console.log('Redirection vers l\'interface utilisateur');
-        router.replace('/(tabs)/home');
+        router.replace('/(tabs)/search');
       }
 
       setLoading(false);

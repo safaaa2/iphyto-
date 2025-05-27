@@ -156,7 +156,7 @@ const TabsLayout = () => {
   const iconStyle = (focused: boolean) => ({
     width: 24,
     height: 24,
-    tintColor: focused ? '#1DB954' : '#B0B0B0'
+    tintColor: focused ? 'green' : '#B0B0B0'
   });
 
   if (isAdmin) {
@@ -191,15 +191,7 @@ const TabsLayout = () => {
   return (
     <SessionProvider>
       <Tabs screenOptions={screenOptions}>
-        <Tabs.Screen
-          name="home"
-          options={{
-            title: 'Home',
-            tabBarIcon: ({ focused }: { focused: boolean }) => (
-              <Image source={icons.home} style={iconStyle(focused)} />
-            ),
-          }}
-        />
+      
         <Tabs.Screen
           name="search"
           options={{
@@ -225,7 +217,7 @@ const TabsLayout = () => {
             title: 'History',
             headerShown: true,
             tabBarIcon: ({ focused }: { focused: boolean }) => (
-              <Icon name="history" size={29} color={focused ? '#1DB954' : '#B0B0B0'} />
+              <Icon name="history" size={29} color={focused ? 'green' : '#B0B0B0'} />
             ),
           }}
         />
