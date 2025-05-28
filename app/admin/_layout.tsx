@@ -41,9 +41,9 @@ const AdminLayout = () => {
   };
 
   const iconStyle = (focused: boolean) => ({
-    width: 15,
-    height: 20,
-    tintColor: focused ? '#1DB954' : '#B0B0B0'
+    width: 26,
+    height: 23,
+    tintColor: focused ? 'green' : '#B0B0B0'
   });
 
   return (
@@ -62,6 +62,29 @@ const AdminLayout = () => {
                 />
               </View>
             ),
+            tabBarLabelStyle: {
+              color: 'green',  // couleur verte pour le texte du label
+            },
+          }}
+        />
+         <Tabs.Screen
+          name="users"
+          options={{
+            title: 'users',
+            headerShown: true,
+            tabBarIcon: ({ focused }: { focused: boolean }) => (
+              <View style={{ alignItems: 'center', justifyContent: 'center' }}>
+                <Image 
+                  source={icons.users} 
+                  style={iconStyle(focused)}
+                />
+              </View>
+            ),
+
+            tabBarLabelStyle: {
+              color: 'green',  // couleur verte pour le texte du label
+            },
+            
           }}
         />
         <Tabs.Screen
@@ -76,7 +99,11 @@ const AdminLayout = () => {
                   style={iconStyle(focused)}
                 />
               </View>
+              
             ),
+            tabBarLabelStyle: {
+              color: 'green',  // couleur verte pour le texte du label
+            },
           }}
         />
       </Tabs>

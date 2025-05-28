@@ -1,45 +1,25 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, TextInput, FlatList, Switch, Modal, Button, Alert } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, SafeAreaView } from 'react-native';
 import { useSession } from '../session/sessionContext';
 import { supabase } from '../../lib/supabase';
 import Icon from 'react-native-vector-icons/FontAwesome';
-
-interface User {
-  id: string;
-  full_name: string;
-  username: string;
-  email: string;
-  role: string;
-  is_active: boolean;
-}
+import { LinearGradient } from 'expo-linear-gradient';
 
 export default function AdminPage() {
   const { session } = useSession();
-  const [activeTab, setActiveTab] = useState('dashboard');
-  const [users, setUsers] = useState<User[]>([]);
-  const [filteredUsers, setFilteredUsers] = useState<User[]>([]);
-  const [searchQuery, setSearchQuery] = useState('');
-  const [modalVisible, setModalVisible] = useState(false);
-  const [userToEdit, setUserToEdit] = useState<User | null>(null);
-  const [fullName, setFullName] = useState('');
-  const [username, setUsername] = useState('');
-  const [email, setEmail] = useState('');
-  const [role, setRole] = useState('');
   const [userCount, setUserCount] = useState(0);
   const [plantCount, setPlantCount] = useState(0);
   const [activeUserCount, setActiveUserCount] = useState(0);
   const [supplierCount, setSupplierCount] = useState(0);
+  const [productSupplierCount, setProductSupplierCount] = useState(0);
 
   useEffect(() => {
-    if (activeTab === 'dashboard') {
-      fetchUserCount();
-      fetchPlantCount();
-      fetchActiveUserCount();
-      fetchSupplierCount();
-    } else if (activeTab === 'users') {
-      fetchUsers();
-    }
-  }, [activeTab]);
+    fetchUserCount();
+    fetchPlantCount();
+    fetchActiveUserCount();
+    fetchSupplierCount();
+    fetchProductSupplierCount();
+  }, []);
 
   const fetchUserCount = async () => {
     try {
@@ -107,334 +87,141 @@ export default function AdminPage() {
     }
   };
 
-  const fetchUsers = async () => {
+  const fetchProductSupplierCount = async () => {
     try {
-      const { data, error } = await supabase
-        .from('profiles')
-        .select('id, full_name, username, email, role, is_active')
-        .order('full_name', { ascending: true });
+      const { count, error } = await supabase
+        .from('Produits')
+        .select('Fournisseur', { count: 'exact', head: true })
+        .not('Fournisseur', 'is', null);
 
       if (error) {
-        console.error('Error fetching users:', error.message);
-        Alert.alert('Erreur', 'Impossible de charger les utilisateurs');
+        console.error('Error counting product suppliers:', error.message);
       } else {
-        setUsers(data as User[]);
-        setFilteredUsers(data as User[]);
+        setProductSupplierCount(count || 0);
       }
     } catch (error) {
-      console.error('Error in fetchUsers:', error);
-      Alert.alert('Erreur', 'Une erreur est survenue lors du chargement des utilisateurs');
+      console.error('Error in fetchProductSupplierCount:', error);
     }
   };
 
-  const filterUsers = (query: string) => {
-    setSearchQuery(query);
-    const lowerQuery = query.toLowerCase();
-    const filtered = users.filter((user: User) =>
-      (user.full_name || '').toLowerCase().includes(lowerQuery) ||
-      (user.email || '').toLowerCase().includes(lowerQuery)
-    );
-    setFilteredUsers(filtered);
-  };
+  return (
+    <SafeAreaView style={styles.safeArea}>
+      <View style={styles.container}>
+        <LinearGradient
+          colors={['#2E7D32', '#1B5E20']}
+          style={styles.header}
+        >
+          <Text style={styles.title}>Administration</Text>
+          <Text style={styles.subtitle}>{session?.user.email}</Text>
+        </LinearGradient>
 
-  const toggleUserActive = async (userId: string, isActive: boolean) => {
-    const { error } = await supabase
-      .from('profiles')
-      .update({ is_active: !isActive })
-      .eq('id', userId);
-
-    if (error) {
-      console.error('Error updating user:', error.message);
-    } else {
-      fetchUsers();
-    }
-  };
-
-  const openEditModal = (user: User) => {
-    setUserToEdit(user);
-    setFullName(user.full_name);
-    setUsername(user.username);
-    setEmail(user.email);
-    setRole(user.role);
-    setModalVisible(true);
-  };
-
-  const closeEditModal = () => {
-    setModalVisible(false);
-    setUserToEdit(null);
-    setFullName('');
-    setUsername('');
-    setEmail('');
-    setRole('');
-  };
-
-  const handleEditUser = async () => {
-    if (!userToEdit) return;
-
-    const { error } = await supabase
-      .from('profiles')
-      .update({
-        full_name: fullName,
-        username: username,
-        email: email,
-        role: role
-      })
-      .eq('id', userToEdit.id);
-
-    if (error) {
-      console.error('Erreur lors de la mise à jour de l\'utilisateur:', error.message);
-    } else {
-      fetchUsers();
-      closeEditModal();
-    }
-  };
-
-  const handleDeleteUser = async (userId: string) => {
-    try {
-      const { error } = await supabase
-        .from('profiles')
-        .delete()
-        .eq('id', userId);
-
-      if (error) {
-        console.error('Erreur lors de la suppression:', error.message);
-        Alert.alert('Erreur', 'Impossible de supprimer l\'utilisateur');
-      } else {
-        fetchUsers();
-        Alert.alert('Succès', 'Utilisateur supprimé avec succès');
-      }
-    } catch (error) {
-      console.error('Erreur lors de la suppression:', error);
-      Alert.alert('Erreur', 'Une erreur est survenue lors de la suppression');
-    }
-  };
-
-  const renderUserItem = ({ item }: { item: User }) => (
-    <View style={styles.userCard}>
-      <View style={{ flex: 1 }}>
-        <Text style={[styles.userName, { fontWeight: 'bold' }]}>
-          {item.full_name || 'Nom inconnu'}
-        </Text>
-        <Text style={styles.userEmail}>Email : {item.email || 'Email inconnu'}</Text>
-        <Text style={styles.userRole}>Rôle : {item.role || 'Utilisateur'}</Text>
-        <Text style={styles.userName}>Nom d'utilisateur : {item.username || 'Nom inconnu'}</Text>
-      </View>
-
-      <TouchableOpacity
-        style={styles.blockButton}
-        onPress={() => toggleUserActive(item.id, item.is_active ?? true)}
-      >
-        <Icon name={item.is_active ? 'lock' : 'unlock'} size={20} color="#fff" />
-      </TouchableOpacity>
-
-      <TouchableOpacity
-        style={styles.modifyButton}
-        onPress={() => openEditModal(item)}
-      >
-        <Icon name="pencil" size={20} color="#fff" />
-      </TouchableOpacity>
-    </View>
-  );
-
-  const renderContent = () => {
-    switch (activeTab) {
-      case 'dashboard':
-        return (
+        <ScrollView 
+          style={styles.scrollView}
+          showsVerticalScrollIndicator={false}
+          contentContainerStyle={styles.scrollViewContent}
+        >
           <View style={styles.content}>
-            <Text style={styles.sectionTitle}>Tableau de bord</Text>
+            <Text style={styles.sectionTitle}>Tableau de Bord</Text>
             <View style={styles.statsContainer}>
               <View style={styles.statCard}>
-                <Icon name="users" size={30} color="#2E7D32" style={styles.statIcon} />
+                <View style={styles.iconContainer}>
+                  <Icon name="users" size={30} color="#2E7D32" style={styles.statIcon} />
+                </View>
                 <Text style={styles.statNumber}>{userCount}</Text>
                 <Text style={styles.statLabel}>Utilisateurs</Text>
               </View>
               <View style={styles.statCard}>
-                <Icon name="leaf" size={30} color="#2E7D32" style={styles.statIcon} />
+                <View style={styles.iconContainer}>
+                  <Icon name="leaf" size={30} color="#2E7D32" style={styles.statIcon} />
+                </View>
                 <Text style={styles.statNumber}>{plantCount}</Text>
                 <Text style={styles.statLabel}>Cultures</Text>
               </View>
             </View>
             <View style={styles.statsContainer}>
               <View style={styles.statCard}>
-                <Icon name="user-circle" size={30} color="#2E7D32" style={styles.statIcon} />
+                <View style={styles.iconContainer}>
+                  <Icon name="user-circle" size={30} color="#2E7D32" style={styles.statIcon} />
+                </View>
                 <Text style={styles.statNumber}>{activeUserCount}</Text>
                 <Text style={styles.statLabel}>Utilisateurs Actifs</Text>
               </View>
               <View style={styles.statCard}>
-                <Icon name="truck" size={30} color="#2E7D32" style={styles.statIcon} />
+                <View style={styles.iconContainer}>
+                  <Icon name="truck" size={30} color="#2E7D32" style={styles.statIcon} />
+                </View>
                 <Text style={styles.statNumber}>{supplierCount}</Text>
-                <Text style={styles.statLabel}>Fournisseur</Text>
+                <Text style={styles.statLabel}>Fournisseurs</Text>
               </View>
             </View>
-          </View>
-        );
-      case 'users':
-        return (
-          <View style={styles.content}>
-            <TextInput
-              style={styles.searchInput}
-              placeholder="Rechercher par nom ou email..."
-              value={searchQuery}
-              onChangeText={filterUsers}
-            />
-            <FlatList
-              data={filteredUsers}
-              keyExtractor={(item) => item.id}
-              renderItem={renderUserItem}
-              ListEmptyComponent={<Text style={styles.emptyText}>Aucun utilisateur trouvé.</Text>}
-            />
-          </View>
-        );
-      default:
-        return null;
-    }
-  };
-
-  return (
-    <View style={styles.container}>
-      <View style={styles.header}>
-        <Text style={styles.title}>Administration</Text>
-        <Text style={styles.subtitle}>{session?.user.email}</Text>
-      </View>
-
-      <View style={styles.tabs}>
-        <TouchableOpacity 
-          style={[styles.tab, activeTab === 'dashboard' && styles.activeTab]} 
-          onPress={() => setActiveTab('dashboard')}
-        >
-          <Text style={[styles.tabText, activeTab === 'dashboard' && styles.activeTabText]}>Tableau de bord</Text>
-        </TouchableOpacity>
-        <TouchableOpacity 
-          style={[styles.tab, activeTab === 'users' && styles.activeTab]} 
-          onPress={() => setActiveTab('users')}
-        >
-          <Text style={[styles.tabText, activeTab === 'users' && styles.activeTabText]}>Utilisateurs</Text>
-        </TouchableOpacity>
-      </View>
-
-      {renderContent()}
-
-      <Modal
-        visible={modalVisible}
-        animationType="slide"
-        transparent={true}
-        onRequestClose={closeEditModal}
-      >
-        <View style={styles.modalBackground}>
-          <View style={styles.modalContainer}>
-            <Text style={styles.modalTitle}>Modifier l'utilisateur</Text>
-
-            <Text>Email : </Text>
-            <TextInput
-              style={styles.input}
-              placeholder="Email"
-              value={email}
-              onChangeText={setEmail}
-            />
-
-            <Text>Role :</Text>
-            <View style={styles.roleContainer}>
-              <TouchableOpacity style={styles.roleButton} onPress={() => setRole('user')}>
-                <Text style={styles.roleText}>User</Text>
-              </TouchableOpacity>
-
-              <TouchableOpacity style={styles.roleButton} onPress={() => setRole('admin')}>
-                <Text style={styles.roleText}>Admin</Text>
-              </TouchableOpacity>
-              <TouchableOpacity style={styles.roleButton} onPress={() => setRole('fournisseur')}>
-                <Text style={styles.roleText}>Fournisseur</Text>
-              </TouchableOpacity>
+            <View style={styles.statsContainer}>
+              <View style={[styles.statCard, styles.fullWidthCard]}>
+                <View style={[styles.iconContainer, styles.companyIconContainer]}>
+                  <Icon name="building" size={30} color="#2E7D32" style={styles.statIcon} />
+                </View>
+                <Text style={styles.statNumber}>{productSupplierCount}</Text>
+                <Text style={styles.statLabel}>Total Fournisseurs de Produits</Text>
+              </View>
             </View>
-
-            <Text>Nom d'utilisateur : </Text>
-            <TextInput
-              style={styles.input}
-              placeholder="Nom d'utilisateur"
-              value={username}
-              onChangeText={setUsername}
-            />
-
-            <Text>Nom complet : </Text>
-            <TextInput
-              style={styles.input}
-              placeholder="Nom complet"
-              value={fullName}
-              onChangeText={setFullName}
-            />
-
-            <View style={styles.modalActions}>
-              <Button title="Annuler" onPress={closeEditModal} />
-              <Button title="Enregistrer" onPress={handleEditUser} />
-            </View>
+            <View style={styles.bottomSpace} />
           </View>
-        </View>
-      </Modal>
-    </View>
+        </ScrollView>
+      </View>
+    </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
+  safeArea: {
+    flex: 1,
+    backgroundColor: '#F8F9FA',
+  },
   container: {
     flex: 1,
-    backgroundColor: '#f5f5f5',
+    backgroundColor: '#F8F9FA',
+  },
+  scrollView: {
+    flex: 1,
+  },
+  scrollViewContent: {
+    flexGrow: 1,
   },
   header: {
-    padding: 20,
-    backgroundColor: 'green',
-    borderBottomLeftRadius: 15,
-    borderBottomRightRadius: 15,
+    padding: 25,
+    borderBottomLeftRadius: 30,
+    borderBottomRightRadius: 30,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.25,
-    shadowRadius: 3.84,
-    elevation: 5,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 5,
+    elevation: 8,
   },
   title: {
-    fontSize: 28,
+    fontSize: 32,
     fontWeight: 'bold',
     color: 'white',
     textAlign: 'center',
-    marginBottom: 5,
+    marginBottom: 8,
+    textShadowColor: 'rgba(0, 0, 0, 0.2)',
+    textShadowOffset: { width: 1, height: 1 },
+    textShadowRadius: 3,
   },
   subtitle: {
-    fontSize: 14,
+    fontSize: 16,
     color: 'white',
     opacity: 0.9,
     textAlign: 'center',
-  },
-  tabs: {
-    flexDirection: 'row',
-    backgroundColor: 'white',
-    padding: 10,
-    borderBottomWidth: 1,
-    borderBottomColor: '#e0e0e0',
-  },
-  tab: {
-    flex: 1,
-    paddingVertical: 10,
-    alignItems: 'center',
-  },
-  activeTab: {
-    borderBottomWidth: 2,
-    borderBottomColor: 'green',
-  },
-  tabText: {
-    color: '#666',
-    fontSize: 14,
-  },
-  activeTabText: {
-    color: 'green',
-    fontWeight: 'bold',
   },
   content: {
     flex: 1,
     padding: 20,
   },
   sectionTitle: {
-    fontSize: 20,
+    fontSize: 24,
     fontWeight: 'bold',
-    marginBottom: 15,
-    color: '#333',
+    marginBottom: 20,
+    color: '#2E7D32',
+    textAlign: 'center',
   },
   statsContainer: {
     flexDirection: 'row',
@@ -445,139 +232,56 @@ const styles = StyleSheet.create({
   statCard: {
     flex: 1,
     backgroundColor: 'white',
-    padding: 15,
-    borderRadius: 12,
+    padding: 20,
+    borderRadius: 15,
     marginHorizontal: 6,
     alignItems: 'center',
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
-    shadowRadius: 3,
-    elevation: 3,
+    shadowRadius: 4,
+    elevation: 4,
     borderWidth: 1,
     borderColor: '#E0E0E0',
   },
+  iconContainer: {
+    width: 60,
+    height: 60,
+    borderRadius: 30,
+    backgroundColor: '#E8F5E9',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 12,
+  },
+  companyIconContainer: {
+    backgroundColor: '#E8F5E9',
+    width: 70,
+    height: 70,
+    borderRadius: 35,
+  },
   statIcon: {
-    marginBottom: 8,
+    marginBottom: 0,
   },
   statNumber: {
-    fontSize: 24,
+    fontSize: 28,
     fontWeight: 'bold',
     color: '#2E7D32',
-    marginBottom: 4,
+    marginBottom: 6,
   },
   statLabel: {
     fontSize: 14,
     color: '#666',
     fontWeight: '500',
-  },
-  searchInput: {
-    height: 40,
-    borderColor: '#4CAF50',
-    borderWidth: 1,
-    borderRadius: 8,
-    marginBottom: 12,
-    paddingHorizontal: 10,
-    backgroundColor: 'white',
-  },
-  userCard: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    borderColor: '#ccc',
-    borderWidth: 1,
-    padding: 12,
-    marginBottom: 8,
-    borderRadius: 8,
-    backgroundColor: '#f9f9f9',
-  },
-  userName: {
-    fontSize: 14,
-    flexWrap: 'nowrap',
-    overflow: 'hidden',
-  },
-  userEmail: {
-    color: 'black',
-    fontSize: 14,
-  },
-  userRole: {
-    color: 'black',
-    fontSize: 14,
-    marginTop: 5,
-  },
-  blockButton: {
-    backgroundColor: '#8B0000',
-    paddingVertical: 6,
-    paddingHorizontal: 12,
-    borderRadius: 6,
-    marginLeft: 8,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  modifyButton: {
-    backgroundColor: 'green',
-    paddingVertical: 6,
-    paddingHorizontal: 12,
-    borderRadius: 6,
-    marginLeft: 8,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  deleteButton: {
-    backgroundColor: '#FF0000',
-    paddingVertical: 6,
-    paddingHorizontal: 12,
-    borderRadius: 6,
-    marginLeft: 8,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  emptyText: {
     textAlign: 'center',
-    marginTop: 20,
-    fontSize: 16,
-    color: 'black',
   },
-  modalBackground: {
+  fullWidthCard: {
     flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    marginHorizontal: 0,
+    backgroundColor: '#E8F5E9',
+    borderColor: '#2E7D32',
+    padding: 25,
   },
-  modalContainer: {
-    backgroundColor: '#fff',
-    padding: 20,
-    borderRadius: 10,
-    width: '80%',
-  },
-  modalTitle: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    marginBottom: 12,
-  },
-  input: {
-    height: 40,
-    borderColor: '#ddd',
-    borderWidth: 1,
-    borderRadius: 8,
-    marginBottom: 12,
-    paddingHorizontal: 10,
-  },
-  roleContainer: {
-    flexDirection: 'row',
-    justifyContent: 'space-around',
-    marginBottom: 12,
-  },
-  roleButton: {
-    backgroundColor: '#4CAF50',
-    paddingVertical: 6,
-    paddingHorizontal: 12,
-    borderRadius: 6,
-  },
-  roleText: {
-    color: '#fff',
-  },
-  modalActions: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
+  bottomSpace: {
+    height: 100,
   },
 }); 

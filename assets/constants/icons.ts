@@ -11,5 +11,6 @@ export const icons = {
   dashboard: require("../icons/dashboard.png"),
   scan: require("../icons/scan.png"),
   circleprofile: require("../icons/circleprofile.png"),
-  commande: require("../icons/commande.png")
+  commande: require("../icons/commande.png"),
+  users: require("../icons/users.png")
 };
