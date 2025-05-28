@@ -11,6 +11,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 const TabsLayout = () => {
   const [isAdmin, setIsAdmin] = useState<boolean>(false);
   const [hasNewNotifications, setHasNewNotifications] = useState(false);
+  const [notificationCount, setNotificationCount] = useState(0);
   const [lastViewedTimestamp, setLastViewedTimestamp] = useState<string>('');
   const router = useRouter();
 
@@ -66,6 +67,7 @@ const TabsLayout = () => {
 
           if (!error && mounted) {
             setHasNewNotifications(data && data.length > 0);
+            setNotificationCount(data ? data.length : 0);
           }
         }
       } catch (error) {
@@ -113,8 +115,8 @@ const TabsLayout = () => {
         >
           <Image source={icons.alert} style={{ width: 24, height: 24, tintColor: 'white' }} />
           {hasNewNotifications && (
-            <View style={[styles.notificationBadge, { position: 'relative', top: 0, right: 0, marginLeft: -10 }]}>
-              <View style={styles.notificationDot} />
+            <View style={styles.notificationBadge}>
+              <Text style={styles.notificationBadgeText}>{notificationCount}</Text>
             </View>
           )}
         </TouchableOpacity>
@@ -249,26 +251,29 @@ const TabsLayout = () => {
 const styles = StyleSheet.create({
   notificationBadge: {
     position: 'absolute',
-    top: -5,
-    right: -5,
-    backgroundColor: 'transparent',
-    borderRadius: 10,
-    width: 20,
-    height: 20,
+    top: -8,
+    right: -12,
+    backgroundColor: '#ff3b30',
+    borderRadius: 12,
+    minWidth: 24,
+    height: 24,
     justifyContent: 'center',
     alignItems: 'center',
-  },
-  notificationDot: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-    backgroundColor: '#FF3B30',
-    borderWidth: 1,
+    paddingHorizontal: 6,
+    borderWidth: 2,
     borderColor: 'white',
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.25,
+    shadowRadius: 3.84,
+    elevation: 5,
   },
   notificationBadgeText: {
     color: 'white',
-    fontSize: 12,
+    fontSize: 14,
     fontWeight: 'bold',
   },
 });
