@@ -1,9 +1,12 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, ScrollView, SafeAreaView } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, SafeAreaView, Dimensions } from 'react-native';
 import { useSession } from '../session/sessionContext';
 import { supabase } from '../../lib/supabase';
 import Icon from 'react-native-vector-icons/FontAwesome';
 import { LinearGradient } from 'expo-linear-gradient';
+
+const { width } = Dimensions.get('window');
+const CARD_WIDTH = (width - 60) / 2;
 
 export default function AdminPage() {
   const { session } = useSession();
@@ -106,67 +109,80 @@ export default function AdminPage() {
 
   return (
     <SafeAreaView style={styles.safeArea}>
-      <View style={styles.container}>
-        <LinearGradient
-          colors={['#2E7D32', '#1B5E20']}
-          style={styles.header}
-        >
+      <LinearGradient
+        colors={['#2E7D32', '#1B5E20']}
+        style={styles.header}
+      >
+        <View style={styles.headerContent}>
           <Text style={styles.title}>Administration</Text>
           <Text style={styles.subtitle}>{session?.user.email}</Text>
-        </LinearGradient>
+        </View>
+      </LinearGradient>
 
-        <ScrollView 
-          style={styles.scrollView}
-          showsVerticalScrollIndicator={false}
-          contentContainerStyle={styles.scrollViewContent}
-        >
-          <View style={styles.content}>
-            <Text style={styles.sectionTitle}>Tableau de Bord</Text>
-            <View style={styles.statsContainer}>
-              <View style={styles.statCard}>
-                <View style={styles.iconContainer}>
-                  <Icon name="users" size={30} color="#2E7D32" style={styles.statIcon} />
-                </View>
-                <Text style={styles.statNumber}>{userCount}</Text>
-                <Text style={styles.statLabel}>Utilisateurs</Text>
-              </View>
-              <View style={styles.statCard}>
-                <View style={styles.iconContainer}>
-                  <Icon name="leaf" size={30} color="#2E7D32" style={styles.statIcon} />
-                </View>
-                <Text style={styles.statNumber}>{plantCount}</Text>
-                <Text style={styles.statLabel}>Cultures</Text>
-              </View>
-            </View>
-            <View style={styles.statsContainer}>
-              <View style={styles.statCard}>
-                <View style={styles.iconContainer}>
-                  <Icon name="user-circle" size={30} color="#2E7D32" style={styles.statIcon} />
-                </View>
-                <Text style={styles.statNumber}>{activeUserCount}</Text>
-                <Text style={styles.statLabel}>Utilisateurs Actifs</Text>
-              </View>
-              <View style={styles.statCard}>
-                <View style={styles.iconContainer}>
-                  <Icon name="truck" size={30} color="#2E7D32" style={styles.statIcon} />
-                </View>
-                <Text style={styles.statNumber}>{supplierCount}</Text>
-                <Text style={styles.statLabel}>Fournisseurs</Text>
-              </View>
-            </View>
-            <View style={styles.statsContainer}>
-              <View style={[styles.statCard, styles.fullWidthCard]}>
-                <View style={[styles.iconContainer, styles.companyIconContainer]}>
-                  <Icon name="building" size={30} color="#2E7D32" style={styles.statIcon} />
-                </View>
-                <Text style={styles.statNumber}>{productSupplierCount}</Text>
-                <Text style={styles.statLabel}>Total Fournisseurs de Produits</Text>
-              </View>
-            </View>
-            <View style={styles.bottomSpace} />
+      <ScrollView 
+        style={styles.scrollView}
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={styles.scrollViewContent}
+      >
+        <View style={styles.content}>
+          <View style={styles.welcomeSection}>
+            <Text style={styles.welcomeText}>Bienvenue sur votre tableau de bord</Text>
+            <Text style={styles.dateText}>{new Date().toLocaleDateString('fr-FR', { 
+              weekday: 'long', 
+              year: 'numeric', 
+              month: 'long', 
+              day: 'numeric' 
+            })}</Text>
           </View>
-        </ScrollView>
-      </View>
+
+          <View style={styles.statsGrid}>
+            <View style={[styles.statCard, styles.usersCard]}>
+              <View style={styles.cardHeader}>
+                <Icon name="users" size={24} color="#2E7D32" />
+                <Text style={styles.cardTitle}>Utilisateurs</Text>
+              </View>
+              <Text style={styles.statNumber}>{userCount}</Text>
+              <Text style={styles.statLabel}>Total des utilisateurs</Text>
+            </View>
+
+            <View style={[styles.statCard, styles.plantsCard]}>
+              <View style={styles.cardHeader}>
+                <Icon name="leaf" size={24} color="#2E7D32" />
+                <Text style={styles.cardTitle}>Cultures</Text>
+              </View>
+              <Text style={styles.statNumber}>{plantCount}</Text>
+              <Text style={styles.statLabel}>Total des cultures</Text>
+            </View>
+
+            <View style={[styles.statCard, styles.activeUsersCard]}>
+              <View style={styles.cardHeader}>
+                <Icon name="user-circle" size={24} color="#2E7D32" />
+                <Text style={styles.cardTitle}>Utilisateurs Actifs</Text>
+              </View>
+              <Text style={styles.statNumber}>{activeUserCount}</Text>
+              <Text style={styles.statLabel}>Utilisateurs connectés</Text>
+            </View>
+
+            <View style={[styles.statCard, styles.suppliersCard]}>
+              <View style={styles.cardHeader}>
+                <Icon name="truck" size={24} color="#2E7D32" />
+                <Text style={styles.cardTitle}>Fournisseurs</Text>
+              </View>
+              <Text style={styles.statNumber}>{supplierCount}</Text>
+              <Text style={styles.statLabel}>Total des fournisseurs</Text>
+            </View>
+          </View>
+
+          <View style={styles.fullWidthCard}>
+            <View style={styles.cardHeader}>
+              <Icon name="building" size={24} color="#2E7D32" />
+              <Text style={styles.cardTitle}>Fournisseurs de Produits</Text>
+            </View>
+            <Text style={styles.statNumber}>{productSupplierCount}</Text>
+            <Text style={styles.statLabel}>Total des fournisseurs de produits</Text>
+          </View>
+        </View>
+      </ScrollView>
     </SafeAreaView>
   );
 }
@@ -176,25 +192,14 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#F8F9FA',
   },
-  container: {
-    flex: 1,
-    backgroundColor: '#F8F9FA',
-  },
-  scrollView: {
-    flex: 1,
-  },
-  scrollViewContent: {
-    flexGrow: 1,
-  },
   header: {
-    padding: 25,
+    paddingTop: 20,
+    paddingBottom: 30,
     borderBottomLeftRadius: 30,
     borderBottomRightRadius: 30,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 5,
-    elevation: 8,
+  },
+  headerContent: {
+    paddingHorizontal: 20,
   },
   title: {
     fontSize: 32,
@@ -212,76 +217,102 @@ const styles = StyleSheet.create({
     opacity: 0.9,
     textAlign: 'center',
   },
+  scrollView: {
+    flex: 1,
+  },
+  scrollViewContent: {
+    minHeight: 1500,
+  },
   content: {
-    flex: 1,
     padding: 20,
   },
-  sectionTitle: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    marginBottom: 20,
-    color: '#2E7D32',
-    textAlign: 'center',
-  },
-  statsContainer: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginBottom: 20,
-    paddingHorizontal: 5,
-  },
-  statCard: {
-    flex: 1,
+  welcomeSection: {
+    marginBottom: 30,
+    padding: 20,
     backgroundColor: 'white',
-    padding: 20,
     borderRadius: 15,
-    marginHorizontal: 6,
-    alignItems: 'center',
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
     shadowRadius: 4,
-    elevation: 4,
-    borderWidth: 1,
-    borderColor: '#E0E0E0',
+    elevation: 3,
   },
-  iconContainer: {
-    width: 60,
-    height: 60,
-    borderRadius: 30,
-    backgroundColor: '#E8F5E9',
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginBottom: 12,
-  },
-  companyIconContainer: {
-    backgroundColor: '#E8F5E9',
-    width: 70,
-    height: 70,
-    borderRadius: 35,
-  },
-  statIcon: {
-    marginBottom: 0,
-  },
-  statNumber: {
-    fontSize: 28,
+  welcomeText: {
+    fontSize: 24,
     fontWeight: 'bold',
     color: '#2E7D32',
-    marginBottom: 6,
+    marginBottom: 8,
+  },
+  dateText: {
+    fontSize: 16,
+    color: '#666',
+  },
+  statsGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    justifyContent: 'space-between',
+    marginBottom: 20,
+  },
+  statCard: {
+    width: CARD_WIDTH,
+    backgroundColor: 'white',
+    padding: 20,
+    borderRadius: 15,
+    marginBottom: 20,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  cardHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 15,
+  },
+  cardTitle: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#2E7D32',
+    marginLeft: 10,
+  },
+  statNumber: {
+    fontSize: 32,
+    fontWeight: 'bold',
+    color: '#2E7D32',
+    marginBottom: 8,
   },
   statLabel: {
     fontSize: 14,
     color: '#666',
-    fontWeight: '500',
-    textAlign: 'center',
+  },
+  usersCard: {
+    borderLeftWidth: 4,
+    borderLeftColor: '#4CAF50',
+  },
+  plantsCard: {
+    borderLeftWidth: 4,
+    borderLeftColor: '#8BC34A',
+  },
+  activeUsersCard: {
+    borderLeftWidth: 4,
+    borderLeftColor: '#66BB6A',
+  },
+  suppliersCard: {
+    borderLeftWidth: 4,
+    borderLeftColor: '#81C784',
   },
   fullWidthCard: {
-    flex: 1,
-    marginHorizontal: 0,
-    backgroundColor: '#E8F5E9',
-    borderColor: '#2E7D32',
+    backgroundColor: 'white',
     padding: 25,
-  },
-  bottomSpace: {
-    height: 100,
+    borderRadius: 15,
+    marginBottom: 20,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
+    borderLeftWidth: 4,
+    borderLeftColor: '#2E7D32',
   },
 }); 
