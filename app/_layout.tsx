@@ -98,9 +98,9 @@ export default function RootLayout() {
             } else if (profileData?.role === "supplier") {
               router.replace("/(supplier)/products");
             } else if (profileData?.role === "farmer") {
-              router.replace("/(tabs)/home");
+              router.replace("/(tabs)/search");
             } else {
-              router.replace("/(tabs)/home");
+              router.replace("/(tabs)/search");
             }
           }
         } catch (error) {
