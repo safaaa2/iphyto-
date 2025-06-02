@@ -22,7 +22,7 @@ export function NavigationGuard() {
     } else if (session && inAuthGroup) {
       isNavigating.current = true;
       setTimeout(() => {
-        router.replace("/(tabs)/home");
+        router.replace("/(tabs)/search");
       }, 100);
     }
 
