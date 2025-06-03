@@ -218,7 +218,7 @@ export default function AdminProfile() {
   }
 
   return (
-    <ScrollView style={styles.container}>
+    <ScrollView style={styles.container} contentContainerStyle={styles.scrollViewContent}>
       <View style={styles.header}>
         <View style={styles.profileImageContainer}>
           <Image 
@@ -410,6 +410,10 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#f5f5f5',
   },
+  scrollViewContent: {
+    flexGrow: 1,
+    paddingBottom: 40,
+  },
   header: {
     alignItems: 'center',
     padding: 20,
@@ -450,7 +454,6 @@ const styles = StyleSheet.create({
     color: '#666',
   },
   content: {
-    flex: 1,
     padding: 20,
   },
   card: {
@@ -561,5 +564,6 @@ const styles = StyleSheet.create({
   editScrollViewContent: {
     padding: 20,
     paddingBottom: 40,
+    flexGrow: 1,
   },
 }); 

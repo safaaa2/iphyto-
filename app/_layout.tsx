@@ -32,7 +32,7 @@ export default function RootLayout() {
         // Wait a short moment before allowing any navigation
         setTimeout(async () => {
           if (!session) {
-            console.log('Pas de session, redirection vers auth');
+            console.log('Pas de session, redirection vers authentication');
             router.replace("/(auth)");
           } else {
             // Vérifier le rôle de l'utilisateur
@@ -133,6 +133,7 @@ export default function RootLayout() {
                   gestureEnabled: false,
                 }}
               >
+                
                 <Stack.Screen
                   name="(auth)"
                   options={{

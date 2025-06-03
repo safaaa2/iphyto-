@@ -28,7 +28,7 @@ export default function SignUp() {
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
-  const [userType, setUserType] = useState<'supplier' | 'farmer'>('farmer');
+  const [userType, setUserType] = useState<'supplier' | 'utilisateur'>('utilisateur');
   const [companyName, setCompanyName] = useState('');
   const router = useRouter();
 
@@ -54,19 +54,6 @@ export default function SignUp() {
       // Pour les fournisseurs, utiliser le nom de l'entreprise comme nom d'utilisateur
       const finalUsername = userType === 'supplier' ? companyName : username;
 
-      // Vérifier si l'utilisateur existe déjà
-      const { data: existingUser } = await supabase.auth.signInWithPassword({
-        email,
-        password,
-      });
-
-      if (existingUser?.user) {
-        console.log('Utilisateur déjà existant');
-        Alert.alert('Erreur', 'Un compte existe déjà avec cet email');
-        setLoading(false);
-        return;
-      }
-
       // Créer le compte
       const { data, error } = await supabase.auth.signUp({
         email,
@@ -89,54 +76,35 @@ export default function SignUp() {
 
       console.log('Compte créé avec succès, ID:', data.user.id);
 
-      // Vérifier si un profil existe déjà
-      const { data: existingProfile, error: checkError } = await supabase
-        .from('profiles')
-        .select('*')
-        .eq('id', data.user.id)
-        .single();
-
-      if (checkError && checkError.code !== 'PGRST116') {
-        console.error('Erreur lors de la vérification du profil:', checkError);
-        Alert.alert('Erreur', 'Erreur lors de la vérification du profil');
-        setLoading(false);
-        return;
-      }
+      // Définir le rôle en fonction du type d'utilisateur
+      const userRole = userType === 'utilisateur' ? 'user' : userType;
+      console.log('Saving user with role:', userRole);
 
       const profileData = {
         id: data.user.id,
         email: email,
         username: finalUsername,
         full_name: fullName,
-        role: userType,
+        role: userRole,
         fournisseur: userType === 'supplier' ? companyName : null,
         updated_at: new Date().toISOString()
       };
 
-      let profileError;
-      if (existingProfile) {
-        // Mettre à jour le profil existant
-        const { error: updateError } = await supabase
-          .from('profiles')
-          .update(profileData)
-          .eq('id', data.user.id);
-        profileError = updateError;
-      } else {
-        // Créer un nouveau profil
-        const { error: insertError } = await supabase
-          .from('profiles')
-          .insert([profileData]);
-        profileError = insertError;
-      }
+      console.log('Profile data to save:', profileData);
+
+      // Créer le profil
+      const { error: profileError } = await supabase
+        .from('profiles')
+        .insert([profileData]);
 
       if (profileError) {
-        console.error('Erreur lors de la création/mise à jour du profil:', profileError);
+        console.error('Erreur lors de la création du profil:', profileError);
         Alert.alert('Erreur', 'Erreur lors de la création du profil');
         setLoading(false);
         return;
       }
 
-      console.log('Profil créé/mis à jour avec succès');
+      console.log('Profil créé avec succès');
 
       // Attendre un peu pour s'assurer que tout est synchronisé
       await new Promise(resolve => setTimeout(resolve, 1000));
@@ -157,9 +125,6 @@ export default function SignUp() {
       if (userType === 'supplier') {
         console.log('Redirection vers l\'interface fournisseur');
         router.replace('/(supplier)/products');
-      } else if (userType === 'farmer') {
-        console.log('Redirection vers l\'interface farmer');
-        router.replace('/(tabs)/search');
       } else {
         console.log('Redirection vers l\'interface utilisateur');
         router.replace('/(tabs)/search');
@@ -259,25 +224,25 @@ export default function SignUp() {
           />
 
           <View style={styles.userTypeContainer}>
-            <Text style={styles.userTypeLabel}>{t('userType')}</Text>
+            <Text style={styles.userTypeLabel}>{t('Rôle :')}</Text>
             <View style={styles.userTypeButtons}>
               <TouchableOpacity
                 style={[
                   styles.userTypeButton,
-                  userType === 'farmer' && styles.userTypeButtonActive
+                  userType === 'utilisateur' && styles.userTypeButtonActive
                 ]}
-                onPress={() => setUserType('farmer')}
+                onPress={() => setUserType('utilisateur')}
               >
                 <Ionicons 
                   name="leaf-outline" 
                   size={24} 
-                  color={userType === 'farmer' ? '#fff' : '#008000'} 
+                  color={userType === 'utilisateur' ? '#fff' : '#008000'} 
                 />
                 <Text style={[
                   styles.userTypeButtonText,
-                  userType === 'farmer' && styles.userTypeButtonTextActive
+                  userType === 'utilisateur' && styles.userTypeButtonTextActive
                 ]}>
-                  {t('farmer')}
+                  {t('Utilisateur')}
                 </Text>
               </TouchableOpacity>
 
@@ -305,7 +270,7 @@ export default function SignUp() {
 
           {userType === 'supplier' && (
             <Input
-              placeholder={t('companyName')}
+              placeholder={t('Nom de l\'entreprise')}
               value={companyName}
               onChangeText={setCompanyName}
               autoCapitalize="none"

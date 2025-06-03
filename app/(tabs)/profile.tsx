@@ -418,146 +418,145 @@ const Profile = () => {
   }
   return (
     <ScrollView style={styles.scrollView} contentContainerStyle={styles.scrollViewContent}>
-      <View style={styles.container}>
-        <View style={styles.headerContainer}>
-          <Text style={styles.welcomeText}>{t('welcome')} {username || t('user')} !</Text>
-        </View>
-
-        {/* Photo de profil avec option de modification */}
-        <View style={styles.profileSection}>
-          <TouchableOpacity 
-            style={styles.profileWrapper} 
-            onPress={pickImage}
-            disabled={uploading}
-          >
-            <Image 
-              source={{ 
-                uri: imageError ? DEFAULT_AVATAR : avatarUrl,
-                cache: 'reload'
-              }} 
-              style={styles.profileImage}
-              onError={handleImageError}
-              defaultSource={{ uri: DEFAULT_AVATAR }}
-            />
-            <View style={styles.editIconContainer}>
-              <Ionicons name="camera" size={20} color="white" />
-            </View>
-          </TouchableOpacity>
-        </View>
-
-        {/* Carte d'informations utilisateur */}
-        <Card containerStyle={styles.card}>
-          <Card.Title style={styles.cardTitle}>{t('personalInfo')}</Card.Title>
-          <Card.Divider />
-
-          <Input 
-            label={t('email')}
-            value={session?.user?.email || ''} 
-            disabled 
-            inputStyle={[styles.inputText, styles.emailInput]}
-            leftIcon={<Ionicons name="mail-outline" size={20} color="green" />}
-          />
-
-          <Input 
-            label={t('username')}
-            placeholder={t('enterUsername')} 
-            value={username} 
-            onChangeText={(text: string) => {
-              setUsername(text);
-              updateProfile(text);
-            }}
-            inputStyle={styles.inputText}
-            leftIcon={<Ionicons name="person-outline" size={20} color="green" />}
-          />
-
-          {/* Bouton Modifier */}
-          <Button 
-            title={loading ? t('updating') : t('update')} 
-            onPress={() => updateProfile(username)} 
-            disabled={loading} 
-            buttonStyle={styles.updateButton}
-            icon={<Ionicons name="save-outline" size={22} color="white" style={{ marginRight: 10 }} />}
-          />
-        </Card>
-
-        {/* Carte de changement de mot de passe */}
-        <Card containerStyle={styles.card}>
-          <Card.Title style={styles.cardTitle}>{t('changePassword')}</Card.Title>
-          <Card.Divider />
-
-          <Input 
-            label={t('currentPassword')}
-            value={currentPassword}
-            onChangeText={setCurrentPassword}
-            secureTextEntry
-            inputStyle={styles.inputText}
-            leftIcon={<Ionicons name="lock-closed-outline" size={20} color="green" />}
-          />
-
-          <Input 
-            label={t('newPassword')}
-            value={newPassword}
-            onChangeText={setNewPassword}
-            secureTextEntry
-            inputStyle={styles.inputText}
-            leftIcon={<Ionicons name="lock-closed-outline" size={20} color="green" />}
-          />
-
-          <Input 
-            label={t('confirmPassword')}
-            value={confirmPassword}
-            onChangeText={setConfirmPassword}
-            secureTextEntry
-            inputStyle={styles.inputText}
-            leftIcon={<Ionicons name="lock-closed-outline" size={20} color="green" />}
-          />
-
-          <Button 
-            title={loading ? t('updating') : t('update')} 
-            onPress={changePassword} 
-            disabled={loading} 
-            buttonStyle={styles.updateButton}
-            icon={<Ionicons name="key-outline" size={22} color="white" style={{ marginRight: 10 }} />}
-          />
-        </Card>
-
-        {/* Sélecteur de langue */}
-        <Card containerStyle={[styles.card, styles.languageCard]}>
-          <Card.Title style={styles.cardTitle}>{t('language')}</Card.Title>
-          <Card.Divider />
-          <View style={styles.languageButtons}>
-            <Button
-              title="Français"
-              onPress={() => handleLanguageChange('fr')}
-              buttonStyle={[
-                styles.languageButton,
-                currentLanguage === 'fr' && styles.selectedLanguage
-              ]}
-              titleStyle={currentLanguage === 'fr' ? styles.selectedLanguageText : styles.languageButtonText}
-            />
-            <Button
-              title="العربية"
-              onPress={() => handleLanguageChange('ar')}
-              buttonStyle={[
-                styles.languageButton,
-                currentLanguage === 'ar' && styles.selectedLanguage
-              ]}
-              titleStyle={currentLanguage === 'ar' ? styles.selectedLanguageText : styles.languageButtonText}
-            />
-          </View>
-        </Card>
-
-        {/* Bouton Déconnexion */}
-        <View style={styles.signOutContainer}>
-          <Button 
-            title={t('signOut')} 
-            onPress={signOut} 
-            buttonStyle={styles.signOutButton}
-            titleStyle={styles.signOutButtonText}
-            icon={<Ionicons name="log-out-outline" size={20} color="white" style={{ marginRight: 8 }} />}
-          />
-        </View>
+      <View style={styles.headerContainer}>
+        <Text style={styles.welcomeText}>{t('welcome')} {username || t('user')} !</Text>
       </View>
+
+      {/* Photo de profil avec option de modification */}
+      <View style={styles.profileSection}>
+        <TouchableOpacity 
+          style={styles.profileWrapper} 
+          onPress={pickImage}
+          disabled={uploading}
+        >
+          <Image 
+            source={{
+              uri: imageError ? DEFAULT_AVATAR : avatarUrl,
+              cache: 'reload'
+            }}
+            style={styles.profileImage}
+            onError={handleImageError}
+            defaultSource={{ uri: DEFAULT_AVATAR }}
+          />
+          <View style={styles.editIconContainer}>
+            <Ionicons name="camera" size={20} color="white" />
+          </View>
+        </TouchableOpacity>
+      </View>
+
+      {/* Carte d'informations utilisateur */}
+      <Card containerStyle={styles.card}>
+        <Card.Title style={styles.cardTitle}>{t('personalInfo')}</Card.Title>
+        <Card.Divider />
+
+        <Input 
+          label={t('email')}
+          value={session?.user?.email || ''} 
+          disabled 
+          inputStyle={[styles.inputText, styles.emailInput]}
+          leftIcon={<Ionicons name="mail-outline" size={20} color="green" />}
+        />
+
+        <Input 
+          label={t('username')}
+          placeholder={t('enterUsername')} 
+          value={username} 
+          onChangeText={(text: string) => {
+            setUsername(text);
+            updateProfile(text);
+          }}
+          inputStyle={styles.inputText}
+          leftIcon={<Ionicons name="person-outline" size={20} color="green" />}
+        />
+
+        {/* Bouton Modifier */}
+        <Button 
+          title={loading ? t('updating') : t('update')} 
+          onPress={() => updateProfile(username)} 
+          disabled={loading} 
+          buttonStyle={styles.updateButton}
+          icon={<Ionicons name="save-outline" size={22} color="white" style={{ marginRight: 10 }} />}
+        />
+      </Card>
+
+      {/* Carte de changement de mot de passe */}
+      <Card containerStyle={styles.card}>
+        <Card.Title style={styles.cardTitle}>{t('changePassword')}</Card.Title>
+        <Card.Divider />
+
+        <Input 
+          label={t('currentPassword')}
+          value={currentPassword}
+          onChangeText={setCurrentPassword}
+          secureTextEntry
+          inputStyle={styles.inputText}
+          leftIcon={<Ionicons name="lock-closed-outline" size={20} color="green" />}
+        />
+
+        <Input 
+          label={t('newPassword')}
+          value={newPassword}
+          onChangeText={setNewPassword}
+          secureTextEntry
+          inputStyle={styles.inputText}
+          leftIcon={<Ionicons name="lock-closed-outline" size={20} color="green" />}
+        />
+
+        <Input 
+          label={t('confirmPassword')}
+          value={confirmPassword}
+          onChangeText={setConfirmPassword}
+          secureTextEntry
+          inputStyle={styles.inputText}
+          leftIcon={<Ionicons name="lock-closed-outline" size={20} color="green" />}
+        />
+
+        <Button 
+          title={loading ? t('updating') : t('update')} 
+          onPress={changePassword} 
+          disabled={loading} 
+          buttonStyle={styles.updateButton}
+          icon={<Ionicons name="key-outline" size={22} color="white" style={{ marginRight: 10 }} />}
+        />
+      </Card>
+
+      {/* Sélecteur de langue */}
+      <Card containerStyle={[styles.card, styles.languageCard]}>
+        <Card.Title style={styles.cardTitle}>{t('language')}</Card.Title>
+        <Card.Divider />
+        <View style={styles.languageButtons}>
+          <Button
+            title="Français"
+            onPress={() => handleLanguageChange('fr')}
+            buttonStyle={[
+              styles.languageButton,
+              currentLanguage === 'fr' && styles.selectedLanguage
+            ]}
+            titleStyle={currentLanguage === 'fr' ? styles.selectedLanguageText : styles.languageButtonText}
+          />
+          <Button
+            title="العربية"
+            onPress={() => handleLanguageChange('ar')}
+            buttonStyle={[
+              styles.languageButton,
+              currentLanguage === 'ar' && styles.selectedLanguage
+            ]}
+            titleStyle={currentLanguage === 'ar' ? styles.selectedLanguageText : styles.languageButtonText}
+          />
+        </View>
+      </Card>
+
+      {/* Bouton Déconnexion */}
+      <View style={styles.signOutContainer}>
+        <Button 
+          title={t('signOut')} 
+          onPress={signOut} 
+          buttonStyle={styles.signOutButton}
+          titleStyle={styles.signOutButtonText}
+          icon={<Ionicons name="log-out-outline" size={20} color="white" style={{ marginRight: 8 }} />}
+        />
+      </View>
+
     </ScrollView>
   );
 };
@@ -571,9 +570,10 @@ const styles = StyleSheet.create({
     flexGrow: 1,
     paddingBottom: 100,
     paddingTop: 10,
+    alignItems: 'center',
+    paddingHorizontal: 15,
   },
   container: {
-    flex: 1,
     backgroundColor: '#f5f5f5',
     alignItems: 'center',
     padding: 15,

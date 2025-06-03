@@ -15,6 +15,7 @@ export default function AdminPage() {
   const [activeUserCount, setActiveUserCount] = useState(0);
   const [supplierCount, setSupplierCount] = useState(0);
   const [productSupplierCount, setProductSupplierCount] = useState(0);
+  const [activeSupplierCount, setActiveSupplierCount] = useState(0);
 
   useEffect(() => {
     fetchUserCount();
@@ -22,6 +23,7 @@ export default function AdminPage() {
     fetchActiveUserCount();
     fetchSupplierCount();
     fetchProductSupplierCount();
+    fetchActiveSupplierCount();
   }, []);
 
   const fetchUserCount = async () => {
@@ -107,6 +109,24 @@ export default function AdminPage() {
     }
   };
 
+  const fetchActiveSupplierCount = async () => {
+    try {
+      const { count, error } = await supabase
+        .from('profiles')
+        .select('*', { count: 'exact', head: true })
+        .eq('role', 'supplier')
+        .eq('is_active', true);
+
+      if (error) {
+        console.error('Error counting active suppliers:', error.message);
+      } else {
+        setActiveSupplierCount(count || 0);
+      }
+    } catch (error) {
+      console.error('Error in fetchActiveSupplierCount:', error);
+    }
+  };
+
   return (
     <SafeAreaView style={styles.safeArea}>
       <LinearGradient
@@ -171,15 +191,24 @@ export default function AdminPage() {
               <Text style={styles.statNumber}>{supplierCount}</Text>
               <Text style={styles.statLabel}>Total des fournisseurs</Text>
             </View>
-          </View>
 
-          <View style={styles.fullWidthCard}>
-            <View style={styles.cardHeader}>
-              <Icon name="building" size={24} color="#2E7D32" />
-              <Text style={styles.cardTitle}>Fournisseurs de Produits</Text>
+            <View style={[styles.statCard, styles.productSuppliersCard]}>
+              <View style={styles.cardHeader}>
+                <Icon name="building" size={24} color="#2E7D32" />
+                <Text style={styles.cardTitle}>Fournisseurs de Produits</Text>
+              </View>
+              <Text style={styles.statNumber}>{productSupplierCount}</Text>
+              <Text style={styles.statLabel}>Total des fournisseurs de produits</Text>
             </View>
-            <Text style={styles.statNumber}>{productSupplierCount}</Text>
-            <Text style={styles.statLabel}>Total des fournisseurs de produits</Text>
+
+            <View style={[styles.statCard, styles.activeSuppliersCard]}>
+              <View style={styles.cardHeader}>
+                <Icon name="check-circle" size={24} color="#2E7D32" />
+                <Text style={styles.cardTitle}>Fournisseurs Actifs</Text>
+              </View>
+              <Text style={styles.statNumber}>{activeSupplierCount}</Text>
+              <Text style={styles.statLabel}>Fournisseurs actuellement actifs</Text>
+            </View>
           </View>
         </View>
       </ScrollView>
@@ -240,8 +269,9 @@ const styles = StyleSheet.create({
   welcomeText: {
     fontSize: 24,
     fontWeight: 'bold',
-    color: '#2E7D32',
+    color: '#000000',
     marginBottom: 8,
+    textAlign: 'center',
   },
   dateText: {
     fontSize: 16,
@@ -273,13 +303,13 @@ const styles = StyleSheet.create({
   cardTitle: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#2E7D32',
+    color: '#000000',
     marginLeft: 10,
   },
   statNumber: {
     fontSize: 32,
     fontWeight: 'bold',
-    color: '#2E7D32',
+    color: '#000000',
     marginBottom: 8,
   },
   statLabel: {
@@ -302,17 +332,12 @@ const styles = StyleSheet.create({
     borderLeftWidth: 4,
     borderLeftColor: '#81C784',
   },
-  fullWidthCard: {
-    backgroundColor: 'white',
-    padding: 25,
-    borderRadius: 15,
-    marginBottom: 20,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
+  productSuppliersCard: {
     borderLeftWidth: 4,
-    borderLeftColor: '#2E7D32',
+    borderLeftColor: '#4CAF50',
+  },
+  activeSuppliersCard: {
+    borderLeftWidth: 4,
+    borderLeftColor: '#66BB6A',
   },
 }); 

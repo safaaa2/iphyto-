@@ -1,10 +1,23 @@
 {
     "welcome": "Bienvenue chez IPHYTO !",
+    "welcomeToIPhyto": "Bienvenue sur iPhyto",
+    "chooseAccountType": "Choisissez votre type de compte",
+    "farmerAndSupplier": "Fournisseur / Agriculteur",
+    "forFarmersAndSuppliers": "Pour les fournisseurs et agriculteurs",
+    "admin": "Administrateur",
+    "forAdministrators": "Pour les administrateurs du système",
     "email": "Email",
     "password": "Mot de passe",
     "forgot_password": "Mot de passe oublié ?",
     "login": "Se connecter",
     "no_account": "Vous n'avez pas de compte ?",
-    "signup": "Créer un compte"
+    "signup": "Créer un compte",
+    "createAccount": "Créer un compte",
+    "forgotPassword": "Mot de passe oublié ?",
+    "loading": "Chargement...",
+    "or": "ou",
+    "selectLanguage": "Choisir la langue",
+    "error": "Erreur",
+    "languageChangeError": "Erreur lors du changement de langue"
   }
   

@@ -1,9 +1,21 @@
 {
     "welcome": "مرحبا بك في IPHYTO!",
+    "welcomeToIPhyto": "مرحباً بك في iPhyto",
+    "chooseAccountType": "اختر نوع الحساب",
+    "farmerAndSupplier": "مورد / مزارع",
+    "forFarmersAndSuppliers": "للموردين والمزارعين",
+    "admin": "مدير",
+    "forAdministrators": "لمدراء النظام",
     "email": "البريد الإلكتروني",
     "password": "كلمة المرور",
-    "forgot_password": "نسيت كلمة المرور؟",
     "login": "تسجيل الدخول",
+    "createAccount": "إنشاء حساب",
+    "forgotPassword": "نسيت كلمة المرور؟",
+    "loading": "جاري التحميل...",
+    "or": "أو",
+    "selectLanguage": "اختر اللغة",
+    "error": "خطأ",
+    "languageChangeError": "خطأ في تغيير اللغة",
     "no_account": "ليس لديك حساب؟",
     "signup": "إنشاء حساب"
   }

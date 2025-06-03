@@ -34,13 +34,12 @@ export default function AdminPage() {
     try {
       let query = supabase
         .from('profiles')
-        .select('id, full_name, username, email, role, is_active')
-        .order('full_name', { ascending: true });
+        .select('*');
 
       if (activeTab === 'suppliers') {
         query = query.eq('role', 'supplier');
       } else {
-        query = query.in('role', ['user', 'farmer']);
+        query = query.in('role', ['user', 'utilisateur']);
       }
 
       const { data, error } = await query;
@@ -49,6 +48,8 @@ export default function AdminPage() {
         console.error('Error fetching users:', error.message);
         Alert.alert('Erreur', 'Impossible de charger les utilisateurs');
       } else {
+        console.log('Users found with role:', activeTab === 'suppliers' ? 'supplier' : 'user');
+        console.log('Users data:', data);
         setUsers(data as User[]);
         setFilteredUsers(data as User[]);
       }
@@ -122,28 +123,52 @@ export default function AdminPage() {
 
   const renderUserItem = ({ item }: { item: User }) => (
     <View style={styles.userCard}>
-      <View style={{ flex: 1 }}>
-        <Text style={[styles.userName, { fontWeight: 'bold' }]}>
-          {item.full_name || 'Nom inconnu'}
-        </Text>
-        <Text style={styles.userEmail}>Email : {item.email || 'Email inconnu'}</Text>
-        <Text style={styles.userRole}>Rôle : {item.role === 'supplier' ? 'Fournisseur' : item.role === 'farmer' ? 'Fermier' : 'Utilisateur'}</Text>
-        <Text style={styles.userName}>Nom d'utilisateur : {item.username || 'Nom inconnu'}</Text>
+      <View style={styles.avatarContainer}>
+        <Icon name="user-circle" size={40} color="#2E7D32" />
       </View>
-
-      <TouchableOpacity
-        style={styles.blockButton}
-        onPress={() => toggleUserActive(item.id, item.is_active ?? true)}
-      >
-        <Icon name={item.is_active ? 'lock' : 'unlock'} size={20} color="#fff" />
-      </TouchableOpacity>
-
-      <TouchableOpacity
-        style={styles.modifyButton}
-        onPress={() => openEditModal(item)}
-      >
-        <Icon name="pencil" size={20} color="#fff" />
-      </TouchableOpacity>
+      <View style={{ flex: 1, marginLeft: 10 }}>
+        <Text style={styles.userName}>{item.full_name || 'Nom inconnu'}</Text>
+        <Text style={styles.userEmail}>{item.email || 'Email inconnu'}</Text>
+        <View style={styles.roleBadgeContainer}>
+          <Text style={[
+            styles.roleBadge,
+            item.role === 'supplier' ? styles.supplierBadge : styles.userBadge
+          ]}>
+            {item.role === 'supplier' ? 'Fournisseur' : 'Utilisateur'}
+          </Text>
+          <View style={[
+            styles.statusDot,
+            item.is_active ? styles.activeDot : styles.inactiveDot
+          ]} />
+          <Text style={styles.statusText}>
+            {item.is_active ? 'Actif' : 'Inactif'}
+          </Text>
+        </View>
+        <Text style={styles.userUsername}>Nom d'utilisateur : {item.username || 'Nom inconnu'}</Text>
+      </View>
+      <View style={styles.actionButtons}>
+        <TouchableOpacity
+          style={styles.blockButton}
+          onPress={() => {
+            Alert.alert(
+              item.is_active ? "Bloquer l\'utilisateur" : "Débloquer l\'utilisateur",
+              `Voulez-vous vraiment ${item.is_active ? "bloquer" : "débloquer"} cet utilisateur ?`,
+              [
+                { text: "Annuler", style: "cancel" },
+                { text: "Confirmer", onPress: () => toggleUserActive(item.id, item.is_active ?? true) }
+              ]
+            );
+          }}
+        >
+          <Icon name={item.is_active ? 'lock' : 'unlock'} size={20} color="#fff" />
+        </TouchableOpacity>
+        <TouchableOpacity
+          style={styles.modifyButton}
+          onPress={() => openEditModal(item)}
+        >
+          <Icon name="pencil" size={20} color="#fff" />
+        </TouchableOpacity>
+      </View>
     </View>
   );
 
@@ -362,22 +387,74 @@ const styles = StyleSheet.create({
     shadowRadius: 3,
     elevation: 3,
   },
+  avatarContainer: {
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 10,
+  },
   userName: {
     fontSize: 16,
     flexWrap: 'nowrap',
     overflow: 'hidden',
-    color: '#333',
+    
+    color: 'black',
+    fontWeight:'bold',
   },
   userEmail: {
     color: '#666',
-    fontSize: 14,
+    fontSize: 16,
+    fontWeight:'bold',
     marginTop: 4,
   },
-  userRole: {
-    color: '#2E7D32',
-    fontSize: 14,
-    marginTop: 6,
-    fontWeight: '500',
+  roleBadgeContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: 4,
+    marginBottom: 2,
+  },
+  roleBadge: {
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    borderRadius: 8,
+    fontSize: 12,
+    fontWeight: 'bold',
+    color: 'white',
+    marginRight: 8,
+  },
+  userBadge: {
+    backgroundColor: '#2E7D32',
+  },
+  supplierBadge: {
+    backgroundColor: 'green',
+  },
+  statusDot: {
+    width: 10,
+    height: 10,
+    borderRadius: 5,
+    marginRight: 4,
+  },
+  activeDot: {
+    backgroundColor: '#43A047',
+  },
+  inactiveDot: {
+    backgroundColor: '#D32F2F',
+  },
+  statusText: {
+    fontSize: 12,
+    color: '#666',
+    fontWeight: 'bold',
+  },
+  userUsername: {
+    fontSize: 13,
+    color: '#333333',
+    fontWeight:'bold',
+    marginTop: 2 ,
+    
+  },
+  actionButtons: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginLeft: 10,
   },
   blockButton: {
     backgroundColor: '#D32F2F',
@@ -449,6 +526,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderRadius: 12,
     marginBottom: 15,
+    
     paddingHorizontal: 15,
     fontSize: 16,
     backgroundColor: '#F8F9FA',

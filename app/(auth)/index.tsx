@@ -134,43 +134,54 @@ export default function Auth(): JSX.Element {
         return;
       }
     
-      const session = data.session;
-      if (!session) {
-        console.error('Session non trouvée');
-        Alert.alert('Erreur', 'Session non trouvée');
-        setLoading(false);
-        return;
-      }
-    
-      console.log('Session créée avec succès');
-      await AsyncStorage.setItem("session", JSON.stringify(session));
-    
-      const userId = session.user.id;
-      console.log('ID utilisateur:', userId);
-    
+      // Si la connexion réussit, récupérer le profil pour vérifier le statut actif
+      const userId = data.user?.id;
+
       if (!userId) {
-        console.error('ID utilisateur non trouvé');
-        Alert.alert('Erreur', 'ID de l\'utilisateur non trouvé dans la session');
+        console.error('ID utilisateur non trouvé après connexion');
+        Alert.alert('Erreur', 'Erreur lors de la récupération de l\'ID utilisateur.');
         setLoading(false);
         return;
       }
-    
-      // Récupérer le rôle depuis la table profiles
+
       const { data: profileData, error: profileError } = await supabase
         .from('profiles')
-        .select('role')
+        .select('role, is_active')
         .eq('id', userId)
         .single();
 
       if (profileError) {
-        console.error('Erreur lors de la récupération du profil:', profileError);
-        Alert.alert('Erreur', 'Impossible de récupérer le profil');
+        console.error('Erreur lors de la récupération du profil pour vérifier l\'activité:', profileError);
+        Alert.alert('Erreur', 'Impossible de vérifier le statut de votre compte.');
         setLoading(false);
         return;
       }
 
+      // Vérifier si l'utilisateur est actif AVANT de créer la session
+      if (profileData && profileData.is_active === false) {
+        console.log('Compte utilisateur désactivé:', userId);
+        // Déconnecter explicitement l'utilisateur
+        await supabase.auth.signOut();
+        // Ne pas créer de session, juste afficher l'alerte
+        Alert.alert('Erreur de connexion', 'Votre compte a été désactivé par l\'administrateur.');
+        setLoading(false);
+        return;
+      }
+
+      // Si l'utilisateur est actif, procéder à la création de la session et à la navigation
+      const session = data.session;
+      if (!session) {
+        console.error('Session non trouvée après vérification d\'activité');
+        Alert.alert('Erreur', 'Session non trouvée après vérification.');
+        setLoading(false);
+        return;
+      }
+
+      console.log('Session créée avec succès et utilisateur actif');
+      await AsyncStorage.setItem("session", JSON.stringify(session));
+
       console.log('Rôle trouvé:', profileData?.role);
-    
+
       if (profileData?.role === "admin") {
         router.replace("/admin");
       } else if (profileData?.role === "supplier") {
@@ -236,7 +247,7 @@ export default function Auth(): JSX.Element {
         disabled={loading}
         style={[styles.buttonContainer, loading && { opacity: 0.7 }]}
       >
-        <View style={styles.button}>
+        <View style={[styles.button, styles.loginButton]}>
           <Text style={styles.buttonText}>
             {loading ? t("loading") : t("login")}
           </Text>
@@ -251,14 +262,9 @@ export default function Auth(): JSX.Element {
 
       <TouchableOpacity
         onPress={() => router.push("/(auth)/signup")}
-        disabled={loading}
-        style={[styles.buttonContainer, loading && { opacity: 0.7 }]}
+        style={styles.createAccountButton}
       >
-        <View style={[styles.button, styles.signupButton]}>
-          <Text style={[styles.buttonText, styles.signupButtonText]}>
-            {t("signup")}
-          </Text>
-        </View>
+        <Text style={styles.createAccountText}>{t("createAccount")}</Text>
       </TouchableOpacity>
 
       <View style={styles.languageSelector}>
@@ -347,6 +353,10 @@ const styles = StyleSheet.create({
     backgroundColor: "#008000",
     borderRadius: 8,
     paddingVertical: 12,
+    alignItems: "center",
+  },
+  loginButton: {
+    width: "100%",
   },
   buttonText: {
     color: "#fff",
@@ -369,17 +379,19 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: "#999",
   },
-  signupButton: {
+  createAccountButton: {
     backgroundColor: "#ffffff",
     borderColor: "#008000",
     borderWidth: 1,
     borderRadius: 8,
     paddingVertical: 12,
+    width: "100%",
+    alignItems: "center",
   },
-  signupButtonText: {
+  createAccountText: {
     color: "#008000",
-    fontWeight: "600",
     fontSize: 16,
+    fontWeight: "600",
   },
   languageSelector: {
     width: "100%",
