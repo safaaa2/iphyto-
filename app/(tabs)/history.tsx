@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, FlatList, TouchableOpacity, ActivityIndicator } from 'react-native';
+import { View, Text, StyleSheet, FlatList, TouchableOpacity, ActivityIndicator, Alert } from 'react-native';
 import { supabase } from '../../lib/supabase';
 import { useTranslation } from 'react-i18next';
 import Icon from 'react-native-vector-icons/MaterialIcons';
@@ -34,6 +34,7 @@ export default function HistoryScreen() {
             const { data: { session } } = await supabase.auth.getSession();
             if (!session) {
                 console.log('No session found');
+                Alert.alert(t('error'), t('authRequiredAlerts'));
                 return;
             }
             console.log('Fetching orders for user:', session.user.id);
@@ -57,13 +58,15 @@ export default function HistoryScreen() {
 
             if (error) {
                 console.error('Error details:', error);
-                throw error;
+                Alert.alert(t('error'), t('loadFavoritesError'));
+                return;
             }
 
             console.log('Orders fetched:', data);
             setOrders(data || []);
         } catch (error) {
             console.error('Error fetching orders:', error);
+            Alert.alert(t('error'), t('genericErrorMessage'));
         } finally {
             setLoading(false);
         }
@@ -92,7 +95,7 @@ export default function HistoryScreen() {
                         style={{ marginRight: 4 }}
                     />
                     <Text style={styles.statusBadgeText}>
-                        {item.statut === 'livré' ? t('payé') : t('Payé')}
+                        {t(item.statut === 'livré' ? 'deliveredStatus' : 'paidStatus')}
                     </Text>
                 </View>
             </View>
@@ -115,13 +118,13 @@ export default function HistoryScreen() {
                         </View>
                     ))
                 ) : (
-                    <Text style={styles.emptyText}>{t('noProducts')}</Text>
+                    <Text style={styles.emptyText}>{t('noProductsFound')}</Text>
                 )}
             </View>
             <View style={styles.orderFooterRow}>
                 <View style={{ flex: 1, flexDirection: 'row', alignItems: 'center' }}>
                     <Ionicons name="location-outline" size={14} color="#888" style={{ marginRight: 3 }} />
-                    <Text style={styles.customerInfo}>{item.nom_client} • {item.adresse_livraison}</Text>
+                    <Text style={styles.customerInfo}>{t('customerNamePrefix')} {item.nom_client} • {t('deliveryAddressPrefix')} {item.adresse_livraison}</Text>
                 </View>
                 <Text style={styles.orderTotal}>{t('total')}: <Text style={styles.bold}>{item.montant_total} MAD</Text></Text>
             </View>
@@ -132,6 +135,7 @@ export default function HistoryScreen() {
         return (
             <View style={styles.loadingContainer}>
                 <ActivityIndicator size="large" color="#008000" />
+                <Text style={styles.loadingText}>{t('loadingOrders')}</Text>
             </View>
         );
     }
@@ -140,13 +144,13 @@ export default function HistoryScreen() {
         <View style={styles.container}>
             <View style={styles.header}>
             <MaterialIcons name="history" size={28} color="#2c3e50"  />
-                <Text style={styles.title}>{t('Mes commandes')}</Text>
+                <Text style={styles.title}>{t('myOrdersTitle')}</Text>
             </View>
 
             {orders.length === 0 ? (
                 <View style={styles.emptyContainer}>
                     <Icon name="history" size={50} color="#666" />
-                    <Text style={styles.emptyText}>{t('noOrders')}</Text>
+                    <Text style={styles.emptyText}>{t('noOrdersFound')}</Text>
                 </View>
             ) : (
                 <FlatList
@@ -305,6 +309,12 @@ const styles = StyleSheet.create({
         padding: 20,
     },
     emptyText: {
+        marginTop: 12,
+        fontSize: 16,
+        color: '#666',
+        textAlign: 'center',
+    },
+    loadingText: {
         marginTop: 12,
         fontSize: 16,
         color: '#666',

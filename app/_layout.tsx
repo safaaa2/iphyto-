@@ -7,108 +7,48 @@ import { NavigationGuard } from "./components/NavigationGuard";
 import { SessionProvider } from "./session/sessionContext";
 import { CartProvider } from '../lib/CartContext';
 import { I18nextProvider } from 'react-i18next';
-import i18n from '../lib/i18n';
+import i18n, { getSavedLanguage } from '../lib/i18n';
 import { StripeProvider } from '@stripe/stripe-react-native';
 
 const queryClient = new QueryClient();
 
 export default function RootLayout() {
   const router = useRouter();
-  const [isReady, setIsReady] = useState(false);
+  const [i18nReady, setI18nReady] = useState(false);
+  const [authReady, setAuthReady] = useState(false);
+  const isReady = i18nReady && authReady;
 
   useEffect(() => {
-    // Delay any navigation attempts to ensure layout is fully mounted
-    const initializeApp = async () => {
-      try {
-        const {
-          data: { session },
-        } = await supabase.auth.getSession();
-
-        console.log('Session initiale:', session?.user?.id);
-
-        // Don't navigate here, just set the ready state
-        setIsReady(true);
-
-        // Wait a short moment before allowing any navigation
-        setTimeout(async () => {
-          if (!session) {
-            console.log('Pas de session, redirection vers authentication');
-            router.replace("/(auth)");
-          } else {
-            // Vérifier le rôle de l'utilisateur
-            const { data: profileData, error: profileError } = await supabase
-              .from('profiles')
-              .select('role')
-              .eq('id', session.user.id)
-              .single();
-
-            if (profileError) {
-              console.error('Erreur lors de la vérification du rôle:', profileError);
-              return;
-            }
-
-            console.log('Rôle trouvé:', profileData?.role);
-
-            if (profileData?.role === "admin") {
-              router.replace("/admin");
-            } else if (profileData?.role === "supplier") {
-              router.replace("/(supplier)/dashboard");
-            } else if (profileData?.role === "farmer") {
-              router.replace("/(tabs)/search");
-            } else {
-              router.replace("/(tabs)/search");
-            }
-          }
-        }, 100);
-      } catch (error) {
-        console.error("Erreur lors de l'initialisation:", error);
-        setIsReady(true);
-        router.replace("/(auth)");
-      }
+    // Load saved language and initialize i18n
+    const loadLanguage = async () => {
+      const savedLanguage = await getSavedLanguage();
+      await i18n.changeLanguage(savedLanguage);
+      setI18nReady(true);
     };
-
-    initializeApp();
+    loadLanguage();
 
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange(async (event, session) => {
       console.log('Changement d\'état auth:', event, session?.user?.id);
       
-      if (!isReady) return;
-
-      if (event === "SIGNED_IN") {
-        try {
-          if (session) {
-            // Vérifier le rôle dans la table profiles
-            const { data: profileData, error: profileError } = await supabase
-              .from('profiles')
-              .select('role')
-              .eq('id', session.user.id)
-              .single();
-
-            if (profileError) {
-              console.error('Erreur lors de la vérification du rôle:', profileError);
-              return;
-            }
-
-            console.log('Rôle trouvé après connexion:', profileData?.role);
-
-            if (profileData?.role === "admin") {
-              router.replace("/admin");
-            } else if (profileData?.role === "supplier") {
-              router.replace("/(supplier)/products");
-            } else if (profileData?.role === "farmer") {
-              router.replace("/(tabs)/search");
-            } else {
-              router.replace("/(tabs)/search");
-            }
-          }
-        } catch (error) {
-          console.error("Erreur lors de la vérification du rôle:", error);
-          router.replace("/(auth)");
+      // This part handles initial session and subsequent auth changes.
+      // It should run regardless of i18n readiness.
+      if (event === "INITIAL_SESSION") {
+        setAuthReady(true);
+        if (!session) {
+          console.log('Initial session: No session found, redirecting to authentication');
+          // We don't navigate immediately here, NavigationGuard will handle it based on session state
+        } else {
+          console.log('Initial session: Session found for user:', session.user.id);
+          // Role checking and navigation should happen in NavigationGuard
         }
+      } else if (event === "SIGNED_IN") {
+        console.log('Auth event: SIGNED_IN for user:', session?.user?.id);
+        // NavigationGuard will handle routing based on the new session
       } else if (event === "SIGNED_OUT") {
-        console.log('Déconnexion détectée');
+        console.log('Auth event: SIGNED_OUT');
+        // NavigationGuard will handle routing
         router.replace("/(auth)");
       }
     });
@@ -116,7 +56,7 @@ export default function RootLayout() {
     return () => {
       subscription.unsubscribe();
     };
-  }, [isReady]);
+  }, []); // Run only once on mount
 
   // Always render the stack first, then handle navigation
   return (
@@ -125,48 +65,50 @@ export default function RootLayout() {
         <SessionProvider>
           <FavoritesProvider>
             <CartProvider>
-              {isReady && <NavigationGuard />}
-              <Stack
-                screenOptions={{
-                  headerShown: false,
-                  animation: "none",
-                  gestureEnabled: false,
-                }}
-              >
-                
-                <Stack.Screen
-                  name="(auth)"
-                  options={{
+              <I18nextProvider i18n={i18n}>
+                {isReady && <NavigationGuard />}
+                <Stack
+                  screenOptions={{
                     headerShown: false,
                     animation: "none",
                     gestureEnabled: false,
                   }}
-                />
-                <Stack.Screen
-                  name="(tabs)"
-                  options={{
-                    headerShown: false,
-                    animation: "none",
-                    gestureEnabled: false,
-                  }}
-                />
-                <Stack.Screen
-                  name="(supplier)"
-                  options={{
-                    headerShown: false,
-                    animation: "none",
-                    gestureEnabled: false,
-                  }}
-                />
-                <Stack.Screen
-                  name="admin"
-                  options={{
-                    headerShown: false,
-                    animation: "none",
-                    gestureEnabled: false,
-                  }}
-                />
-              </Stack>
+                >
+                  
+                  <Stack.Screen
+                    name="(auth)"
+                    options={{
+                      headerShown: false,
+                      animation: "none",
+                      gestureEnabled: false,
+                    }}
+                  />
+                  <Stack.Screen
+                    name="(tabs)"
+                    options={{
+                      headerShown: false,
+                      animation: "none",
+                      gestureEnabled: false,
+                    }}
+                  />
+                  <Stack.Screen
+                    name="(supplier)"
+                    options={{
+                      headerShown: false,
+                      animation: "none",
+                      gestureEnabled: false,
+                    }}
+                  />
+                  <Stack.Screen
+                    name="admin"
+                    options={{
+                      headerShown: false,
+                      animation: "none",
+                      gestureEnabled: false,
+                    }}
+                  />
+                </Stack>
+              </I18nextProvider>
             </CartProvider>
           </FavoritesProvider>
         </SessionProvider>

@@ -242,7 +242,7 @@ export default function SignUp() {
                   styles.userTypeButtonText,
                   userType === 'utilisateur' && styles.userTypeButtonTextActive
                 ]}>
-                  {t('Utilisateur')}
+                  {t('userRoleUser')}
                 </Text>
               </TouchableOpacity>
 

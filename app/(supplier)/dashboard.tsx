@@ -401,13 +401,15 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   statsContainer: {
-    padding: 16,
-    marginTop: -20,
+    paddingHorizontal: 16,
+    paddingTop: 16,
+    paddingBottom: 8,
+    marginTop: 10,
   },
   statsRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    marginBottom: 16,
+    marginBottom: 5,
   },
   statCard: {
     flex: 1,
@@ -446,7 +448,9 @@ const styles = StyleSheet.create({
     fontWeight: '500',
   },
   actionsContainer: {
-    padding: 16,
+    paddingHorizontal: 16,
+    paddingTop: 4,
+    paddingBottom: 16,
   },
   sectionTitle: {
     fontSize: 20,

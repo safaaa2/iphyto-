@@ -3,6 +3,7 @@ import { View, Text, StyleSheet, FlatList, TouchableOpacity, Alert, ViewStyle, T
 import Icon from 'react-native-vector-icons/MaterialIcons';
 import { supabase } from '../../lib/supabase';
 import { useFavorites } from '../../lib/FavoritesContext';
+import { useTranslation } from 'react-i18next';
 
 type SavedProduct = {
   user_id: string;
@@ -59,6 +60,7 @@ export default function FavoritesScreen() {
   const [loading, setLoading] = useState(true);
   const [expandedProducts, setExpandedProducts] = useState<Set<string>>(new Set());
   const { refreshFavorites, triggerRefresh } = useFavorites();
+  const { t } = useTranslation();
 
   useEffect(() => {
     fetchSavedProducts();
@@ -73,7 +75,7 @@ export default function FavoritesScreen() {
 
       if (!userId) {
         console.log('Pas d\'utilisateur connecté');
-        Alert.alert('Erreur', 'Vous devez être connecté pour voir vos favoris.');
+        Alert.alert(t('error'), t('authRequiredFavorites'));
         return;
       }
 
@@ -89,7 +91,7 @@ export default function FavoritesScreen() {
 
       if (error) {
         console.error('Erreur lors de la récupération des favoris:', error);
-        Alert.alert('Erreur', 'Impossible de charger vos favoris.');
+        Alert.alert(t('error'), t('loadFavoritesError'));
         return;
       }
 
@@ -97,7 +99,7 @@ export default function FavoritesScreen() {
       console.log('Produits favoris mis à jour:', data || []);
     } catch (error) {
       console.error('Erreur:', error);
-      Alert.alert('Erreur', 'Une erreur est survenue.');
+      Alert.alert(t('error'), t('genericErrorMessage'));
     } finally {
       setLoading(false);
     }
@@ -144,19 +146,19 @@ export default function FavoritesScreen() {
       {loading ? (
         <View style={styles.loadingContainer}>
           <ActivityIndicator size="large" color="#2E7D32" />
-          <Text style={styles.loadingText}>Chargement des favoris...</Text>
+          <Text style={styles.loadingText}>{t('loadingFavorites')}</Text>
         </View>
       ) : savedProducts.length === 0 ? (
         <View style={styles.emptyContainer}>
           <Icon name="favorite-border" size={80} color="#2E7D32" />
-          <Text style={styles.emptyText}>Aucun produit favori</Text>
-          <Text style={styles.emptySubText}>Ajoutez des produits à vos favoris pour les retrouver facilement</Text>
+          <Text style={styles.emptyText}>{t('noFavoriteProducts')}</Text>
+          <Text style={styles.emptySubText}>{t('addFavoritesMessage')}</Text>
         </View>
       ) : (
         <>
           <View style={styles.headerContainer}>
-            <Text style={styles.favoritesTitle}>Mes Favoris</Text>
-            <Text style={styles.favoritesSubtitle}>{savedProducts.length} produit(s) sauvegardé(s)</Text>
+            <Text style={styles.favoritesTitle}>{t('myFavoritesTitle')}</Text>
+            <Text style={styles.favoritesSubtitle}>{t('savedProductsCount', { count: savedProducts.length })}</Text>
           </View>
           <FlatList
             style={styles.list}
@@ -170,7 +172,7 @@ export default function FavoritesScreen() {
                     <Text style={styles.productName}>{item.Produits}</Text>
                     <View style={styles.categoryContainer}>
                       <Icon name="category" size={16} color="#2E7D32" />
-                      <Text style={styles.productCategory}>{item.Categorie || 'Non spécifié'}</Text>
+                      <Text style={styles.productCategory}>{item.Categorie || t('notSpecified')}</Text>
                     </View>
                   </View>
                   <View style={styles.headerRight}>
@@ -193,15 +195,15 @@ export default function FavoritesScreen() {
                   <View style={styles.infoSection}>
                     <View style={styles.infoRow}>
                       <Icon name="science" size={20} color="#2E7D32" />
-                      <Text style={styles.infoText}>Matière active: {item['Matière active'] || 'Non spécifié'}</Text>
+                      <Text style={styles.infoText}>{t('activeMatterPrefix')} {item['Matière active'] || t('notSpecified')}</Text>
                     </View>
                     <View style={styles.infoRow}>
                       <Icon name="agriculture" size={20} color="#2E7D32" />
-                      <Text style={styles.infoText}>Cultures: {item.Cultures || 'Non spécifié'}</Text>
+                      <Text style={styles.infoText}>{t('culturesPrefix')} {item.Cultures || t('notSpecified')}</Text>
                     </View>
                     <View style={styles.infoRow}>
                       <Icon name="bug-report" size={20} color="#2E7D32" />
-                      <Text style={styles.infoText}>Cible: {item.Cible || 'Non spécifié'}</Text>
+                      <Text style={styles.infoText}>{t('targetPrefix')} {item.Cible || t('notSpecified')}</Text>
                     </View>
                   </View>
 
@@ -210,7 +212,7 @@ export default function FavoritesScreen() {
                     onPress={() => toggleProductDetails(item["Numéro homologation"])}
                   >
                     <Text style={styles.moreDetailsText}>
-                      {expandedProducts.has(item["Numéro homologation"]) ? "Masquer les détails" : "Voir plus de détails"}
+                      {expandedProducts.has(item["Numéro homologation"]) ? t('hideDetails') : t('showMoreDetails')}
                     </Text>
                     <Icon 
                       name={expandedProducts.has(item["Numéro homologation"]) ? "expand-less" : "expand-more"} 
@@ -222,61 +224,61 @@ export default function FavoritesScreen() {
                   {expandedProducts.has(item["Numéro homologation"]) && (
                     <View style={styles.expandedContent}>
                       <View style={styles.infoSection}>
-                        <Text style={styles.sectionTitle}>Dosage et application</Text>
+                        <Text style={styles.sectionTitle}>{t('dosageAndApplication')}</Text>
                         <View style={styles.infoRow}>
                           <Icon name="opacity" size={20} color="#2E7D32" />
-                          <Text style={styles.infoText}>Dose: {item.Dose || 'Non spécifié'}</Text>
+                          <Text style={styles.infoText}>{t('dosePrefix')} {item.Dose || t('notSpecified')}</Text>
                         </View>
                         <View style={styles.infoRow}>
                           <Icon name="hourglass-bottom" size={20} color="#2E7D32" />
-                          <Text style={styles.infoText}>DAR: {item.DAR || 'Non spécifié'}</Text>
+                          <Text style={styles.infoText}>{t('darPrefix')} {item.DAR || t('notSpecified')}</Text>
                         </View>
                         <View style={styles.infoRow}>
                           <Icon name="repeat" size={20} color="#2E7D32" />
-                          <Text style={styles.infoText}>Nombre d'applications: {item["Nbr_d'app"] || 'Non spécifié'}</Text>
+                          <Text style={styles.infoText}>{t('applicationsNumberPrefix')} {item["Nbr_d'app"] || t('notSpecified')}</Text>
                         </View>
                       </View>
 
                       <View style={styles.infoSection}>
-                        <Text style={styles.sectionTitle}>Caractéristiques</Text>
+                        <Text style={styles.sectionTitle}>{t('characteristics')}</Text>
                         <View style={styles.infoRow}>
                           <Icon name="science" size={20} color="#2E7D32" />
-                          <Text style={styles.infoText}>Formulation: {item.Formulation || 'Non spécifié'}</Text>
+                          <Text style={styles.infoText}>{t('formulationPrefix')} {item.Formulation || t('notSpecified')}</Text>
                         </View>
                         <View style={styles.infoRow}>
                           <Icon name="percent" size={20} color="#2E7D32" />
-                          <Text style={styles.infoText}>Teneur: {item.Teneur || 'Non spécifié'}</Text>
+                          <Text style={styles.infoText}>{t('contentPrefix')} {item.Teneur || t('notSpecified')}</Text>
                         </View>
                         <View style={styles.infoRow}>
                           <Icon name="report-problem" size={20} color="#e53935" />
-                          <Text style={styles.infoText}>Tableau toxicologique: {item["Tableau toxicologique"] || 'Non spécifié'}</Text>
+                          <Text style={styles.infoText}>{t('toxicologicalTablePrefix')} {item["Tableau toxicologique"] || t('notSpecified')}</Text>
                         </View>
                       </View>
 
                       <View style={styles.infoSection}>
-                        <Text style={styles.sectionTitle}>Informations commerciales</Text>
+                        <Text style={styles.sectionTitle}>{t('commercialInformation')}</Text>
                         <View style={styles.infoRow}>
                           <Icon name="local-shipping" size={20} color="#2E7D32" />
-                          <Text style={styles.infoText}>Fournisseur: {item.Fournisseur || 'Non spécifié'}</Text>
+                          <Text style={styles.infoText}>{t('supplierPrefix')} {item.Fournisseur || t('notSpecified')}</Text>
                         </View>
                         <View style={styles.infoRow}>
                           <Icon name="person" size={20} color="#2E7D32" />
-                          <Text style={styles.infoText}>Détenteur: {item.Détenteur || 'Non spécifié'}</Text>
+                          <Text style={styles.infoText}>{t('holderPrefix')} {item.Détenteur || t('notSpecified')}</Text>
                         </View>
                         <View style={styles.infoRow}>
                           <Icon name="confirmation-number" size={20} color="#2E7D32" />
-                          <Text style={styles.infoText}>Numéro homologation: {item["Numéro homologation"]}</Text>
+                          <Text style={styles.infoText}>{t('homologationNumberPrefix')} {item["Numéro homologation"]}</Text>
                         </View>
                         <View style={styles.infoRow}>
                           <Icon name="event" size={20} color="#2E7D32" />
                           <Text style={styles.infoText}>
-                            Valable jusqu'au: {item["Valable jusqu'au"] 
+                            {t('validUntilPrefix')}{item["Valable jusqu'au"]
                               ? new Date(item["Valable jusqu'au"]).toLocaleDateString('fr-FR', {
                                   year: 'numeric',
                                   month: 'long',
                                   day: 'numeric',
                                 })
-                              : 'Non spécifié'}
+                              : t('notSpecified')}
                           </Text>
                         </View>
                       </View>

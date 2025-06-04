@@ -7,6 +7,7 @@ import { supabase } from '../../lib/supabase';
 import { useRouter } from 'expo-router';
 import Icon from 'react-native-vector-icons/MaterialIcons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { useTranslation } from 'react-i18next';
 
 const TabsLayout = () => {
   const [isAdmin, setIsAdmin] = useState<boolean>(false);
@@ -14,6 +15,7 @@ const TabsLayout = () => {
   const [notificationCount, setNotificationCount] = useState(0);
   const [lastViewedTimestamp, setLastViewedTimestamp] = useState<string>('');
   const router = useRouter();
+  const { t } = useTranslation();
 
   useEffect(() => {
     let mounted = true;
@@ -168,7 +170,7 @@ const TabsLayout = () => {
           <Tabs.Screen
             name="admin"
             options={{
-              title: 'Admin',
+              title: t('adminTabTitle'),
               headerShown: true,
               tabBarIcon: ({ focused }: { focused: boolean }) => (
                 <Image source={icons.person} style={iconStyle(focused)} />
@@ -178,7 +180,7 @@ const TabsLayout = () => {
           <Tabs.Screen
             name="profile"
             options={{
-              title: 'Profile',
+              title: t('profileTabTitle'),
               headerShown: false,
               tabBarIcon: ({ focused }: { focused: boolean }) => (
                 <Image source={icons.person} style={iconStyle(focused)} />
@@ -197,7 +199,7 @@ const TabsLayout = () => {
         <Tabs.Screen
           name="search"
           options={{
-            title: 'Search',
+            title: t('searchTabTitle'),
             tabBarIcon: ({ focused }: { focused: boolean }) => (
               <Image source={icons.search} style={iconStyle(focused)} />
             ),
@@ -206,7 +208,7 @@ const TabsLayout = () => {
         <Tabs.Screen
           name="favoris"
           options={{
-            title: 'Favoris',
+            title: t('favoritesTabTitle'),
             headerShown: true,
             tabBarIcon: ({ focused }: { focused: boolean }) => (
               <Image source={icons.favoris} style={iconStyle(focused)} />
@@ -216,7 +218,7 @@ const TabsLayout = () => {
         <Tabs.Screen
           name="history"
           options={{
-            title: 'History',
+            title: t('historyTabTitle'),
             headerShown: true,
             tabBarIcon: ({ focused }: { focused: boolean }) => (
               <Icon name="history" size={29} color={focused ? 'green' : '#B0B0B0'} />
@@ -226,7 +228,7 @@ const TabsLayout = () => {
         <Tabs.Screen
           name="cart"
           options={{
-            title: 'panier',
+            title: t('cartTabTitle'),
             headerShown: true,
             tabBarIcon: ({ focused }: { focused: boolean }) => (
               <Image source={icons.panier} style={iconStyle(focused)} />
@@ -236,7 +238,7 @@ const TabsLayout = () => {
         <Tabs.Screen
           name="profile"
           options={{
-            title: 'Profile',
+            title: t('profileTabTitle'),
             headerShown: false,
             tabBarIcon: ({ focused }: { focused: boolean }) => (
               <Image source={icons.person} style={iconStyle(focused)} />

@@ -1,11 +1,11 @@
-import { View, Text, StyleSheet, FlatList, TouchableOpacity, Alert, RefreshControl, Animated } from 'react-native';
+import { View, Text, StyleSheet, FlatList, TouchableOpacity, Alert, RefreshControl, Animated, SectionList } from 'react-native';
 import React, { useState, useEffect, useRef } from 'react';
 import Icon from 'react-native-vector-icons/MaterialIcons';
 import { supabase } from '../lib/supabase';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
-import AsyncStorage from '@react-native-async-storage/async-storage';
+import { useTranslation } from 'react-i18next';
 
 type SupplierProduct = {
   id: string;
@@ -44,37 +44,10 @@ const AlertScreen = () => {
   const [newProducts, setNewProducts] = useState<SupplierProduct[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
-  const [dismissedIds, setDismissedIds] = useState<string[]>([]);
   const router = useRouter();
   const fadeAnim = useRef(new Animated.Value(0)).current;
-
-  // Load dismissed notifications from storage
-  useEffect(() => {
-    loadDismissedNotifications();
-  }, []);
-
-  const loadDismissedNotifications = async () => {
-    try {
-      const storedDismissed = await AsyncStorage.getItem('dismissedNotifications');
-      if (storedDismissed) {
-        setDismissedIds(JSON.parse(storedDismissed));
-      }
-    } catch (error) {
-      console.error('Error loading dismissed notifications:', error);
-    }
-  };
-
-  const saveDismissedNotifications = async (newDismissedIds: string[]) => {
-    try {
-      await AsyncStorage.setItem('dismissedNotifications', JSON.stringify(newDismissedIds));
-    } catch (error) {
-      console.error('Error saving dismissed notifications:', error);
-    }
-  };
-
-  // Calculate visible notifications
-  const visibleProducts = newProducts.filter(item => !dismissedIds.includes(item.id));
-  const hasNewNotifications = visibleProducts.length > 0;
+  const [groupedProducts, setGroupedProducts] = useState<Array<{ title: string; data: SupplierProduct[] }>>([]);
+  const { t } = useTranslation();
 
   useEffect(() => {
     fetchNewProducts();
@@ -91,50 +64,50 @@ const AlertScreen = () => {
       const userId = userData?.user?.id;
 
       if (!userId) {
-        Alert.alert('Erreur', 'Vous devez être connecté pour voir les alertes.');
+        Alert.alert(t('error'), t('authRequiredAlerts'));
         return;
       }
 
-      // Calculer la date d'il y a 7 jours
-      const sevenDaysAgo = new Date();
-      sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
-
-      // Récupérer les produits des 7 derniers jours
+      // Récupérer les 5 derniers produits
       const { data, error } = await supabase
         .from('utilisation')
         .select('*')
-        .gte('created_at', sevenDaysAgo.toISOString())
         .order('created_at', { ascending: false })
-        .limit(2);
-
-      console.log('Produits récupérés:', data);
+        .gte('created_at', '2025-05-29T00:00:00.000Z');
 
       if (error) {
         console.error('Erreur lors de la récupération des produits:', error);
-        Alert.alert('Erreur', 'Impossible de charger les nouveaux produits.');
+        Alert.alert(t('error'), t('loadProductsError'));
         return;
       }
 
       const newProductsData = data || [];
-      const updatedProducts = await Promise.all(newProductsData.map(async (item: SupplierProduct) => {
-        const { data: produitData } = await supabase
-          .from('Produits')
-          .select('Valable jusqu\'au')
-          .eq('Numéro homologation', item["Numéro homologation"])
-          .single();
+      setNewProducts(newProductsData as SupplierProduct[]); // Keep for total count
 
-      
+      // Group products by date
+      const grouped = newProductsData.reduce((acc, item) => {
+        const date = new Date(item.created_at).toLocaleDateString('fr-FR', {
+          year: 'numeric',
+          month: 'long',
+          day: 'numeric',
+        });
+        if (!acc[date]) {
+          acc[date] = [];
+        }
+        acc[date].push(item);
+        return acc;
+      }, {});
 
-        return {
-          ...item,
-         
-        };
+      const sections = Object.keys(grouped).map(date => ({
+        title: date,
+        data: grouped[date],
       }));
 
-      setNewProducts(updatedProducts);
+      setGroupedProducts(sections);
+
     } catch (error) {
       console.error('Erreur:', error);
-      Alert.alert('Erreur', 'Une erreur est survenue.');
+      Alert.alert(t('error'), t('genericErrorMessage'));
     } finally {
       setLoading(false);
       setRefreshing(false);
@@ -146,23 +119,11 @@ const AlertScreen = () => {
     fetchNewProducts();
   }, []);
 
-  const handleRemoveNotification = async (item: SupplierProduct) => {
-    const newDismissedIds = [...dismissedIds, item.id];
-    setDismissedIds(newDismissedIds);
-    await saveDismissedNotifications(newDismissedIds);
-  };
-
   const renderProduct = ({ item }: { item: SupplierProduct }) => {
-    const productDate = new Date(item.created_at).toLocaleDateString('fr-FR', {
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric',
-    });
     return (
       <Animated.View style={{ opacity: fadeAnim }}>
         <TouchableOpacity
           style={styles.cardContainer}
-          onPress={() => handleRemoveNotification(item)}
           activeOpacity={0.7}
         >
           <LinearGradient
@@ -180,31 +141,30 @@ const AlertScreen = () => {
                 )}
               </View>
             </View>
-            <Text style={styles.createdDateText}>Ajouté le: {productDate}</Text>
             <View style={styles.infoContainer}>
               <View style={styles.cultureRow}>
                 <Icon name="eco" size={20} color="#2e7d32" style={styles.icon} />
                 <View style={styles.cultureBadge}>
-                  <Text style={styles.cultureText}>{item.Cultures || "Non spécifié"}</Text>
+                  <Text style={styles.cultureText}>{item.Cultures || t('notSpecified')}</Text>
                 </View>
               </View>
               <View style={styles.targetRow}>
                 <Icon name="bug-report" size={18} color="#2e7d32" style={styles.icon} />
                 <View style={styles.targetBadge}>
-                  <Text style={styles.targetText}>{item.Cible || "Non spécifié"}</Text>
+                  <Text style={styles.targetText}>{item.Cible || t('notSpecified')}</Text>
                 </View>
               </View>
               <View style={styles.dateRow}>
                 <Icon name="calendar-month" size={16} color="#2e7d32" style={styles.icon} />
                 <Text style={styles.dateText}>
-                  Valable jusqu'au :{" "}
+                  {t('validUntilPrefix')}
                   {item["Valable jusqu'au"]
                     ? new Date(item["Valable jusqu'au"]).toLocaleDateString("fr-FR", {
                       year: "numeric",
                       month: "short",
                       day: "numeric",
                     })
-                    : "Non spécifié"}
+                    : t('notSpecified')}
                 </Text>
               </View>
             </View>
@@ -213,6 +173,12 @@ const AlertScreen = () => {
       </Animated.View>
     );
   };
+
+  const renderSectionHeader = ({ section: { title } }: { section: { title: string } }) => (
+    <View style={styles.sectionHeader}>
+      <Text style={styles.sectionTitle}>{t('addedOnDatePrefix')} {title}</Text>
+    </View>
+  );
 
   return (
     <View style={styles.container}>
@@ -228,27 +194,28 @@ const AlertScreen = () => {
           <Ionicons name="arrow-back" size={28} color="#2e7d32" />
         </TouchableOpacity>
         <View style={styles.titleContainer}>
-          <Text style={styles.title}>Nouveaux produits</Text>
-          <AlertIcon count={visibleProducts.length} />
+          <Text style={styles.title}>{t('newProductsTitle')}</Text>
+          <AlertIcon count={newProducts.length} />
         </View>
       </LinearGradient>
       {loading ? (
         <View style={styles.loadingContainer}>
-          <Text style={styles.loadingText}>Chargement des nouveaux produits...</Text>
+          <Text style={styles.loadingText}>{t('loadingNewProducts')}</Text>
         </View>
-      ) : visibleProducts.length === 0 ? (
+      ) : groupedProducts.length === 0 ? (
         <View style={styles.emptyContainer}>
           <Icon name="notifications-off" size={60} color="#2e7d32" />
-          <Text style={styles.emptyText}>Aucun nouveau produit</Text>
+          <Text style={styles.emptyText}>{t('noNewProducts')}</Text>
           <TouchableOpacity onPress={onRefresh} style={styles.retryButton}>
-            <Text style={styles.retryButtonText}>Actualiser</Text>
+            <Text style={styles.retryButtonText}>{t('refreshButtonText')}</Text>
           </TouchableOpacity>
         </View>
       ) : (
-        <FlatList
-          data={visibleProducts}
+        <SectionList
+          sections={groupedProducts}
+          keyExtractor={(item) => item.id}
           renderItem={renderProduct}
-          keyExtractor={(item) => `${item.id}-${item.created_at}`}
+          renderSectionHeader={renderSectionHeader}
           contentContainerStyle={styles.listContainer}
           refreshControl={
             <RefreshControl
@@ -351,15 +318,17 @@ const styles = StyleSheet.create({
   },
   listContainer: {
     padding: 16,
+    paddingBottom: 30,
   },
   cardContainer: {
     marginBottom: 16,
     borderRadius: 12,
+    backgroundColor: '#ffffff',
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.1,
-    shadowRadius: 8,
-    elevation: 4,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.15,
+    shadowRadius: 3.84,
+    elevation: 3,
   },
   card: {
     padding: 16,
@@ -408,8 +377,8 @@ const styles = StyleSheet.create({
     borderColor: '#2e7d32',
     backgroundColor: 'rgba(46, 125, 50, 0.1)',
     borderRadius: 20,
-    paddingVertical: 6,
-    paddingHorizontal: 12,
+    paddingVertical: 4,
+    paddingHorizontal: 10,
   },
   cultureText: {
     fontSize: 14,
@@ -424,8 +393,8 @@ const styles = StyleSheet.create({
   targetBadge: {
     backgroundColor: '#2e7d32',
     borderRadius: 20,
-    paddingHorizontal: 12,
-    paddingVertical: 6,
+    paddingHorizontal: 10,
+    paddingVertical: 4,
   },
   targetText: {
     color: 'white',
@@ -438,7 +407,8 @@ const styles = StyleSheet.create({
   },
   dateText: {
     fontSize: 14,
-    color: '#666',
+    fontWeight:'bold',
+    color:'black'
   },
   retryButton: {
     marginTop: 20,
@@ -453,10 +423,15 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '600',
   },
-  createdDateText: {
-    fontSize: 12,
-    color: '#666',
+  sectionHeader: {
+    marginTop: 16,
     marginBottom: 8,
+    paddingHorizontal: 16,
+  },
+  sectionTitle: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    color: '#2e7d32',
   },
 });
 

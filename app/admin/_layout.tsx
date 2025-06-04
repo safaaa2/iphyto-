@@ -21,11 +21,7 @@ const AdminLayout = () => {
     headerStyle: { backgroundColor: 'green' },
     headerTintColor: 'white',
     headerTitleAlign: 'left' as const,
-    headerTitle: () => (
-      <Text style={{ fontWeight: 'bold', color: 'white', fontSize: 20 }}>
-        Iphyto Admin
-      </Text>
-    ),
+    
     tabBarStyle: { 
       position: 'absolute' as const, 
       bottom: 0, 
@@ -52,8 +48,8 @@ const AdminLayout = () => {
         <Tabs.Screen
           name="index"
           options={{
-            title: 'Espace Admin',
-            headerShown: true,
+          
+            headerShown: false,
             tabBarIcon: ({ focused }: { focused: boolean }) => (
               <View style={{ alignItems: 'center', justifyContent: 'center' }}>
                 <Image 
@@ -71,7 +67,7 @@ const AdminLayout = () => {
           name="users"
           options={{
             title: 'users',
-            headerShown: true,
+            headerShown: false,
             tabBarIcon: ({ focused }: { focused: boolean }) => (
               <View style={{ alignItems: 'center', justifyContent: 'center' }}>
                 <Image 
