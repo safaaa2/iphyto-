@@ -19,46 +19,46 @@ export default function RootLayout() {
   const isReady = i18nReady && authReady;
 
   useEffect(() => {
+    let mounted = true;
+
     // Load saved language and initialize i18n
     const loadLanguage = async () => {
       const savedLanguage = await getSavedLanguage();
       await i18n.changeLanguage(savedLanguage);
-      setI18nReady(true);
+      if (mounted) {
+        setI18nReady(true);
+      }
     };
     loadLanguage();
 
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange(async (event, session) => {
+      if (!mounted) return;
+      
       console.log('Changement d\'état auth:', event, session?.user?.id);
       
-      // This part handles initial session and subsequent auth changes.
-      // It should run regardless of i18n readiness.
       if (event === "INITIAL_SESSION") {
         setAuthReady(true);
         if (!session) {
           console.log('Initial session: No session found, redirecting to authentication');
-          // We don't navigate immediately here, NavigationGuard will handle it based on session state
         } else {
           console.log('Initial session: Session found for user:', session.user.id);
-          // Role checking and navigation should happen in NavigationGuard
         }
       } else if (event === "SIGNED_IN") {
         console.log('Auth event: SIGNED_IN for user:', session?.user?.id);
-        // NavigationGuard will handle routing based on the new session
       } else if (event === "SIGNED_OUT") {
         console.log('Auth event: SIGNED_OUT');
-        // NavigationGuard will handle routing
         router.replace("/(auth)");
       }
     });
 
     return () => {
+      mounted = false;
       subscription.unsubscribe();
     };
-  }, []); // Run only once on mount
+  }, []); 
 
-  // Always render the stack first, then handle navigation
   return (
     <StripeProvider publishableKey="pk_test_51RQUNq4KRNSut1EI28mDH6m8GHEQacVfHeYRRGPP0qsmhuKDJaeuqi7dLQH2HOnIb3xEYdrRrK7Pz6dGY7rVej1i00Nn8SPrXi">
       <QueryClientProvider client={queryClient}>
@@ -74,7 +74,6 @@ export default function RootLayout() {
                     gestureEnabled: false,
                   }}
                 >
-                  
                   <Stack.Screen
                     name="(auth)"
                     options={{

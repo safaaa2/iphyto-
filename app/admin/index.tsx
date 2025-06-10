@@ -77,15 +77,20 @@ export default function AdminPage() {
 
   const fetchSupplierCount = async () => {
     try {
-      const { count, error } = await supabase
-        .from('profiles')
-        .select('*', { count: 'exact', head: true })
-        .eq('role', 'supplier');
-
+      const { data, error } = await supabase
+        .from('Produits')
+        .select('Fournisseur');
+  
       if (error) {
-        console.error('Error counting suppliers:', error.message);
+        console.error('Error fetching product suppliers:', error.message);
       } else {
-        setSupplierCount(count || 0);
+        // Extraire les noms uniques de fournisseurs non nuls
+        const fournisseurs = data
+          .map(p => p.Fournisseur)
+          .filter(f => f !== null && f.trim() !== '');
+  
+        const fournisseursUniques = [...new Set(fournisseurs)];
+        setSupplierCount(fournisseursUniques.length);
       }
     } catch (error) {
       console.error('Error in fetchSupplierCount:', error);
