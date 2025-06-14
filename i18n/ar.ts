@@ -21,7 +21,7 @@ export default {
   paymentSuccess: "تم الدفع بنجاح",
   paymentError: "حدث خطأ أثناء الدفع",
   paymentCancelled: "تم إلغاء الدفع",
-  paymentCancelledMessage: "تم إلغاء عملية الدفع",
+  paymentCancelledMessage: "تم إلغاء عملية الدفع.",
   fillAllFields: "يرجى ملء جميع الحقول",
   invalidEmail: "البريد الإلكتروني غير صالح",
   invalidPhone: "رقم الهاتف غير صالح",
@@ -38,5 +38,7 @@ export default {
   clear: "تفريغ",
   clearCart: "تفريغ السلة",
   checkout: "الدفع",
-  emptyCart: "سلة المشتريات فارغة"
+  emptyCart: "سلة المشتريات فارغة",
+  confirmOrder: "هل أنت متأكد من رغبتك في تأكيد هذا الطلب؟",
+  orderSuccessMessage: "تم تسجيل طلبك بنجاح !"
 }; 

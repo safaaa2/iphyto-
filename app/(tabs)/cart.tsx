@@ -140,54 +140,53 @@ function CartContent() {
 
       Alert.alert(
         t('success'),
-        t('paymentSuccess'),
-        [
-          {
-            text: t('ok'),
-            onPress: async () => {
-              try {
-                console.log('cartItems avant extraction fournisseur:', cartItems);
-                const fournisseurs = Array.from(new Set(cartItems.map(item => item.fournisseur)));
-                console.log('Fournisseurs extraits:', fournisseurs);
-                if (fournisseurs.length === 1 && fournisseurs[0]) {
-                  // Un seul fournisseur
-                  await supabase.from('commandes').insert([{
-                    user_id: userDetails?.email,
-                    produits: cartItems,
-                    date: new Date().toISOString(),
-                    fournisseur: fournisseurs[0],
-                  }]);
-                  console.log('Commande insérée pour un fournisseur:', fournisseurs[0]);
-                } else if (fournisseurs.length > 1) {
-                  // Plusieurs fournisseurs : une commande par fournisseur
-                  console.log('Plusieurs fournisseurs détectés, insertion multiple');
-                  for (const f of fournisseurs) {
-                    if (f) {
-                      const produitsFournisseur = cartItems.filter(item => item.fournisseur === f);
-                      await supabase.from('commandes').insert([{
-                        user_id: userDetails?.email,
-                        produits: produitsFournisseur,
-                        date: new Date().toISOString(),
-                        fournisseur: f,
-                      }]);
-                      console.log('Commande insérée pour le fournisseur:', f);
-                    }
+        t('orderSuccessMessage'),
+        [{ 
+          text: t('ok'), 
+          onPress: async () => {
+            try {
+              console.log('cartItems avant extraction fournisseur:', cartItems);
+              const fournisseurs = Array.from(new Set(cartItems.map(item => item.fournisseur)));
+              console.log('Fournisseurs extraits:', fournisseurs);
+              if (fournisseurs.length === 1 && fournisseurs[0]) {
+                // Un seul fournisseur
+                await supabase.from('commandes').insert([{
+                  user_id: userDetails?.email,
+                  produits: cartItems,
+                  date: new Date().toISOString(),
+                  fournisseur: fournisseurs[0],
+                }]);
+                console.log('Commande insérée pour un fournisseur:', fournisseurs[0]);
+              } else if (fournisseurs.length > 1) {
+                // Plusieurs fournisseurs : une commande par fournisseur
+                console.log('Plusieurs fournisseurs détectés, insertion multiple');
+                for (const f of fournisseurs) {
+                  if (f) {
+                    const produitsFournisseur = cartItems.filter(item => item.fournisseur === f);
+                    await supabase.from('commandes').insert([{
+                      user_id: userDetails?.email,
+                      produits: produitsFournisseur,
+                      date: new Date().toISOString(),
+                      fournisseur: f,
+                    }]);
+                    console.log('Commande insérée pour le fournisseur:', f);
                   }
-                } else {
-                   console.warn(`Aucun fournisseur valide trouvé dans cartItems pour l'insertion de la commande.`);
                 }
-              } catch (err) {
-                console.error('Erreur lors de l\'enregistrement de la commande:', err);
+              } else {
+                 console.warn(`Aucun fournisseur valide trouvé dans cartItems pour l'insertion de la commande.`);
               }
-              clearCart();
-              router.replace('/(tabs)/search');
+            } catch (err) {
+              console.error('Erreur lors de l\'enregistrement de la commande:', err);
             }
+            clearCart();
+            router.replace('/(tabs)/search');
           }
-        ]
+        }]
       );
 
     } catch (error: any) {
-      if (error.message === 'The payment flow has been canceled') {
+      const errorMessage = error.message ? String(error.message).trim().toLowerCase() : '';
+      if (errorMessage.includes('the payment flow has been canceled')) {
         Alert.alert(
           t('paymentCancelled'),
           t('paymentCancelledMessage')

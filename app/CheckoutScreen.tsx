@@ -48,63 +48,85 @@ export default function CheckoutScreen() {
   }, []);
 
   const handlePay = async () => {
-    if (!name || !email || !address || !phone) return Alert.alert(t('error'), t('fillAllFields'));
-    if (!isValidEmail(email)) return Alert.alert(t('error'), t('L\'email est invalide'));
-    if (!isValidPhone(phone)) return Alert.alert(t('error'), t('Numéro de telephone invalide'));
+    if (!name || !email || !address || !phone) return Alert.alert('Erreur', 'Veuillez remplir tous les champs');
+    if (!isValidEmail(email)) return Alert.alert('Erreur', 'L\'email est invalide');
+    if (!isValidPhone(phone)) return Alert.alert('Erreur', 'Numéro de téléphone invalide');
 
-    setLoading(true);
-    try {
-      const response = await fetch(`${Constants.expoConfig?.extra?.supabaseUrl}/functions/v1/stripe`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${Constants.expoConfig?.extra?.supabaseAnonKey}`,
+    Alert.alert(
+      'Confirmation',
+      'Êtes-vous sûr de vouloir passer cette commande ?',
+      [
+        {
+          text: 'Annuler',
+          style: 'cancel',
         },
-        body: JSON.stringify({ name, email, address, phone, amount: total, currency: 'mad' })
-      });
+        {
+          text: 'Confirmer',
+          onPress: async () => {
+            setLoading(true);
+            try {
+              const response = await fetch(`${Constants.expoConfig?.extra?.supabaseUrl}/functions/v1/stripe`, {
+                method: 'POST',
+                headers: {
+                  'Content-Type': 'application/json',
+                  'Authorization': `Bearer ${Constants.expoConfig?.extra?.supabaseAnonKey}`,
+                },
+                body: JSON.stringify({ name, email, address, phone, amount: total, currency: 'mad' })
+              });
 
-      const { clientSecret, error } = await response.json();
-      if (!clientSecret) throw new Error(error || 'No client secret received');
+              const { clientSecret, error } = await response.json();
+              if (!clientSecret) throw new Error(error || 'Erreur lors de la réception du secret client');
 
-      const { initPaymentSheet, presentPaymentSheet } = require('@stripe/stripe-react-native');
-      const initResponse = await initPaymentSheet({
-        paymentIntentClientSecret: clientSecret,
-        merchantDisplayName: 'Votre App',
-        allowsDelayedPaymentMethods: false,
-      });
-      if (initResponse.error) throw new Error(initResponse.error.message);
+              const { initPaymentSheet, presentPaymentSheet } = require('@stripe/stripe-react-native');
+              const initResponse = await initPaymentSheet({
+                paymentIntentClientSecret: clientSecret,
+                merchantDisplayName: 'iPhyto',
+                allowsDelayedPaymentMethods: false,
+              });
+              if (initResponse.error) throw new Error(initResponse.error.message);
 
-      const paymentResponse = await presentPaymentSheet();
-      if (paymentResponse.error) throw new Error(paymentResponse.error.message);
+              const paymentResponse = await presentPaymentSheet();
+              if (paymentResponse.error) throw new Error(paymentResponse.error.message);
 
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) throw new Error('User not found');
+              const { data: { user } } = await supabase.auth.getUser();
+              if (!user) throw new Error('Utilisateur non trouvé');
 
-      const fournisseurs = Array.from(new Set(cartItems.map(item => item.fournisseur)));
+              const fournisseurs = Array.from(new Set(cartItems.map(item => item.fournisseur)));
 
-      for (const f of fournisseurs) {
-        const produitsFournisseur = cartItems.filter(item => item.fournisseur === f);
-        const { error: orderError } = await supabase.from('commandes').insert({
-          user_id: user.id,
-          statut: 'en attente',
-          montant_total: produitsFournisseur.reduce((sum, item) => sum + item.price * item.quantity, 0),
-          produits: produitsFournisseur,
-          adresse_livraison: address,
-          telephone: phone,
-          nom_client: name,
-          email: email,
-          fournisseur: f
-        });
-        if (orderError) throw new Error(`Failed to save order for supplier ${f}`);
-      }
+              for (const f of fournisseurs) {
+                const produitsFournisseur = cartItems.filter(item => item.fournisseur === f);
+                const { error: orderError } = await supabase.from('commandes').insert({
+                  user_id: user.id,
+                  statut: 'en attente',
+                  montant_total: produitsFournisseur.reduce((sum, item) => sum + item.price * item.quantity, 0),
+                  produits: produitsFournisseur,
+                  adresse_livraison: address,
+                  telephone: phone,
+                  nom_client: name,
+                  email: email,
+                  fournisseur: f
+                });
+                if (orderError) throw new Error(`Erreur lors de l'enregistrement de la commande pour le fournisseur ${f}`);
+              }
 
-      clearCart();
-      Alert.alert(t('success'), t('paymentSuccess'), [{ text: t('ok'), onPress: () => router.replace('/(tabs)/search') }]);
-    } catch (err) {
-      Alert.alert(t('error'), err instanceof Error ? err.message : 'Payment failed');
-    } finally {
-      setLoading(false);
-    }
+              clearCart();
+              Alert.alert(
+                'Succès',
+                'Votre commande a été enregistrée avec succès !',
+                [{ 
+                  text: 'OK', 
+                  onPress: () => router.replace('/(tabs)/search') 
+                }]
+              );
+            } catch (err) {
+              Alert.alert('Erreur', err instanceof Error ? err.message : 'Le paiement a échoué');
+            } finally {
+              setLoading(false);
+            }
+          },
+        },
+      ],
+    );
   };
 
   return (
