@@ -278,7 +278,7 @@ function CartContent() {
                 ) : (
                   <>
                     <Icon name="cart-check" size={20} color="white" />
-                    <Text style={styles.buttonText}>{t('checkout')}</Text>
+                    <Text style={styles.buttonText}>{t('Payer')}</Text>
                   </>
                 )}
               </TouchableOpacity>

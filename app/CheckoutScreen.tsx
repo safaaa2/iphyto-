@@ -30,8 +30,8 @@ export default function CheckoutScreen() {
 
   const total = cartItems.reduce((sum, item) => sum + item.price * item.quantity, 0);
 
-  const isValidEmail = (email) => /\S+@\S+\.\S+/.test(email);
-  const isValidPhone = (phone) => /^[0-9]{10,15}$/.test(phone);
+  const isValidEmail = (email: string) => /\S+@\S+\.\S+/.test(email);
+  const isValidPhone = (phone: string) => phone.length === 10 && /^\d+$/.test(phone);
 
   useEffect(() => {
     const fetchUserInfo = async () => {
@@ -49,8 +49,8 @@ export default function CheckoutScreen() {
 
   const handlePay = async () => {
     if (!name || !email || !address || !phone) return Alert.alert(t('error'), t('fillAllFields'));
-    if (!isValidEmail(email)) return Alert.alert(t('error'), t('invalidEmail'));
-    if (!isValidPhone(phone)) return Alert.alert(t('error'), t('invalidPhone'));
+    if (!isValidEmail(email)) return Alert.alert(t('error'), t('L\'email est invalide'));
+    if (!isValidPhone(phone)) return Alert.alert(t('error'), t('Numéro de telephone invalide'));
 
     setLoading(true);
     try {
@@ -115,7 +115,7 @@ export default function CheckoutScreen() {
         </TouchableOpacity>
         <View style={styles.headerRow}>
           <Ionicons name="cart-outline" size={28} color="#008000" style={{ marginRight: 8 }} />
-          <Text style={styles.title}>{t('checkout')}</Text>
+          <Text style={styles.title}>{t('Panier')}</Text>
         </View>
 
         <View style={styles.cartSummary}>
@@ -131,23 +131,23 @@ export default function CheckoutScreen() {
         </View>
 
         <View style={styles.formSection}>
-          <Text style={styles.inputLabel}>{t('name')}</Text>
-          <TextInput style={styles.input} placeholder={t('name')} value={name} onChangeText={setName} editable={!loading} />
+          <Text style={styles.inputLabel}>{t('Nom')}</Text>
+          <TextInput style={styles.input} placeholder={t('nom')} value={name} onChangeText={setName} editable={!loading} />
 
-          <Text style={styles.inputLabel}>{t('email')}</Text>
+          <Text style={styles.inputLabel}>{t('Email')}</Text>
           <TextInput style={styles.input} placeholder={t('email')} value={email} onChangeText={setEmail} keyboardType="email-address" autoCapitalize="none" editable={!loading} />
 
-          <Text style={styles.inputLabel}>{t('address')}</Text>
-          <TextInput style={styles.input} placeholder={t('address')} value={address} onChangeText={setAddress} editable={!loading} />
+          <Text style={styles.inputLabel}>{t('Adresse')}</Text>
+          <TextInput style={styles.input} placeholder={t('adresse')} value={address} onChangeText={setAddress} editable={!loading} />
 
-          <Text style={styles.inputLabel}>{t('phone')}</Text>
-          <TextInput style={styles.input} placeholder={t('phone')} value={phone} onChangeText={setPhone} keyboardType="phone-pad" editable={!loading} />
+          <Text style={styles.inputLabel}>{t('Telephone')}</Text>
+          <TextInput style={styles.input} placeholder={t('telephone')} value={phone} onChangeText={setPhone} keyboardType="phone-pad" editable={!loading} />
         </View>
 
         <Text style={styles.note}>{t('paymentSecure')}</Text>
 
         <TouchableOpacity style={styles.checkoutButton} onPress={handlePay} disabled={loading}>
-          {loading ? <ActivityIndicator color="white" /> : <Text style={styles.checkoutText}>{t('checkout')}</Text>}
+          {loading ? <ActivityIndicator color="white" /> : <Text style={styles.checkoutText}>{t('Payer')}</Text>}
         </TouchableOpacity>
       </ScrollView>
     </KeyboardAvoidingView>
@@ -178,6 +178,7 @@ const styles = StyleSheet.create({
     fontSize: 28,
     fontWeight: 'bold',
     textAlign: 'center',
+    
   },
   cartSummary: {
     marginBottom: 24,

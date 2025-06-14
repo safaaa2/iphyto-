@@ -134,7 +134,7 @@ const resources = {
       holderPrefix: 'Détenteur:',
       homologationNumberPrefix: 'Numéro d\'homologation:',
       validUntilPrefix: 'Valable jusqu\'au:',
-      searchTabTitle: 'Search',
+      searchTabTitle: 'Recherche',
       favoritesTabTitle: 'Favoris',
       historyTabTitle: 'Historique',
       cartTabTitle: 'Cart',
