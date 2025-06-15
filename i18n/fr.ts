@@ -19,4 +19,6 @@ export default {
   error: "Erreur",
   paymentError: "Une erreur est survenue lors du paiement.",
   orderSuccessMessage: "Votre commande a été enregistrée avec succès !",
+  myProducts: "Mes produits",
+  searchProductName: "Rechercher un produit",
 }; 

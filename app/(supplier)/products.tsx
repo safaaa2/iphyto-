@@ -90,10 +90,20 @@ export default function Products() {
     utilisation: '',
   });
   const router = useRouter();
+  const [searchQuery, setSearchQuery] = useState('');
+  const [filteredProducts, setFilteredProducts] = useState<Product[]>([]);
 
   useEffect(() => {
     fetchProducts();
   }, []);
+
+  useEffect(() => {
+    const lowerCaseQuery = searchQuery.toLowerCase();
+    const filtered = products.filter(product =>
+      product.Produits.toLowerCase().includes(lowerCaseQuery)
+    );
+    setFilteredProducts(filtered);
+  }, [searchQuery, products]);
 
   const fetchProducts = async () => {
     try {
@@ -687,7 +697,7 @@ export default function Products() {
   return (
     <View style={[styles.container, { paddingBottom: Platform.OS === 'ios' ? 85 : 60 }]}>
       <View style={styles.header}>
-        <Text style={styles.title}>{t('myProducts')}</Text>
+        <Text style={styles.title}>Mes produits</Text>
         <View style={styles.headerButtons}>
           <TouchableOpacity
             key="add-product-button"
@@ -716,7 +726,7 @@ export default function Products() {
             style={styles.addButton}
           >
             <Ionicons name="add-circle" size={24} color="#ffffff" />
-            <Text style={styles.addButtonText}>{t('addProduct')}</Text>
+            <Text style={styles.addButtonText}>Ajouter </Text>
           </TouchableOpacity>
          
           
@@ -724,11 +734,25 @@ export default function Products() {
         </View>
       </View>
 
+      <View style={styles.searchContainer}>
+        <Ionicons name="search" size={20} color="#757575" style={styles.searchIcon} />
+        <TextInput
+          style={styles.searchInput}
+          placeholder={t('rechercher mon produit phytosanitaire')}
+          value={searchQuery}
+          onChangeText={setSearchQuery}
+        />
+      </View>
+
       {loading ? (
         <View style={styles.centerContainer}>
           <Text>Chargement...</Text>
         </View>
-      ) : products.length === 0 ? (
+      ) : filteredProducts.length === 0 && searchQuery !== '' ? (
+        <View style={styles.centerContainer}>
+          <Text style={styles.noProductsText}>Aucun produit trouvé pour "{searchQuery}"</Text>
+        </View>
+      ) : filteredProducts.length === 0 ? (
         <View style={styles.centerContainer}>
           <Text style={styles.noProductsText}>Aucun produit trouvé</Text>
           <TouchableOpacity
@@ -741,7 +765,7 @@ export default function Products() {
         </View>
       ) : (
         <FlatList
-          data={products}
+          data={filteredProducts}
           renderItem={renderProduct}
           keyExtractor={(item, idx) => item.id ? String(item.id) : String(idx)}
           contentContainerStyle={styles.productList}
@@ -1184,5 +1208,31 @@ const styles = StyleSheet.create({
     color: '#ffffff',
     fontSize: 14,
     fontWeight: '500',
+  },
+  searchContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#FFFFFF',
+    borderRadius: 8,
+    marginHorizontal: 20,
+    marginTop: -14, // Overlap with the header slightly
+    marginBottom: 15,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    elevation: 3,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.15,
+    shadowRadius: 3,
+  },
+  searchIcon: {
+    marginRight: 8,
+    color:"green"
+  },
+  searchInput: {
+    flex: -2,
+    fontSize: 14,
+    color: '#333',
+   
   },
 }); 

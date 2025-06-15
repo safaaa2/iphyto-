@@ -40,5 +40,7 @@ export default {
   checkout: "الدفع",
   emptyCart: "سلة المشتريات فارغة",
   confirmOrder: "هل أنت متأكد من رغبتك في تأكيد هذا الطلب؟",
-  orderSuccessMessage: "تم تسجيل طلبك بنجاح !"
+  orderSuccessMessage: "تم تسجيل طلبك بنجاح !",
+  myProducts: "منتجاتي",
+  
 }; 
