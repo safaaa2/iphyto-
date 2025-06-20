@@ -141,6 +141,7 @@ const resources = {
       profileTabTitle: 'Profil',
       adminTabTitle: 'Administration',
       userRoleUser: 'Utilisateur',
+      myOrders: 'Mes commandes',
     }
   },
   ar: {
@@ -272,11 +273,11 @@ const resources = {
       holderPrefix: 'الحائز:',
       homologationNumberPrefix: 'رقم التسجيل:',
       validUntilPrefix: 'صالح حتى:',
-      myOrdersTitle: 'طلباتي',
+      commandes: 'طلباتي',
       loadingOrders: 'جاري تحميل الطلبات...',
       noOrdersFound: 'لا يوجد طلبات',
-      quantity: 'الكمية',
-      price: 'السعر',
+      quantité: 'الكمية',
+      prix: 'السعر',
       total: 'الإجمالي',
       paidStatus: 'مدفوع',
       deliveredStatus: 'تم التوصيل',
@@ -289,6 +290,7 @@ const resources = {
       profileTabTitle: 'الملف الشخصي',
       adminTabTitle: 'الادارة',
       userRoleUser: 'مستخدم',
+      myOrders: 'طلباتي',
     }
   },
   en: {

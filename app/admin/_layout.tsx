@@ -48,7 +48,7 @@ const AdminLayout = () => {
         <Tabs.Screen
           name="index"
           options={{
-          
+            title: 'tableau de bord',
             headerShown: false,
             tabBarIcon: ({ focused }: { focused: boolean }) => (
               <View style={{ alignItems: 'center', justifyContent: 'center' }}>
@@ -66,7 +66,7 @@ const AdminLayout = () => {
          <Tabs.Screen
           name="users"
           options={{
-            title: 'users',
+            title: 'utilisateurs',
             headerShown: false,
             tabBarIcon: ({ focused }: { focused: boolean }) => (
               <View style={{ alignItems: 'center', justifyContent: 'center' }}>

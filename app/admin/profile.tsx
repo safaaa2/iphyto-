@@ -253,7 +253,7 @@ export default function AdminProfile() {
             </View>
 
             <View style={styles.inputGroup}>
-              <Text style={styles.label}>Nom d'utilisateur</Text>
+              <Text style={styles.label}>Nom </Text>
               <TextInput
                 style={styles.input}
                 value={username}

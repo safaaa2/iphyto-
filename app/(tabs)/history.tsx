@@ -95,7 +95,7 @@ export default function HistoryScreen() {
                         style={{ marginRight: 4 }}
                     />
                     <Text style={styles.statusBadgeText}>
-                        {t(item.statut === 'livré' ? 'deliveredStatus' : 'paidStatus')}
+                        {t(item.statut === 'livré' ? 'deliveredStatus' : 'payé')}
                     </Text>
                 </View>
             </View>
@@ -108,8 +108,8 @@ export default function HistoryScreen() {
                                 <View style={{ flex: 1 }}>
                                     <Text style={styles.productName}>{prod.name || prod.nom}</Text>
                                     <View style={styles.productDetailsRow}>
-                                        <Text style={styles.productDetail}>{t('quantity')}: <Text style={styles.bold}>{prod.quantity || prod.quantite}</Text></Text>
-                                        <Text style={styles.productDetail}>| {t('price')}: <Text style={styles.bold}>{prod.price || prod.prix} MAD</Text></Text>
+                                        <Text style={styles.productDetail}>{t('quantité')}: <Text style={styles.bold}>{prod.quantity || prod.quantite}</Text></Text>
+                                        <Text style={styles.productDetail}>| {t('prix')}: <Text style={styles.bold}>{prod.price || prod.prix} MAD</Text></Text>
                                         {prod.unite && <Text style={styles.productDetail}>| {prod.unite}</Text>}
                                     </View>
                                 </View>
@@ -124,7 +124,7 @@ export default function HistoryScreen() {
             <View style={styles.orderFooterRow}>
                 <View style={{ flex: 1, flexDirection: 'row', alignItems: 'center' }}>
                     <Ionicons name="location-outline" size={14} color="#888" style={{ marginRight: 3 }} />
-                    <Text style={styles.customerInfo}>{t('customerNamePrefix')} {item.nom_client} • {t('deliveryAddressPrefix')} {item.adresse_livraison}</Text>
+                    <Text style={styles.customerInfo}> {item.nom_client} • {item.adresse_livraison}</Text>
                 </View>
                 <Text style={styles.orderTotal}>{t('total')}: <Text style={styles.bold}>{item.montant_total} MAD</Text></Text>
             </View>
@@ -144,7 +144,7 @@ export default function HistoryScreen() {
         <View style={styles.container}>
             <View style={styles.header}>
             <MaterialIcons name="history" size={28} color="#2c3e50"  />
-                <Text style={styles.title}>{t('myOrdersTitle')}</Text>
+                <Text style={styles.title}>{t('myOrders')}</Text>
             </View>
 
             {orders.length === 0 ? (
