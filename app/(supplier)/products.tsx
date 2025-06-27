@@ -30,7 +30,7 @@ interface Product {
   "Valable jusqu'au": string;
   Cultures: string;
   Cible: string;
-  Prix: string;
+  Prix: number | null;
   Nbr_d_app?: string;
   DAR?: string;
   DOSE?: string;
@@ -48,11 +48,12 @@ interface ProductData {
   Teneur: string;
   Categorie: string;
   Fournisseur: string;
+  Prix: number | null;
 }
 
 // Fonction pour générer un ID unique
 const generateUniqueId = () => {
-  return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
+  return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function (c) {
     const r = Math.random() * 16 | 0;
     const v = c === 'x' ? r : (r & 0x3 | 0x8);
     return v.toString(16);
@@ -109,10 +110,10 @@ export default function Products() {
     try {
       setLoading(true);
       console.log('Fetching products...');
-      
+
       // Récupérer l'utilisateur connecté
       const { data: { user } } = await supabase.auth.getUser();
-      
+
       if (!user) {
         throw new Error('Utilisateur non connecté');
       }
@@ -163,6 +164,7 @@ export default function Products() {
           // Fusionner les données du produit avec les données d'utilisation
           return {
             ...product,
+            Prix: product.Prix !== undefined && product.Prix !== null ? Number(product.Prix) : null,
             Nbr_d_app: firstUtilization?.['Nbr_d\'app'] || null,
             DAR: firstUtilization?.DAR || null,
             DOSE: firstUtilization?.Dose || null,
@@ -172,7 +174,7 @@ export default function Products() {
           };
         })
       );
-      
+
       console.log('Products with utilization data:', productsWithUtilization);
       setProducts(productsWithUtilization);
     } catch (error: any) {
@@ -186,7 +188,7 @@ export default function Products() {
   const handleAddProduct = async () => {
     try {
       const { data: { user } } = await supabase.auth.getUser();
-      
+
       if (!user) {
         Alert.alert('Erreur', 'Utilisateur non connecté');
         return;
@@ -234,6 +236,9 @@ export default function Products() {
         return;
       }
 
+      // LOG pour debug valeur du prix
+      console.log('Valeur brute du prix dans le formulaire:', newProduct.prix, typeof newProduct.prix);
+
       const productData: ProductData = {
         "Produits": newProduct.name,
         "Détenteur": newProduct.detenteur,
@@ -244,9 +249,11 @@ export default function Products() {
         "Matière active": newProduct.matiere_active,
         "Teneur": newProduct.teneur,
         "Categorie": newProduct.categorie,
-        "Fournisseur": profileData.fournisseur
+        "Fournisseur": profileData.fournisseur,
+        "Prix": newProduct.prix.trim() !== '' && !isNaN(Number(newProduct.prix.trim()))
+          ? Number(newProduct.prix.trim())
+          : null,
       };
-
       // Données pour la table utilisation
       const utilisationData = {
         "Numéro homologation": newProduct.numero_homologation,
@@ -264,13 +271,22 @@ export default function Products() {
       console.log('Données d\'utilisation à insérer:', utilisationData);
 
       // Vérifier si tous les champs requis sont remplis
-      const requiredFields: (keyof ProductData)[] = ['Produits', 'Détenteur', 'Numéro homologation', 'Valable jusqu\'au'];
-      const missingFields = requiredFields.filter(field => !productData[field]);
-      
+      const requiredFields: (keyof ProductData)[] = ['Produits', 'Détenteur', 'Numéro homologation', 'Valable jusqu\'au', 'Prix'];
+      const missingFields = requiredFields.filter(field => !productData[field] && productData[field] !== 0);
+
+      // Vérification stricte du prix
+      if (!newProduct.prix || isNaN(Number(newProduct.prix))) {
+        Alert.alert('Erreur', 'Veuillez saisir un prix valide (nombre).');
+        return;
+      }
+
       if (missingFields.length > 0) {
         Alert.alert('Erreur', `Veuillez remplir tous les champs obligatoires: ${missingFields.join(', ')}`);
         return;
       }
+
+      console.log('Prix à insérer:', newProduct.prix, typeof newProduct.prix);
+      console.log('Prix converti:', productData.Prix, typeof productData.Prix);
 
       try {
         // Insérer dans la table Produits
@@ -354,7 +370,7 @@ export default function Products() {
       categorie: product.Categorie,
       cultures: product.Cultures,
       cible: product.Cible,
-      prix: product.Prix,
+      prix: product.Prix !== null && product.Prix !== undefined ? String(product.Prix) : '',
       nbr_d_app: product.Nbr_d_app || '',
       dar: product.DAR || '',
       dose: product.DOSE || '',
@@ -363,41 +379,29 @@ export default function Products() {
     setModalVisible(true);
   };
 
-  const handleDeleteProduct = async (productId: string) => {
+  const handleDeleteProduct = async (productId: string, productName: string) => {
     Alert.alert(
       'Confirmation',
       'Êtes-vous sûr de vouloir supprimer ce produit ? Toutes les utilisations associées seront supprimées.',
       [
-        {
-          text: 'Annuler',
-          style: 'cancel'
-        },
+        { text: 'Annuler', style: 'cancel' },
         {
           text: 'Supprimer',
           style: 'destructive',
           onPress: async () => {
             try {
-              // Supprimer toutes les utilisations associées
-              const { error: utilisationError } = await supabase
+              // Supprimer toutes les utilisations associées (par nom ET numéro d'homologation)
+              await supabase
                 .from('utilisation')
                 .delete()
-                .eq('Numéro homologation', productId);
-
-              if (utilisationError) {
-                console.error('Erreur lors de la suppression des utilisations:', utilisationError);
-                throw utilisationError;
-              }
+                .or(`Numéro homologation.eq.${productId},Produits.eq.${productName}`);
 
               // Ensuite supprimer le produit
-              const { error: productError } = await supabase
+              await supabase
                 .from('Produits')
                 .delete()
                 .eq('Numéro homologation', productId);
 
-              if (productError) {
-                console.error('Erreur lors de la suppression du produit:', productError);
-                throw productError;
-              }
               Alert.alert('Succès', 'Produit et utilisations associées supprimés avec succès');
               fetchProducts();
             } catch (error: any) {
@@ -413,7 +417,7 @@ export default function Products() {
   const handleSaveProduct = async () => {
     try {
       const { data: { user } } = await supabase.auth.getUser();
-      
+
       if (!user) {
         Alert.alert('Erreur', 'Utilisateur non connecté');
         return;
@@ -448,7 +452,8 @@ export default function Products() {
         "Matière active": newProduct.matiere_active,
         "Teneur": newProduct.teneur,
         "Categorie": newProduct.categorie,
-        "Fournisseur": profileData.fournisseur
+        "Fournisseur": profileData.fournisseur,
+        "Prix": parseFloat(newProduct.prix),
       };
 
       // Données pour la table utilisation
@@ -468,7 +473,7 @@ export default function Products() {
 
       if (editingProduct) {
         console.log('Mise à jour du produit:', editingProduct["Numéro homologation"]);
-        
+
         // Mise à jour du produit
         const { error: productError } = await supabase
           .from('Produits')
@@ -566,7 +571,7 @@ export default function Products() {
         dose: '',
         utilisation: '',
       });
-      
+
       // Rafraîchir la liste des produits
       await fetchProducts();
     } catch (error: any) {
@@ -601,14 +606,14 @@ export default function Products() {
             Detenteur: <Text style={styles.boldText}>{item.Détenteur}</Text>
           </Text>
         </View>
-      
+
         <View style={styles.infoRow} key="numero-homologation">
           <Ionicons name="flask-outline" size={16} color="#008000" style={styles.infoIcon} />
           <Text style={styles.productDescription}>
-          Numéro homologation: <Text style={styles.boldText}>{item['Numéro homologation']}</Text>
+            Numéro homologation: <Text style={styles.boldText}>{item['Numéro homologation']}</Text>
           </Text>
         </View>
-         <View style={styles.infoRow} key="tableau-toxicologique">
+        <View style={styles.infoRow} key="tableau-toxicologique">
           <Ionicons name="flask-outline" size={16} color="#008000" style={styles.infoIcon} />
           <Text style={styles.productDescription}>
             Tableau Toxicologique: <Text style={styles.boldText}>{item['Tableau toxicologique']}</Text>
@@ -674,6 +679,12 @@ export default function Products() {
             Utilisation: <Text style={styles.boldText}>{item.Utilisation || 'Non spécifié'}</Text>
           </Text>
         </View>
+        <View style={styles.infoRow} key="Prix">
+          <Ionicons name="information-circle-outline" size={16} color="#008000" style={styles.infoIcon} />
+          <Text style={styles.productDescription}>
+            Prix: <Text style={styles.boldText}>{item.Prix !== undefined && item.Prix !== null ? `${item.Prix} MAD` : 'Non spécifié'}</Text>
+          </Text>
+        </View>
       </View>
       <View style={styles.productActions}>
         <TouchableOpacity
@@ -685,7 +696,7 @@ export default function Products() {
         </TouchableOpacity>
         <TouchableOpacity
           key="delete-button"
-          onPress={() => handleDeleteProduct(item["Numéro homologation"])}
+          onPress={() => handleDeleteProduct(item["Numéro homologation"], item.Produits)}
           style={styles.actionButton}
         >
           <Ionicons name="trash" size={24} color="#ff0000" />
@@ -728,9 +739,9 @@ export default function Products() {
             <Ionicons name="add-circle" size={24} color="#ffffff" />
             <Text style={styles.addButtonText}>Ajouter </Text>
           </TouchableOpacity>
-         
-          
-          
+
+
+
         </View>
       </View>
 
@@ -881,12 +892,12 @@ export default function Products() {
 
               <Text style={styles.sectionTitle}>Informations commerciales</Text>
               <View style={styles.inputContainer}>
-                <Text style={styles.inputLabel}>Prix (MAD)</Text>
+                <Text style={styles.inputLabel}>Prix (MAD) *</Text>
                 <TextInput
                   style={styles.input}
                   placeholder="Entrez le prix"
                   value={newProduct.prix}
-                  onChangeText={(text) => setNewProduct({ ...newProduct, prix: text })}
+                  onChangeText={(text) => setNewProduct({ ...newProduct, prix: text.replace(/[^0-9.]/g, '') })}
                   keyboardType="numeric"
                 />
               </View>
@@ -1227,12 +1238,12 @@ const styles = StyleSheet.create({
   },
   searchIcon: {
     marginRight: 8,
-    color:"green"
+    color: "green"
   },
   searchInput: {
     flex: -2,
     fontSize: 14,
     color: '#333',
-   
+
   },
 }); 
