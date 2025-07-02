@@ -70,6 +70,7 @@ const resources = {
       validUntil: 'Valable jusqu\'au',
       saveProduct: 'Sauvegarder le produit',
       productSaved: 'Produit sauvegardé avec succès!',
+      productAddedToCart: "le produit a été ajouté au panier avec succès",
       productAlreadySaved: 'Ce produit est déjà dans vos favoris pour cette culture.',
       mustBeLoggedIn: 'Vous devez être connecté pour sauvegarder des produits.',
       saveError: 'Impossible de sauvegarder le produit.',
@@ -142,6 +143,7 @@ const resources = {
       adminTabTitle: 'Administration',
       userRoleUser: 'Utilisateur',
       myOrders: 'Mes commandes',
+      productRemovedFromCart: "Produit retiré du panier",
     }
   },
   ar: {
@@ -210,6 +212,7 @@ const resources = {
       validUntil: 'صالح حتى',
       saveProduct: 'حفظ المنتج',
       productSaved: 'تم حفظ المنتج بنجاح!',
+      productAddedToCart: "تم إضافة المنتج إلى السلة بنجاح",
       productAlreadySaved: 'هذا المنتج موجود بالفعل في المفضلة لهذه المحصول.',
       mustBeLoggedIn: 'يجب تسجيل الدخول لحفظ المنتجات.',
       welcomeToIPhyto: 'مرحباً بك في iPhyto!',
@@ -291,6 +294,7 @@ const resources = {
       adminTabTitle: 'الادارة',
       userRoleUser: 'مستخدم',
       myOrders: 'طلباتي',
+      productRemovedFromCart: "تمت إزالة المنتج من السلة",
     }
   },
   en: {
@@ -358,6 +362,7 @@ const resources = {
       validUntil: 'Valid until',
       saveProduct: 'Save product',
       productSaved: 'Product saved successfully!',
+      productAddedToCart: "le produit a été ajouté au panier avec succès",
       productAlreadySaved: 'This product is already in your favorites for this crop.',
       mustBeLoggedIn: 'You must be logged in to save products.',
       saveError: 'Could not save the product.',
@@ -395,6 +400,7 @@ const resources = {
       cartTabTitle: 'Panier',
       profileTabTitle: 'Profil',
       adminTabTitle: 'Administration',
+      productRemovedFromCart: "Product removed from cart",
     }
   },
  
