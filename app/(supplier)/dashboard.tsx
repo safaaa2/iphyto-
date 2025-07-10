@@ -86,19 +86,39 @@ export default function Dashboard() {
 
       if (ordersError) throw ordersError;
 
-      const today = new Date();
-      const thirtyDaysFromNow = new Date();
+      // Utility: normalize date to midnight, or return null if invalid
+      function normalizeDate(date: any) {
+        if (!date) return null;
+        const d = new Date(date);
+        if (isNaN(d.getTime())) return null;
+        d.setHours(0, 0, 0, 0);
+        return d;
+      }
+
+      // Always get a valid today date
+      let today = normalizeDate(new Date());
+      if (!today) today = new Date(); today.setHours(0,0,0,0);
+      const thirtyDaysFromNow = new Date(today);
       thirtyDaysFromNow.setDate(today.getDate() + 30);
 
-      // Calculer les statistiques des produits
+      // Filter products with valid expiry dates only
+      const validProducts = (products || []).filter(p => normalizeDate(p["Valable jusqu'au"]));
+
+      // Calculate product stats
       const productStats = {
         totalProducts: products?.length || 0,
-        activeProducts: products?.filter(p => new Date(p["Valable jusqu'au"]) > today).length || 0,
-        expiringProducts: products?.filter(p => {
-          const expiryDate = new Date(p["Valable jusqu'au"]);
-          return expiryDate > today && expiryDate <= thirtyDaysFromNow;
+        activeProducts: validProducts.filter(p => {
+          const expiryDate = normalizeDate(p["Valable jusqu'au"]);
+          return expiryDate && expiryDate > today;
         }).length || 0,
-        expiredProducts: products?.filter(p => new Date(p["Valable jusqu'au"]) < today).length || 0,
+        expiringProducts: validProducts.filter(p => {
+          const expiryDate = normalizeDate(p["Valable jusqu'au"]);
+          return expiryDate && expiryDate > today && expiryDate <= thirtyDaysFromNow;
+        }).length || 0,
+        expiredProducts: validProducts.filter(p => {
+          const expiryDate = normalizeDate(p["Valable jusqu'au"]);
+          return expiryDate && expiryDate < today;
+        }).length || 0,
         recentProducts: products?.filter(p => {
           const creationDate = new Date(p.created_at);
           const thirtyDaysAgo = new Date();
@@ -183,32 +203,34 @@ export default function Dashboard() {
     try {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
-
       const { data: profileData } = await supabase
         .from('profiles')
         .select('fournisseur')
         .eq('id', user.id)
         .single();
-
       if (!profileData?.fournisseur) return;
-
-      const today = new Date();
-      const thirtyDaysFromNow = new Date();
-      thirtyDaysFromNow.setDate(today.getDate() + 30);
-
-      const { data: expiringProducts } = await supabase
+      const { data: products } = await supabase
         .from('Produits')
         .select('*')
-        .eq('Fournisseur', profileData.fournisseur)
-        .gte("Valable jusqu'au", today.toISOString())
-        .lte("Valable jusqu'au", thirtyDaysFromNow.toISOString())
-        .order("Valable jusqu'au", { ascending: true });
-
-      if (expiringProducts && expiringProducts.length > 0) {
-        router.push({
-          pathname: '/products',
-          params: { filter: 'expiring', products: JSON.stringify(expiringProducts) }
-        });
+        .eq('Fournisseur', profileData.fournisseur);
+      function normalizeDate(date: any) {
+        if (!date) return null;
+        const d = new Date(date);
+        if (isNaN(d.getTime())) return null;
+        d.setHours(0, 0, 0, 0);
+        return d;
+      }
+      let today = normalizeDate(new Date());
+      if (!today) today = new Date(); today.setHours(0,0,0,0);
+      const thirtyDaysFromNow = new Date(today);
+      thirtyDaysFromNow.setDate(today.getDate() + 30);
+      const expiringProducts = (products || []).filter(p => {
+        const expiryDate = normalizeDate(p["Valable jusqu'au"]);
+        return expiryDate && expiryDate > today && expiryDate <= thirtyDaysFromNow;
+      });
+      if (expiringProducts.length > 0) {
+        const names = expiringProducts.map(p => p.Produits || p.name || 'Produit inconnu').join('\n');
+        Alert.alert('Produits expirant bientôt', names);
       } else {
         Alert.alert(
           'Information',
@@ -218,6 +240,48 @@ export default function Dashboard() {
     } catch (error) {
       console.error('Error fetching expiring products:', error);
       Alert.alert('Erreur', 'Impossible de récupérer les produits expirant.');
+    }
+  };
+
+  const handleExpiredProducts = async () => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+      const { data: profileData } = await supabase
+        .from('profiles')
+        .select('fournisseur')
+        .eq('id', user.id)
+        .single();
+      if (!profileData?.fournisseur) return;
+      const { data: products } = await supabase
+        .from('Produits')
+        .select('*')
+        .eq('Fournisseur', profileData.fournisseur);
+      function normalizeDate(date: any) {
+        if (!date) return null;
+        const d = new Date(date);
+        if (isNaN(d.getTime())) return null;
+        d.setHours(0, 0, 0, 0);
+        return d;
+      }
+      let today = normalizeDate(new Date());
+      if (!today) today = new Date(); today.setHours(0,0,0,0);
+      const expiredProducts = (products || []).filter(p => {
+        const expiryDate = normalizeDate(p["Valable jusqu'au"]);
+        return expiryDate && expiryDate < today;
+      });
+      if (expiredProducts.length > 0) {
+        const names = expiredProducts.map(p => p.Produits || p.name || 'Produit inconnu').join('\n');
+        Alert.alert('Produits expirés', names);
+      } else {
+        Alert.alert(
+          'Information',
+          'Aucun produit n\'est expiré.'
+        );
+      }
+    } catch (error) {
+      console.error('Error fetching expired products:', error);
+      Alert.alert('Erreur', 'Impossible de récupérer les produits expirés.');
     }
   };
 
@@ -319,6 +383,12 @@ export default function Dashboard() {
             icon="warning"
             onPress={handleExpiringProducts}
             color="#F57C00"
+          />
+          <QuickActionButton
+            title="Produits expirés"
+            icon="close-circle"
+            onPress={handleExpiredProducts}
+            color="#D32F2F"
           />
         </View>
       </View>

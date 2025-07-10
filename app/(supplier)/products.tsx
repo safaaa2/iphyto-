@@ -14,7 +14,7 @@ import {
 import { supabase } from '../../lib/supabase';
 import { useTranslation } from 'react-i18next';
 import { Ionicons } from '@expo/vector-icons';
-import { useRouter } from 'expo-router';
+import { useRouter, useLocalSearchParams } from 'expo-router';
 
 interface Product {
   id: string;
@@ -62,7 +62,9 @@ const generateUniqueId = () => {
 
 export default function Products() {
   const { t } = useTranslation();
+  const params = useLocalSearchParams();
   const [products, setProducts] = useState<Product[]>([]);
+  const [allProducts, setAllProducts] = useState<Product[]>([]); // keep all for reset
   const [loading, setLoading] = useState(true);
   const [modalVisible, setModalVisible] = useState(false);
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
@@ -95,6 +97,44 @@ export default function Products() {
   const [filteredProducts, setFilteredProducts] = useState<Product[]>([]);
 
   useEffect(() => {
+    // Si on a un filtre 'expiring' ou 'expired' et une liste de produits passée en paramètre, on l'utilise et on refiltre côté client
+    if ((params.filter === 'expiring' || params.filter === 'expired') && params.products) {
+      try {
+        const rawProducts = JSON.parse(params.products as string);
+        function normalizeDate(date: any) {
+          if (!date) return null;
+          const d = new Date(date);
+          if (isNaN(d.getTime())) return null;
+          d.setHours(0, 0, 0, 0);
+          return d;
+        }
+        const todayRaw = new Date();
+        todayRaw.setHours(0, 0, 0, 0);
+        const today = todayRaw;
+        const thirtyDaysFromNow = new Date(today);
+        thirtyDaysFromNow.setDate(today.getDate() + 30);
+        let filtered = [];
+        if (params.filter === 'expiring') {
+          filtered = rawProducts.filter((p: any) => {
+            const expiryDate = normalizeDate(p["Valable jusqu'au"]);
+            // Only products that are NOT expired and expire within 30 days
+            return expiryDate && expiryDate > today && expiryDate <= thirtyDaysFromNow;
+          });
+        } else if (params.filter === 'expired') {
+          filtered = rawProducts.filter((p: any) => {
+            const expiryDate = normalizeDate(p["Valable jusqu'au"]);
+            return expiryDate && expiryDate < today;
+          });
+        }
+        setProducts(filtered);
+        setAllProducts(filtered); // for reset
+        setFilteredProducts(filtered);
+        setLoading(false);
+        return;
+      } catch (e) {
+        // fallback si parsing échoue
+      }
+    }
     fetchProducts();
   }, []);
 
@@ -177,12 +217,37 @@ export default function Products() {
 
       console.log('Products with utilization data:', productsWithUtilization);
       setProducts(productsWithUtilization);
+      setAllProducts(productsWithUtilization);
     } catch (error: any) {
       console.error('Error in fetchProducts:', error);
       Alert.alert('Erreur', 'Impossible de charger les produits');
     } finally {
       setLoading(false);
     }
+  };
+
+  // Button handlers
+  const showExpiredProducts = () => {
+    function normalizeDate(date: any) {
+      if (!date) return null;
+      const d = new Date(date);
+      if (isNaN(d.getTime())) return null;
+      d.setHours(0, 0, 0, 0);
+      return d;
+    }
+    const todayRaw = new Date();
+    todayRaw.setHours(0, 0, 0, 0);
+    const today = todayRaw;
+    const expired = allProducts.filter((p: any) => {
+      const expiryDate = normalizeDate(p["Valable jusqu'au"]);
+      return expiryDate && expiryDate < today;
+    });
+    setProducts(expired);
+    setFilteredProducts(expired);
+  };
+  const showAllProducts = () => {
+    setProducts(allProducts);
+    setFilteredProducts(allProducts);
   };
 
   const handleAddProduct = async () => {
