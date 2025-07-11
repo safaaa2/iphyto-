@@ -18,6 +18,7 @@
     "or": "ou",
     "selectLanguage": "Choisir la langue",
     "error": "Erreur",
-    "languageChangeError": "Erreur lors du changement de langue"
+    "languageChangeError": "Erreur lors du changement de langue",
+    "removeFromCartConfirm": "Voulez-vous vraiment retirer cet article du panier ?"
   }
   
