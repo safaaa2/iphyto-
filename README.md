@@ -1,64 +1,78 @@
 <div align="center">
 
-
+<br/>
 
 # 🌱 iPhyto
 
-### Application E-commerce Agricole
+**La plateforme e-commerce agricole du Maroc**
 
-[![Platform](https://img.shields.io/badge/Platform-iOS%20%26%20Android-green?style=flat-square)](https://github.com)
-[![Made with Expo](https://img.shields.io/badge/Made%20with-Expo-blue?style=flat-square)](https://expo.dev)
-[![Backend](https://img.shields.io/badge/Backend-Supabase-3ECF8E?style=flat-square)](https://supabase.com)
-[![License](https://img.shields.io/badge/License-MIT-yellow?style=flat-square)](LICENSE)
+<br/>
 
-</div>
+[![Platform](https://img.shields.io/badge/Platform-iOS%20%26%20Android-34C759?style=for-the-badge&logo=apple)](https://github.com/safaaa2/iphyto-)
+[![Expo](https://img.shields.io/badge/Expo-SDK-000020?style=for-the-badge&logo=expo)](https://expo.dev)
+[![Supabase](https://img.shields.io/badge/Supabase-Backend-3ECF8E?style=for-the-badge&logo=supabase)](https://supabase.com)
+[![TypeScript](https://img.shields.io/badge/TypeScript-5.0-3178C6?style=for-the-badge&logo=typescript)](https://www.typescriptlang.org)
+[![ONSSA](https://img.shields.io/badge/Conformité-ONSSA-brightgreen?style=for-the-badge)](https://www.onssa.gov.ma)
+
+<br/>
+
+> *Digitaliser l'accès aux intrants agricoles pour les professionnels marocains.*
+
+<br/>
 
 ---
 
-## 📖 Description
+</div>
 
-**iPhyto** est une application mobile e-commerce dédiée aux agriculteurs marocains. Elle permet d'acheter facilement des produits agricoles tels que les engrais, les semences, les pesticides et les équipements. iPhyto vise à digitaliser le processus d'achat pour les professionnels du secteur et à assurer la conformité avec les normes de l'**ONSSA**.
+## 📖 À propos du projet
+
+**iPhyto** est une application mobile e-commerce conçue pour les agriculteurs et professionnels du secteur agricole marocain. Elle centralise l'achat de produits phytosanitaires et agricoles (engrais, semences, pesticides, équipements) tout en garantissant la traçabilité et la conformité aux exigences réglementaires de l'**ONSSA**.
+
+L'application s'adresse aussi bien aux agriculteurs individuels qu'aux coopératives et distributeurs agréés.
 
 ---
 
 ## ✨ Fonctionnalités
 
-### 🛒 Achat de produits agricoles
-- Parcourir un catalogue complet de produits (engrais, semences, pesticides, équipements)
-- Recherche avancée par catégorie et fournisseur
-- Panier et paiement intégré
+<br/>
 
-### 🏭 Gestion des fournisseurs
-- Accès à une liste de fournisseurs certifiés
-- Consultation des profils et des produits par fournisseur
-- Recherche et filtrage des fournisseurs
+| Module | Description |
+|--------|-------------|
+| 🛒 **Marketplace** | Catalogue complet de produits agricoles avec recherche, filtres et fiches détaillées |
+| 🏭 **Fournisseurs** | Annuaire de fournisseurs certifiés avec profils, avis et produits référencés |
+| 💳 **Paiement** | Processus de commande fluide avec panier et paiement sécurisé intégré |
+| 🔔 **Notifications** | Alertes temps réel sur les commandes, nouveautés produits et mises à jour |
+| 🛠️ **Administration** | Dashboard complet : gestion des produits, utilisateurs, fournisseurs et statistiques |
+| 🌍 **Multilingue** | Interface disponible en Français et en Arabe |
 
-### 🔔 Notifications
-- Notifications de nouveaux produits
-- Rappels et mises à jour importantes
-
-### 🛠️ Panel Admin
-- Gestion des produits et des catégories
-- Gestion des utilisateurs et des fournisseurs
-- Suivi des commandes et statistiques
+<br/>
 
 ---
 
 ## 🧰 Stack Technique
 
-| Technologie | Usage |
-|-------------|-------|
-| **React Native / Expo** | Framework mobile (iOS & Android) |
-| **Supabase** | Backend (BDD, Auth, Storage) |
-| **TypeScript** | Langage principal |
-| **i18n** | Internationalisation (FR / AR) |
+```
+📱 Mobile      →  React Native + Expo (iOS & Android)
+🗄️ Backend     →  Supabase (PostgreSQL, Auth, Storage, Realtime)
+🔤 Langage     →  TypeScript
+🌍 i18n        →  expo-localization (Français / Arabe)
+```
 
 ---
 
-## 🚀 Installation
+## 🚀 Installation & Démarrage
+
+### Prérequis
+
+- Node.js >= 18
+- npm ou yarn
+- Expo CLI (`npm install -g expo-cli`)
+- Compte [Supabase](https://supabase.com)
+
+### Étapes
 
 ```bash
-# 1. Cloner le repo
+# 1. Cloner le dépôt
 git clone https://github.com/safaaa2/iphyto-.git
 cd iphyto-
 
@@ -67,28 +81,73 @@ npm install
 
 # 3. Configurer les variables d'environnement
 cp .env.example .env
-# Remplir les clés Supabase dans .env
+# → Renseigner les clés Supabase dans le fichier .env
 
 # 4. Lancer l'application
-npm start
-# ou
 npx expo start
+```
+
+> Scannez le QR code avec **Expo Go** sur votre téléphone pour tester l'application.
+
+---
+
+## 📁 Structure du projet
+
+```
+iphyto-/
+├── app/              # Écrans et navigation
+├── assets/           # Images, icônes, polices
+├── lib/              # Utilitaires et helpers
+├── i18n/             # Fichiers de traduction (FR / AR)
+├── supabase/         # Schémas et requêtes Supabase
+├── app.config.js     # Configuration Expo
+└── package.json
 ```
 
 ---
 
-
-
 ## 🌿 Conformité ONSSA
 
-iPhyto respecte les normes de l'**Office National de Sécurité Sanitaire des produits Alimentaires (ONSSA)** pour garantir la qualité et la traçabilité des produits agricoles distribués sur la plateforme.
+iPhyto est développé dans le respect des exigences de l'**Office National de Sécurité Sanitaire des produits Alimentaires (ONSSA)**. Chaque produit référencé sur la plateforme est soumis à une validation préalable afin de garantir :
+
+- ✅ La conformité réglementaire des produits phytosanitaires
+- ✅ La traçabilité des intrants agricoles
+- ✅ La fiabilité des fournisseurs référencés
+
+---
+
+## 📱 Captures d'écran
+
+> *Screenshots à venir — restez connectés !*
+
+---
+
+## 🤝 Contribution
+
+Les contributions sont les bienvenues. Pour contribuer :
+
+1. Forkez le projet
+2. Créez une branche (`git checkout -b feature/ma-fonctionnalite`)
+3. Commitez vos changements (`git commit -m 'feat: ajout de ...'`)
+4. Poussez la branche (`git push origin feature/ma-fonctionnalite`)
+5. Ouvrez une **Pull Request**
+
+---
+
+## 📄 Licence
+
+Ce projet est sous licence **MIT**. Voir le fichier [LICENSE](LICENSE) pour plus de détails.
 
 ---
 
 <div align="center">
 
-Made with ❤️ for Moroccan Farmers 🌱
+<br/>
 
-**iPhyto** — *Digitaliser l'agriculture marocaine*
+Développé avec ❤️ au **Maroc** 🇲🇦
+
+**iPhyto** — *L'agriculture marocaine entre vos mains*
+
+<br/>
 
 </div>
