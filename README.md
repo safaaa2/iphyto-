@@ -116,23 +116,8 @@ iPhyto est développé dans le respect des exigences de l'**Office National de S
 
 ---
 
-## 📱 Captures d'écran
 
-> *Screenshots à venir — restez connectés !*
 
----
-
-## 🤝 Contribution
-
-Les contributions sont les bienvenues. Pour contribuer :
-
-1. Forkez le projet
-2. Créez une branche (`git checkout -b feature/ma-fonctionnalite`)
-3. Commitez vos changements (`git commit -m 'feat: ajout de ...'`)
-4. Poussez la branche (`git push origin feature/ma-fonctionnalite`)
-5. Ouvrez une **Pull Request**
-
----
 
 ## 📄 Licence
 
