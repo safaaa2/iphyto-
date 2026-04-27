@@ -59,7 +59,7 @@
 
 ```bash
 # 1. Cloner le repo
-git clone https://github.com/votre-username/iphyto-.git
+git clone https://github.com/safaaa2/iphyto-.git
 cd iphyto-
 
 # 2. Installer les dépendances
