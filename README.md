@@ -1,6 +1,6 @@
 <div align="center">
 
-<img src="assets/logo.png" alt="iPhyto Logo" width="120"/>
+
 
 # 🌱 iPhyto
 
