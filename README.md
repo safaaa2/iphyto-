@@ -145,4 +145,5 @@ Développé avec ❤️ au **Maroc** 🇲🇦
 📌 Aperçu rapide de l’application :
 
 
-[DEMO.pdf](https://github.com/user-attachments/files/27288485/DEMO.pdf)
+[DEMO.pdf](https://github.com/user-attachments/files/27288548/DEMO.pdf)
+
