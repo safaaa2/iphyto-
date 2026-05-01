@@ -140,10 +140,5 @@ Développé avec ❤️ au **Maroc** 🇲🇦
 
 
 
-## 🎥 Démo
 
-📌 Aperçu rapide de l’application :
-
-
-[DEMO.pdf](https://github.com/user-attachments/files/27288548/DEMO.pdf)
 
