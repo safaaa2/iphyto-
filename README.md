@@ -28,6 +28,7 @@
 
 **iPhyto** est une application mobile e-commerce conçue pour les agriculteurs et professionnels du secteur agricole marocain. Elle centralise l'achat de produits phytosanitaires et agricoles (engrais, semences, pesticides, équipements) tout en garantissant la traçabilité et la conformité aux exigences réglementaires de l'**ONSSA**.
 
+
 L'application s'adresse aussi bien aux agriculteurs individuels qu'aux coopératives et distributeurs agréés.
 
 ---
@@ -136,3 +137,12 @@ Développé avec ❤️ au **Maroc** 🇲🇦
 <br/>
 
 </div>
+
+
+
+## 🎥 Démo
+
+📌 Aperçu rapide de l’application :
+
+
+[DEMO.pdf](https://github.com/user-attachments/files/27288485/DEMO.pdf)
